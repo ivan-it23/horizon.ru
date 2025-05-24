@@ -1,0 +1,2273 @@
+/* ==========================================================================
+   StyleAccountingOfDevices.css
+   Стили для корпоративного веб-приложения учёта приборов.
+   Включает стили для header/footer (из Page1.css) и новые стили компонентов.
+   ========================================================================== */
+
+/* ==========================================================================
+   1. CSS Переменные (Variables)
+   ========================================================================== */
+:root {
+  --primary-color: #2c3e50; /* Темно-синий */
+  --secondary-color: #6c757d; /* Средне-серый */
+  --accent-color: #0D6EFD; /* Синий акцент (из Page1.css для совместимости) */
+  --hover-color: #34495e; /* Темно-синий при наведении */
+  --hover-accent-color: #0B5ED7; /* Синий акцент при наведении */
+
+  --bg-body: #f8f9fa; /* Очень светло-серый */
+  --bg-container: #ffffff; /* Белый */
+  --bg-header-footer: #ffffff; /* Белый для хедера/футера */
+  --bg-table-header: #f8fafc; /* Фон заголовков таблиц */
+  --bg-table-stripe: #f8fafc; /* Фон четных строк таблицы */
+  --bg-input: #ffffff; /* Фон полей ввода */
+  --bg-button-secondary-hover: #e9ecef; /* Фон вторичной кнопки при наведении */
+
+  --text-primary: #212529; /* Почти черный */
+  --text-secondary: #495057; /* Темно-серый */
+  --text-light: #ffffff; /* Белый текст (на темном фоне) */
+  --text-placeholder: #6c757d; /* Цвет плейсхолдера */
+  --text-link: var(--accent-color); /* Цвет ссылок */
+
+  --border-color: #dee2e6; /* Светло-серый */
+  --border-color-input: #ced4da; /* Серый для полей ввода */
+  --border-color-focus: #80BDFF; /* Голубой при фокусе */
+  --border-width: 1px;
+  --border-radius: 6px; /* Скругление углов */
+
+  --danger-color: #dc3545; /* Красный */
+  --success-color: #198754; /* Зеленый */
+  --warning-color: #ffc107; /* Желтый */
+  --info-color: #0dcaf0; /* Бирюзовый */
+
+  --disabled-bg: #e9ecef; /* Фон отключенных элементов */
+  --disabled-border: #ced4da; /* Граница отключенных элементов */
+  --disabled-text: #6c757d; /* Текст отключенных элементов */
+
+  --font-family-base: 'Open Sans', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-size-base: 16px;
+  --line-height-base: 1.6;
+
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.07);
+  --shadow-lg: 0 10px 20px rgba(0, 0, 0, 0.1);
+
+  --modal-overlay-bg: rgba(0, 0, 0, 0.5);
+}
+
+/* ==========================================================================
+   2. Глобальные стили и сброс (Global Styles & Reset)
+   ========================================================================== */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-family-base);
+  line-height: var(--line-height-base);
+  font-size: var(--font-size-base);
+  background-color: var(--bg-body);
+  color: var(--text-primary);
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+body.menu-open {
+  overflow: hidden; /* Блокировка прокрутки при открытом мобильном меню */
+}
+
+a {
+  color: var(--text-link);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+a:hover {
+  color: var(--hover-accent-color);
+  text-decoration: none;
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  margin-bottom: 0.8rem;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--primary-color); /* Заголовки темно-синие */
+}
+
+h1 { font-size: 2rem; } /* 32px */
+h2 { font-size: 1.75rem; } /* 28px */
+h3 { font-size: 1.5rem; } /* 24px */
+h4 { font-size: 1.25rem; } /* 20px */
+h5 { font-size: 1.1rem; } /* 17.6px */
+h6 { font-size: 1rem; } /* 16px */
+
+p {
+  margin-bottom: 1rem;
+}
+
+/* ==========================================================================
+   3. Стили Header и Footer (унаследовано из Page1.css)
+   ========================================================================== */
+
+/* --- Контейнеры --- */
+.header-container,
+.main-container, /* Добавлен для единообразия */
+.footer-container {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 24px;
+  width: 100%;
+}
+
+/* --- Header --- */
+.site-header {
+  background-color: var(--bg-header-footer);
+  border-bottom: var(--border-width) solid var(--border-color);
+  padding: 12px 0;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  box-shadow: var(--shadow-sm);
+}
+
+.header-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  min-height: 40px;
+}
+
+.header-left {
+  flex-shrink: 0;
+}
+
+.logo-link {
+  display: inline-block;
+}
+
+.logo-img {
+  height: 36px;
+  width: auto;
+}
+
+.header-nav {
+  flex-grow: 1;
+  display: flex;
+  justify-content: center;
+}
+
+.header-nav ul {
+  display: flex;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.header-nav ul li {
+  margin: 0 12px;
+}
+
+.header-nav ul li a {
+  color: var(--text-secondary);
+  font-weight: 600;
+  font-size: 1rem;
+  padding: 8px 12px;
+  border-radius: 4px; /* Небольшое скругление */
+  transition: color 0.2s ease, background-color 0.2s ease;
+  position: relative;
+  display: inline-block;
+}
+
+.header-nav ul li a:hover {
+  color: var(--accent-color);
+  background-color: rgba(13, 110, 253, 0.05);
+}
+
+.header-nav ul li a.active {
+  color: var(--accent-color);
+  font-weight: 700;
+}
+
+.header-nav ul li a.active::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 12px;
+  right: 12px;
+  height: 2px;
+  background-color: var(--accent-color);
+}
+
+.header-right {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+/* Стили для авторизованного пользователя */
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.user-link-container {
+  position: relative;
+  display: flex;
+}
+
+.user-profile-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 400;
+  font-size: 0.9rem;
+  padding: 6px 8px;
+  border-radius: 4px;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+.user-profile-link:hover {
+  background-color: var(--bg-button-secondary-hover);
+}
+
+.user-icon {
+  font-size: 1.4rem;
+  line-height: 1;
+  color: var(--secondary-color);
+  transition: color 0.2s ease;
+}
+.user-profile-link:hover .user-icon {
+  color: var(--text-secondary);
+}
+
+.user-name {
+  color: var(--text-primary);
+  white-space: nowrap;
+  font-size: 1rem;
+}
+
+.logout-form {
+  margin: 0;
+}
+
+.logout-link {
+  color: var(--secondary-color);
+  font-size: 0.9rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border-radius: 4px;
+  transition: color 0.2s ease, background-color 0.2s ease;
+}
+
+.logout-link:hover {
+  color: var(--danger-color);
+  background-color: rgba(220, 53, 69, 0.05);
+}
+.logout-link i {
+  font-size: 1rem;
+}
+
+/* Стили для формы авторизации */
+.auth-form {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.input-wrapper {
+  position: relative;
+}
+
+.auth-form input[type="text"],
+.auth-form input[type="password"] {
+  padding: 8px 12px;
+  font-size: 0.9rem;
+  border: var(--border-width) solid var(--border-color-input);
+  border-radius: var(--border-radius);
+  width: 160px;
+  background-color: var(--bg-input);
+  color: var(--text-primary);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.auth-form input[type="text"]:focus,
+.auth-form input[type="password"]:focus {
+  border-color: var(--border-color-focus);
+  box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.15);
+  outline: none;
+}
+
+.login-button { /* Стили для кнопки Войти в хедере */
+  padding: 8px 16px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-light);
+  background-color: var(--accent-color);
+  border: var(--border-width) solid var(--accent-color);
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+  white-space: nowrap;
+}
+
+.login-button:hover {
+  background-color: var(--hover-accent-color);
+  border-color: #0A58CA;
+}
+
+/* Бейдж непрочитанных сообщений */
+.unread-badge {
+  position: absolute;
+  top: -6px;
+  right: -8px;
+  background-color: var(--danger-color);
+  color: white;
+  border-radius: 50%;
+  padding: 1px 5px;
+  font-size: 10px;
+  font-weight: bold;
+  line-height: 1.4;
+  min-width: 16px;
+  height: 16px;
+  display: none;
+  box-sizing: border-box;
+  text-align: center;
+  box-shadow: 0 0 0 2px var(--bg-header-footer); /* Обводка цветом фона хедера */
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  opacity: 0;
+  transform: scale(0.8);
+  z-index: 1;
+  pointer-events: none;
+}
+
+.unread-badge.visible {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* --- Footer --- */
+.site-footer {
+  background-color: var(--bg-header-footer);
+  border-top: var(--border-width) solid var(--border-color);
+  padding: 24px 0;
+  margin-top: auto; /* Прижимает футер к низу */
+}
+
+.footer-container p {
+  font-size: 0.875rem; /* ~14px */
+  color: var(--secondary-color);
+  text-align: center;
+  margin: 0;
+}
+
+.footer-container a {
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+.footer-container a:hover {
+  color: var(--accent-color);
+}
+
+/* --- Мобильное меню (из Page1.css) --- */
+.mobile-menu-toggle {
+  display: none;
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 8px;
+  line-height: 1;
+}
+
+/* ==========================================================================
+   4. Основной контент (Main Content Area)
+   ========================================================================== */
+main {
+  flex: 1; /* Занимает оставшееся пространство */
+  padding: 32px 0; /* Вертикальные отступы */
+  width: 100%;
+}
+
+/* Контейнер для основного контента страницы учёта */
+.accounting-container { /* Используйте этот класс для обертки контента на странице учёта */
+  max-width: 1400px; /* Можно сделать шире для таблиц */
+  margin: 0 auto;
+  padding: 0 24px;
+  width: 100%;
+}
+
+/* ==========================================================================
+   5. Компоненты интерфейса (UI Components)
+   ========================================================================== */
+
+/* --- Формы --- */
+label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+input[type="text"],
+input[type="password"],
+input[type="email"],
+input[type="number"],
+input[type="date"],
+input[type="search"],
+select,
+textarea {
+  display: block;
+  width: 100%;
+  padding: 10px 12px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text-primary);
+  background-color: var(--bg-input);
+  background-clip: padding-box;
+  border: var(--border-width) solid var(--border-color-input);
+  appearance: none; /* Убирает стандартный вид для select */
+  border-radius: var(--border-radius);
+  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--text-placeholder);
+  opacity: 1;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  color: var(--text-primary);
+  background-color: var(--bg-input);
+  border-color: var(--border-color-focus);
+  outline: 0;
+  box-shadow: 0 0 0 3px rgba(44, 62, 80, 0.15); /* Тень фокуса */
+}
+
+textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+select {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 16px 12px;
+}
+
+/* Стили для отключенных полей */
+input:disabled,
+select:disabled,
+textarea:disabled {
+  background-color: var(--disabled-bg);
+  border-color: var(--disabled-border);
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* Группировка элементов формы */
+.form-group {
+  margin-bottom: 1.2rem;
+}
+
+/* --- Кнопки --- */
+.button {
+  display: inline-flex; /* Используем inline-flex для выравнивания иконки и текста */
+  align-items: center;
+  justify-content: center;
+  gap: 8px; /* Расстояние между иконкой и текстом */
+  padding: 10px 20px;
+  font-family: var(--font-family-base);
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.5;
+  text-align: center;
+  text-decoration: none;
+  vertical-align: middle;
+  cursor: pointer;
+  user-select: none;
+  border: var(--border-width) solid transparent;
+  border-radius: var(--border-radius);
+  transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out, border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.button i, .button .fas, .button .far, .button .fal, .button .fab {
+  /* Стили для иконок внутри кнопок */
+  line-height: 1; /* Для лучшего выравнивания */
+}
+
+/* Основная кнопка */
+.button-primary {
+  color: var(--text-light);
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+}
+.button-primary:hover {
+  color: var(--text-light);
+  background-color: var(--hover-color);
+  border-color: var(--hover-color);
+}
+.button-primary:focus {
+  box-shadow: 0 0 0 3px rgba(44, 62, 80, 0.3);
+}
+
+/* Вторичная кнопка */
+.button-secondary {
+  color: var(--text-secondary);
+  background-color: var(--bg-container);
+  border-color: var(--border-color-input);
+}
+.button-secondary:hover {
+  color: var(--text-primary);
+  background-color: var(--bg-button-secondary-hover);
+  border-color: #adb5bd;
+}
+.button-secondary:focus {
+  box-shadow: 0 0 0 3px rgba(108, 117, 125, 0.2);
+}
+
+/* Кнопка Danger */
+.button-danger {
+  color: var(--text-light);
+  background-color: var(--danger-color);
+  border-color: var(--danger-color);
+}
+.button-danger:hover {
+  color: var(--text-light);
+  background-color: #bb2d3b; /* Темнее красный */
+  border-color: #b02a37;
+}
+.button-danger:focus {
+   box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.3);
+}
+
+/* Отключенная кнопка */
+.button:disabled,
+button:disabled {
+  color: var(--disabled-text);
+  background-color: var(--disabled-bg);
+  border-color: var(--disabled-border);
+  cursor: not-allowed;
+  opacity: 0.7;
+  pointer-events: none; /* Отключаем события мыши */
+}
+
+/* --- Таблицы --- */
+.data-table {
+  width: 100%;
+  margin-bottom: 1.5rem;
+  color: var(--text-primary);
+  vertical-align: top;
+  border-collapse: separate; /* Используем separate для border-radius */
+  border-spacing: 0;
+  border: var(--border-width) solid var(--border-color);
+  border-radius: var(--border-radius);
+  overflow: hidden; /* Чтобы border-radius работал */
+  box-shadow: var(--shadow-sm);
+  background-color: var(--bg-container);
+}
+
+.data-table > thead {
+  vertical-align: bottom;
+}
+
+.data-table th {
+  background-color: var(--bg-table-header);
+  padding: 14px 16px;
+  font-weight: 600;
+  text-align: inherit; /* Наследует text-align */
+  text-align: -webkit-match-parent;
+  border-bottom: 2px solid var(--border-color);
+  color: var(--text-secondary);
+}
+
+.data-table td {
+  padding: 12px 16px;
+  border-bottom: var(--border-width) solid var(--border-color);
+  line-height: 1.5;
+  font-size: 14px;
+}
+
+/* Чередование строк */
+.data-table > tbody > tr:nth-of-type(even) > * {
+  background-color: var(--bg-table-stripe);
+}
+
+/* Наведение на строки */
+.data-table > tbody > tr:hover > * {
+  background-color: var(--bg-button-secondary-hover);
+  color: var(--text-primary);
+}
+
+/* Убираем нижнюю границу у последней строки */
+.data-table > tbody > tr:last-of-type > td {
+  border-bottom: 0;
+}
+
+/* Заголовок таблицы */
+.data-table caption {
+  caption-side: top;
+  padding: 12px 16px;
+  text-align: left;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--primary-color);
+  background-color: var(--bg-table-header);
+  border-bottom: 2px solid var(--border-color);
+}
+
+/* Адаптивность таблицы: горизонтальный скролл на малых экранах */
+.table-responsive {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.table-responsive > .data-table {
+  margin-bottom: 0; /* Убираем отступ у таблицы внутри обертки */
+}
+
+/* --- Вкладки (Tabs) --- */
+.tabs {
+  margin-bottom: 1.5rem;
+}
+
+.tab-list {
+  display: flex;
+  flex-wrap: wrap;
+  list-style: none;
+  padding-left: 0;
+  margin-bottom: 0;
+  border-bottom: 2px solid var(--border-color);
+}
+
+.tab-item {
+  cursor: pointer;
+  padding: 14px 24px;
+  margin-bottom: -2px; /* Перекрывает нижнюю границу .tab-list */
+  background: none;
+  border: 1px solid transparent;
+  border-top-left-radius: var(--border-radius);
+  border-top-right-radius: var(--border-radius);
+  color: var(--text-secondary);
+  font-weight: 600;
+  transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out, border-color 0.15s ease-in-out;
+  position: relative; /* Для псевдоэлементов */
+}
+
+.tab-item:hover {
+  color: var(--primary-color);
+  background-color: var(--bg-button-secondary-hover);
+  border-color: transparent; /* Убираем рамку при наведении, если не активна */
+}
+
+.tab-item.active {
+  color: var(--primary-color);
+  background-color: var(--bg-container);
+  border-color: var(--border-color) var(--border-color) var(--bg-container); /* Рамка совпадает с фоном снизу */
+  border-bottom-color: var(--bg-container); /* Явно указываем цвет нижней границы */
+  font-weight: 700;
+}
+
+/* Подчеркивание активной вкладки */
+.tab-item.active::after {
+  content: '';
+  position: absolute;
+  bottom: -2px; /* Располагается на месте границы tab-list */
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: var(--primary-color); /* Цвет подчеркивания */
+}
+
+.tab-content {
+  padding-top: 1.5rem;
+}
+
+.tab-pane {
+  display: none;
+}
+
+.tab-pane.active {
+  display: block;
+}
+
+/* Стили для родительских вкладок и подвкладок */
+.parent-tab {
+  position: relative;
+}
+
+.sub-tabs {
+  display: none; /* Скрыты по умолчанию */
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background-color: var(--bg-container);
+  border: 1px solid var(--border-color);
+  border-top: none; /* Убираем верхнюю границу */
+  border-radius: 0 0 var(--border-radius) var(--border-radius);
+  box-shadow: var(--shadow-md);
+  z-index: 100;
+  min-width: 200px; /* Минимальная ширина выпадающего списка */
+  padding: 5px 0; /* Небольшие отступы сверху/снизу */
+  list-style: none;
+}
+
+.parent-tab:hover .sub-tabs,
+.parent-tab.active .sub-tabs { /* Показываем при наведении или если родитель активен */
+  display: block;
+}
+
+.sub-tabs .tab-item {
+  display: block; /* Элементы списка вертикально */
+  padding: 10px 20px;
+  margin-bottom: 0; /* Убираем нижний отступ */
+  border: none; /* Убираем рамки */
+  border-radius: 0; /* Убираем скругление */
+  white-space: nowrap; /* Запрещаем перенос текста */
+  color: var(--text-secondary);
+  font-weight: 400;
+}
+
+.sub-tabs .tab-item:hover {
+  background-color: var(--bg-button-secondary-hover);
+  color: var(--primary-color);
+}
+
+.sub-tabs .tab-item.active {
+  background-color: rgba(44, 62, 80, 0.1); /* Легкий фон для активной подвкладки */
+  color: var(--primary-color);
+  font-weight: 600;
+}
+.sub-tabs .tab-item.active::after {
+  display: none; /* Убираем подчеркивание у подвкладок */
+}
+
+
+/* --- Модальные окна --- */
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 1050; /* Выше большинства элементов */
+  display: none; /* Скрыто по умолчанию */
+  width: 100%;
+  height: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+  outline: 0;
+  background-color: var(--modal-overlay-bg); /* Полупрозрачный фон */
+}
+
+.modal.show { /* Класс для показа модального окна */
+  display: block;
+}
+
+.modal-dialog {
+  position: relative;
+  width: auto;
+  margin: 1.75rem auto; /* Отступы сверху/снизу и центрирование */
+  max-width: 600px; /* Максимальная ширина */
+  pointer-events: none; /* Позволяет кликать "сквозь" диалог на оверлей */
+}
+
+.modal-content {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  pointer-events: auto; /* Восстанавливаем события для контента */
+  background-color: var(--bg-container);
+  background-clip: padding-box;
+  border: var(--border-width) solid rgba(0, 0, 0, 0.2);
+  border-radius: calc(var(--border-radius) + 2px); /* Немного большее скругление */
+  box-shadow: var(--shadow-lg);
+  outline: 0;
+}
+
+.modal-header {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.5rem;
+  border-bottom: var(--border-width) solid var(--border-color);
+  border-top-left-radius: var(--border-radius);
+  border-top-right-radius: var(--border-radius);
+}
+
+.modal-title {
+  margin-bottom: 0;
+  line-height: 1.5;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--primary-color);
+}
+
+.modal-close-button { /* Стили для кнопки закрытия (если используется <button>) */
+  padding: 0.5rem;
+  margin: -0.5rem -0.5rem -0.5rem auto;
+  background-color: transparent;
+  border: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1;
+  color: #000;
+  text-shadow: 0 1px 0 #fff;
+  opacity: 0.5;
+  cursor: pointer;
+}
+.modal-close-button:hover {
+  opacity: 0.75;
+}
+
+.modal-body {
+  position: relative;
+  flex: 1 1 auto;
+  padding: 1.5rem;
+}
+
+.modal-footer {
+  display: flex;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: flex-end; /* Кнопки справа */
+  padding: 1rem 1.5rem;
+  border-top: var(--border-width) solid var(--border-color);
+  border-bottom-right-radius: var(--border-radius);
+  border-bottom-left-radius: var(--border-radius);
+}
+
+.modal-footer > * { /* Отступы между элементами в футере */
+  margin: 0.25rem;
+}
+
+/* --- Карточки Действий (Action Cards) --- */
+.action-selector-container {
+  margin: 25px 0;
+  padding: 20px;
+  background: var(--bg-container);
+  border-radius: calc(var(--border-radius) + 2px);
+  box-shadow: var(--shadow-sm);
+}
+
+.action-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); /* Адаптивные колонки */
+  gap: 20px;
+  margin-bottom: 25px;
+}
+
+.action-card {
+  padding: 25px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  transition: all 0.25s ease;
+  text-align: center;
+  background: var(--bg-table-header); /* Светлый фон */
+}
+
+.action-card:hover, .action-card.selected {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--primary-color);
+  background: var(--bg-container);
+}
+
+.action-card i {
+  font-size: 32px;
+  color: var(--primary-color);
+  margin-bottom: 15px;
+  transition: color 0.3s ease;
+}
+
+.action-card h3 {
+  margin: 10px 0 5px;
+  color: var(--primary-color);
+  font-size: 18px;
+}
+
+.action-card p {
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.4;
+  margin-bottom: 0;
+}
+
+/* --- Блок Информации о Приборе --- */
+.device-info-box {
+  background: var(--bg-container);
+  border: var(--border-width) solid var(--border-color);
+  border-radius: var(--border-radius);
+  padding: 1.2rem;
+  margin-bottom: 1.5rem;
+  box-shadow: var(--shadow-sm);
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1rem;
+}
+
+.device-info-item {
+  display: flex;
+  align-items: center;
+  padding: 0.6rem 1rem;
+  background: var(--bg-table-header);
+  border-radius: 4px;
+  border: var(--border-width) solid #edf2f7;
+}
+
+.device-info-label {
+  font-size: 0.95rem;
+  color: var(--secondary-color);
+  font-weight: 500;
+  min-width: 120px;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.device-info-label i {
+  color: var(--primary-color);
+  font-size: 1.1rem;
+  width: 20px;
+}
+
+.device-info-value {
+  font-size: 1.1rem;
+  color: var(--text-primary);
+  font-weight: 600;
+  margin-left: auto;
+  padding-left: 1rem;
+  word-break: break-all; /* Перенос длинных значений */
+}
+
+/* --- Стили для отображения истории --- */
+.history-section {
+  background-color: var(--bg-container);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  margin-bottom: 1.5rem;
+  padding: 0;
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+.history-header {
+  background-color: var(--bg-table-header);
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-primary);
+  font-weight: 600;
+  font-size: 1.1em;
+  margin: 0;
+  display: flex;
+  justify-content: space-between; /* Разносим дату и автора */
+  flex-wrap: wrap; /* Перенос на мобильных */
+  gap: 10px;
+}
+
+.history-header p {
+  margin: 0;
+  font-size: 0.9em;
+  color: var(--secondary-color);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.history-header p strong {
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+.history-header p span {
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.history-main-info, .history-details {
+  padding: 15px 20px;
+}
+
+.history-subtable {
+  width: calc(100% - 40px);
+  margin: 0 20px 20px 20px;
+  border-collapse: collapse;
+  border: 1px solid var(--border-color);
+  font-size: 0.95em;
+  background-color: var(--bg-container);
+}
+.history-subtable th,
+.history-subtable td {
+  border: 1px solid var(--border-color);
+  padding: 10px 12px;
+  text-align: left;
+  vertical-align: top;
+  color: var(--text-primary);
+}
+.history-subtable th {
+  background-color: var(--bg-table-header);
+  font-weight: 600;
+  color: var(--text-secondary);
+  width: 30%; /* Ширина колонки заголовка */
+}
+.history-subtable td {
+   width: 70%; /* Ширина колонки значения */
+}
+
+/* Подсветка измененных полей в истории */
+.history-subtable td.changed {
+    background-color: #fff3cd !important;
+    position: relative;
+    font-weight: 500;
+}
+.history-subtable td.changed::before { /* Маркер изменения */
+    content: '*';
+    color: #856404;
+    font-weight: bold;
+    margin-right: 5px;
+}
+
+/* Стили для вложенных таблиц в истории */
+.history-subtable .nested-table {
+    margin: 5px 0;
+    border: 1px solid #e9ecef;
+    background: #f8fafc;
+    width: 100%;
+    font-size: 0.9em;
+}
+.history-subtable .nested-table th,
+.history-subtable .nested-table td {
+    padding: 6px 8px;
+    border-color: #e9ecef;
+}
+.history-subtable .nested-table th {
+    background-color: #e9ecef;
+    font-weight: 500;
+}
+
+/* --- Вспомогательные классы --- */
+.text-danger { color: var(--danger-color) !important; }
+.text-success { color: var(--success-color) !important; }
+.text-warning { color: var(--warning-color) !important; }
+.text-info { color: var(--info-color) !important; }
+.text-muted { color: var(--secondary-color) !important; }
+
+.bg-danger-light { background-color: rgba(220, 53, 69, 0.1); }
+.bg-success-light { background-color: rgba(25, 135, 84, 0.1); }
+
+.d-none { display: none !important; }
+.d-block { display: block !important; }
+.d-flex { display: flex !important; }
+.d-inline-block { display: inline-block !important; }
+
+.mt-1 { margin-top: 0.25rem !important; }
+.mt-2 { margin-top: 0.5rem !important; }
+.mt-3 { margin-top: 1rem !important; }
+.mt-4 { margin-top: 1.5rem !important; }
+.mt-5 { margin-top: 3rem !important; }
+.mb-1 { margin-bottom: 0.25rem !important; }
+.mb-2 { margin-bottom: 0.5rem !important; }
+.mb-3 { margin-bottom: 1rem !important; }
+.mb-4 { margin-bottom: 1.5rem !important; }
+.mb-5 { margin-bottom: 3rem !important; }
+.ms-2 { margin-left: 0.5rem !important; }
+.me-2 { margin-right: 0.5rem !important; }
+
+/* ==========================================================================
+   6. Адаптивность (Responsiveness)
+   ========================================================================== */
+
+/* Планшеты и небольшие десктопы */
+@media (max-width: 1024px) {
+  .header-container,
+  .main-container,
+  .accounting-container,
+  .footer-container {
+    padding: 0 20px;
+  }
+
+  h1 { font-size: 1.8rem; }
+  h2 { font-size: 1.6rem; }
+
+  .action-cards {
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  }
+
+  .tab-item {
+    padding: 12px 18px;
+    font-size: 14px;
+  }
+}
+
+/* Мобильные устройства */
+@media (max-width: 768px) {
+  body {
+    font-size: 15px;
+  }
+
+  .header-container {
+    position: relative;
+  }
+
+  .mobile-menu-toggle {
+    display: block;
+    order: 3;
+  }
+
+  .header-nav,
+  .header-right {
+    display: none; /* Скрыты по умолчанию */
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    background-color: var(--bg-header-footer);
+    flex-direction: column;
+    align-items: stretch;
+    padding: 16px 0;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    border-top: 1px solid var(--border-color);
+    z-index: 999;
+  }
+
+  .header-nav.mobile-active,
+  .header-right.mobile-active {
+    display: flex; /* Показываем при активации */
+  }
+
+  .header-nav ul {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .header-nav ul li {
+    margin: 0;
+    text-align: center;
+    border-bottom: 1px solid #EFF2F5;
+  }
+   .header-nav ul li:last-child {
+    border-bottom: none;
+   }
+
+  .header-nav ul li a {
+    padding: 12px 20px;
+    display: block;
+    width: 100%;
+    border-radius: 0;
+  }
+   .header-nav ul li a.active::after {
+     display: none;
+   }
+   .header-nav ul li a:hover {
+     background-color: rgba(13, 110, 253, 0.05);
+   }
+
+  .header-right {
+    padding: 16px 20px;
+    gap: 15px;
+    border-top: 1px solid var(--border-color);
+  }
+
+   .auth-form {
+      flex-direction: column;
+      align-items: stretch;
+      width: 100%;
+   }
+    .auth-form input[type="text"],
+    .auth-form input[type="password"] {
+        width: 100%;
+    }
+    .login-button {
+        width: 100%;
+    }
+
+   .user-info {
+       flex-direction: column;
+       align-items: center;
+       gap: 10px;
+       width: 100%;
+   }
+   .logout-link {
+       padding: 10px 15px;
+       justify-content: center; /* Центрируем кнопку выхода */
+   }
+
+  main {
+    padding: 24px 0;
+  }
+  .accounting-container {
+     padding: 0 15px;
+  }
+
+  h1 { font-size: 1.6rem; }
+  h2 { font-size: 1.4rem; }
+  h3 { font-size: 1.2rem; }
+
+  .action-cards {
+    grid-template-columns: 1fr; /* Одна колонка на мобильных */
+  }
+
+  .button {
+    padding: 10px 16px;
+    font-size: 14px;
+  }
+
+  .data-table th, .data-table td {
+      padding: 10px 12px;
+      font-size: 13px;
+  }
+
+  .tab-item {
+    flex-grow: 1; /* Занимают всю ширину */
+    text-align: center;
+    padding: 12px 10px;
+  }
+
+  .modal-dialog {
+    margin: 10px;
+    max-width: calc(100% - 20px);
+  }
+  .modal-header, .modal-body, .modal-footer {
+    padding: 1rem;
+  }
+  .modal-title {
+    font-size: 1.1rem;
+  }
+
+  .device-info-box {
+      grid-template-columns: 1fr;
+      padding: 1rem;
+  }
+  .device-info-item {
+      padding: 0.5rem 0.8rem;
+  }
+  .device-info-label {
+      min-width: 100px;
+      font-size: 0.9rem;
+  }
+  .device-info-value {
+      font-size: 1rem;
+  }
+
+  .history-header {
+      padding: 10px 15px;
+      font-size: 1em;
+  }
+  .history-main-info, .history-details {
+      padding: 10px 15px;
+  }
+  .history-subtable {
+      width: calc(100% - 30px);
+      margin: 0 15px 15px 15px;
+      font-size: 0.9em;
+  }
+  .history-subtable th, .history-subtable td {
+      padding: 8px 10px;
+  }
+}
+
+/* Стили для мессенджера (из Page1.css, адаптированные) */
+.mode-buttons {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5em;
+    margin-bottom: 20px;
+}
+
+.mode-buttons .msgr-open-icon {
+    font-size: 1.5rem; /* Размер иконки */
+    color: var(--secondary-color);
+    cursor: pointer;
+    transition: color 0.2s;
+    padding: 5px; /* Область клика */
+}
+.mode-buttons .msgr-open-icon:hover {
+    color: var(--primary-color);
+}
+
+.mode-buttons .msgr-dropdown {
+    position: absolute;
+    top: calc(100% + 5px); /* Ниже иконки */
+    right: 0;
+    width: 250px; /* Ширина списка */
+    background: var(--bg-container);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-md);
+    z-index: 1010; /* Выше табов */
+    overflow: hidden;
+    display: none;
+}
+
+.mode-buttons .msgr-dropdown ul {
+    list-style: none;
+    margin: 0;
+    padding: 5px 0;
+    max-height: 200px; /* Ограничение высоты списка */
+    overflow-y: auto; /* Прокрутка, если много пользователей */
+}
+.mode-buttons .msgr-dropdown li {
+    padding: 8px 15px;
+    font-size: 14px;
+    color: var(--text-primary);
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.mode-buttons .msgr-dropdown li + li {
+    border-top: 1px solid #f1f3f5;
+}
+.mode-buttons .msgr-dropdown li:hover {
+    background: var(--bg-button-secondary-hover);
+}
+
+.mode-buttons .msgr-modal {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: var(--modal-overlay-bg);
+    display: none; /* Изначально скрыто */
+    align-items: center;
+    justify-content: center;
+    z-index: 1051; /* Выше обычных модалок */
+}
+.mode-buttons .msgr-modal.show {
+    display: flex; /* Показываем с flex */
+}
+
+.mode-buttons .msgr-modal-content {
+    background: var(--bg-container);
+    padding: 20px;
+    border-radius: var(--border-radius);
+    width: 90%;
+    max-width: 400px; /* Ширина модалки сообщения */
+    position: relative;
+    box-shadow: var(--shadow-lg);
+}
+.mode-buttons .msgr-modal-content h3 {
+    font-size: 1.1rem;
+    margin-top: 0;
+    margin-bottom: 15px;
+    color: var(--primary-color);
+}
+.mode-buttons .msgr-modal-content h3 span {
+    font-weight: normal;
+    color: var(--text-primary);
+}
+
+.mode-buttons .msgr-close {
+    position: absolute;
+    top: 10px; right: 15px;
+    cursor: pointer;
+    font-size: 1.5rem;
+    color: var(--secondary-color);
+    background: none;
+    border: none;
+    padding: 0;
+    line-height: 1;
+}
+.mode-buttons .msgr-close:hover {
+    color: var(--text-primary);
+}
+
+.mode-buttons .msgr-text { /* Textarea */
+    width: 100%;
+    min-height: 80px;
+    margin-bottom: 15px;
+    /* Стили наследуются от общих стилей textarea */
+}
+
+.mode-buttons .msgr-send-btn {
+    /* Используем стили .button и .button-primary */
+}
+
+/* Стили для модального окна мессенджера (уже есть базовые, добавляем детали) */
+.msgr-modal {
+    /* Базовые стили position, top, left, right, bottom, background, z-index уже должны быть */
+    display: none; /* Убедимся, что скрыто по умолчанию */
+    align-items: center; /* Центрирование содержимого по вертикали */
+    justify-content: center; /* Центрирование содержимого по горизонтали */
+}
+
+.msgr-modal-content {
+    /* Базовые стили background, padding, border-radius, width, max-width, position, box-shadow уже должны быть */
+    display: flex; /* Используем flexbox для расположения заголовка и тела */
+    flex-direction: column; /* Элементы располагаются вертикально */
+    max-height: 80vh; /* Ограничиваем максимальную высоту модалки */
+}
+
+.msgr-modal-title {
+    /* Стили для заголовка модального окна */
+    font-size: 1.1rem;
+    margin-top: 0;
+    margin-bottom: 15px; /* Отступ снизу */
+    color: var(--primary-color);
+    padding: 0 10px; /* Небольшой внутренний отступ */
+}
+
+.msgr-modal-body-content {
+    /* Контейнер для переключаемых секций (список пользователей или форма сообщения) */
+    flex-grow: 1; /* Занимает все доступное пространство */
+    overflow-y: auto; /* Добавляем прокрутку, если контент превышает высоту */
+    padding: 0 10px; /* Небольшой внутренний отступ */
+}
+
+/* Стили для секции списка пользователей */
+.msgr-user-list-section h4 {
+    font-size: 1rem;
+    margin-top: 0;
+    margin-bottom: 10px;
+    color: var(--text-secondary);
+}
+
+.msgr-user-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.msgr-user-list-item {
+    padding: 10px 15px;
+    font-size: 14px;
+    color: var(--text-primary);
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    border-bottom: 1px solid #f1f3f5; /* Разделитель между пользователями */
+    transition: background-color 0.2s ease;
+}
+
+.msgr-user-list-item:last-child {
+    border-bottom: none; /* Убираем нижний разделитель у последнего элемента */
+}
+
+.msgr-user-list-item:hover {
+    background: var(--bg-button-secondary-hover);
+}
+
+/* Стили для секции формы сообщения */
+.msgr-message-form-section h4 {
+    font-size: 1rem;
+    margin-top: 0;
+    margin-bottom: 10px;
+    color: var(--text-secondary);
+}
+.msgr-message-form-section h4 span.msgr-recipient-name {
+     font-weight: 600;
+     color: var(--primary-color);
+}
+
+
+/* Стили для textarea и кнопки отправки (наследуются от общих стилей .msgr-text и .msgr-send-btn,
+   но можно добавить специфические корректировки при необходимости) */
+.msgr-message-form-section .msgr-text {
+    margin-bottom: 15px; /* Отступ между textarea и кнопкой */
+}
+
+.msgr-message-form-section .msgr-send-btn {
+    /* Использует стили .button .button-primary */
+    width: 100%; /* Кнопка занимает всю ширину в модалке */
+}
+
+/* Стили для кнопки закрытия модального окна */
+.msgr-close {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    cursor: pointer;
+    font-size: 1.5rem;
+    color: var(--secondary-color);
+    background: none;
+    border: none;
+    padding: 0;
+    line-height: 1;
+    transition: color 0.2s ease;
+}
+.msgr-close:hover {
+    color: var(--danger-color); /* Красный цвет при наведении */
+}
+
+/* Стили для сообщений об ошибках в списке пользователей */
+.msgr-user-list li.error-message {
+    color: var(--danger-color);
+    font-weight: 500;
+    text-align: center;
+    padding: 15px;
+}
+
+/* Адаптивность для модального окна мессенджера */
+@media (max-width: 500px) {
+    .msgr-modal-content {
+        width: 95%; /* Увеличиваем ширину на очень маленьких экранах */
+        padding: 15px;
+    }
+    .msgr-modal-title {
+        font-size: 1rem;
+        margin-bottom: 10px;
+    }
+    .msgr-user-list-item {
+        padding: 8px 10px;
+        font-size: 13px;
+    }
+    .msgr-message-form-section h4 {
+        font-size: 0.95rem;
+    }
+}
+
+
+
+/* Стили для истории изменений (из Page1.css, адаптированные) */
+.history-item {
+    margin-bottom: 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    background-color: var(--bg-container);
+    overflow: hidden; /* Для скругления */
+}
+
+.history-item h4 { /* Заголовок записи истории */
+    background-color: var(--bg-table-header);
+    padding: 10px 15px;
+    margin: 0;
+    font-size: 1rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.history-item table.history-table {
+    margin: 0;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    width: 100%;
+}
+
+.history-item table.history-table th,
+.history-item table.history-table td {
+    padding: 10px 15px;
+    font-size: 14px;
+    border-right: none;
+    border-left: none;
+    border-top: none; /* Убираем лишние рамки */
+}
+.history-item table.history-table th {
+    width: 40%; /* Ширина колонки поля */
+    background-color: transparent; /* Убираем фон у th */
+    border-bottom: 1px solid #f1f3f5;
+}
+.history-item table.history-table td {
+     width: 60%; /* Ширина колонки значения */
+     border-bottom: 1px solid #f1f3f5;
+}
+.history-item table.history-table tr:last-child td,
+.history-item table.history-table tr:last-child th {
+    border-bottom: none;
+}
+.history-item table.history-table tr:nth-of-type(even) > * {
+    background-color: var(--bg-table-stripe); /* Чередование */
+}
+
+/* Стили для контейнера ввода удаления платы */
+.delete-board-input-container {
+    display: flex; /* Используем flexbox для выравнивания элементов в строку */
+    align-items: center; /* Выравниваем элементы по центру по вертикали */
+    gap: 10px; /* Пространство между полем ввода и кнопкой */
+    padding: 10px;
+    border: 1px solid #ccc; /* Легкая рамка */
+    border-radius: 4px; /* Скругленные углы */
+    background-color: #f9f9f9; /* Светлый фон */
+    max-width: 400px; /* Ограничиваем ширину контейнера */
+}
+
+/* Стили для поля ввода названия платы */
+.delete-board-input-container .input-field.delete-board-input {
+    flex-grow: 1; /* Поле ввода занимает все доступное пространство */
+    padding: 8px;
+    border: 1px solid #bbb;
+    border-radius: 4px;
+    font-size: 1rem;
+}
+
+/* Стили для кнопки подтверждения удаления */
+.delete-board-input-container .button-danger {
+    /* Используем стандартный класс button-danger, если он определен в вашем CSS */
+    /* Если нет, можно добавить базовые стили */
+    background-color: #dc3545; /* Красный цвет для опасных действий */
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.delete-board-input-container .button-danger:hover {
+    background-color: #c82333; /* Темнее при наведении */
+}
+
+/* Стили для строк, помеченных к удалению */
+.pending-deletion {
+    opacity: 0.5; /* Сделать полупрозрачной */
+    text-decoration: line-through; /* Перечеркнуть текст */
+    background-color: #ffebee; /* Светло-красный фон */
+    /* Можете добавить другие стили, например, рамку */
+    /* border: 1px dashed red; */
+}
+
+/* Стили для измененных значений в истории */
+.changed-value {
+    background-color: #e9f7ef; /* Светло-зеленый, как системный цвет успеха */
+    font-weight: bold;
+}
+
+/* Стили для добавленных строк в истории состава */
+.added-row {
+    background-color: #e0f7fa; /* Светло-голубой, как системный цвет информации */
+}
+
+/* Стили для удаленных строк в истории состава */
+.removed-row {
+    background-color: #fce4ec; /* Светло-розовый, как системный цвет предупреждения */
+    text-decoration: line-through; /* Перечеркнутый текст */
+    opacity: 0.7; /* Сделать немного прозрачнее */
+}
+
+
+/* Стили для кнопок переключения между параметрами и составом */
+.tab-buttons {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 1.5rem;
+}
+
+.tab-button {
+  padding: 8px 16px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  background: var(--bg-container);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.tab-button.active {
+  background: var(--accent-color);
+  color: var(--text-light);
+  border-color: var(--accent-color);
+}
+
+.tab-button:hover:not(.active) {
+  background: var(--bg-button-secondary-hover);
+}
+
+/* Контейнер для элементов списка приборов */
+.device-list-items-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); /* Адаптивные колонки */
+    gap: 15px; /* Пространство между элементами */
+    margin-top: 15px; /* Отступ сверху после заголовка */
+}
+/* Стиль для отдельного элемента списка прибора */
+.device-list-item {
+    background-color: var(--bg-container); /* Белый фон */
+    border: 1px solid var(--border-color); /* Светлая рамка */
+    border-radius: var(--border-radius); /* Скругленные углы */
+    padding: 15px; /* Внутренние отступы */
+    cursor: pointer; /* Курсор при наведении */
+    transition: all 0.2s ease-in-out; /* Плавный переход при наведении/выборе */
+    box-shadow: var(--shadow-sm); /* Легкая тень */
+    display: flex; /* Используем flexbox для внутреннего содержимого */
+    flex-direction: column; /* Элементы внутри располагаются вертикально */
+    gap: 10px; /* Пространство между строками информации */
+}
+
+.device-list-item:hover {
+    border-color: var(--accent-color); /* Рамка акцентного цвета при наведении */
+    box-shadow: var(--shadow-md); /* Увеличенная тень при наведении */
+    transform: translateY(-2px); /* Небольшой подъем при наведении */
+}
+
+/* Стиль для выбранного элемента списка */
+.device-list-item.selected {
+    border-color: var(--primary-color); /* Рамка основного цвета при выборе */
+    background-color: var(--bg-table-stripe); /* Легкий фон при выборе */
+    box-shadow: var(--shadow-md); /* Увеличенная тень при выборе */
+}
+
+/* Стили для строк информации внутри элемента списка (используем существующие классы) */
+.device-list-item .device-info-item {
+    padding: 0; /* Убираем внутренние отступы, так как они уже есть в .device-list-item */
+    background: none; /* Убираем фон */
+    border: none; /* Убираем рамку */
+    box-shadow: none; /* Убираем тень */
+    display: flex; /* Flexbox для метки и значения */
+    align-items: center; /* Выравнивание по центру */
+    gap: 8px; /* Пространство между меткой и значением */
+}
+
+.device-list-item .device-info-label {
+    font-size: 0.9rem; /* Немного уменьшаем размер шрифта для меток в списке */
+    min-width: 100px; /* Минимальная ширина метки */
+    color: var(--text-secondary); /* Цвет текста метки */
+    font-weight: 500;
+}
+
+.device-list-item .device-info-label i {
+    color: var(--secondary-color); /* Цвет иконки */
+    font-size: 1rem;
+    width: auto; /* Убираем фиксированную ширину иконки */
+}
+
+
+.device-list-item .device-info-value {
+    font-size: 1rem; /* Размер шрифта для значения */
+    color: var(--text-primary); /* Цвет текста значения */
+    font-weight: 600;
+    margin-left: auto; /* Прижимает значение к правому краю */
+    padding-left: 8px; /* Небольшой отступ слева от значения */
+    word-break: break-word; /* Перенос слов */
+    text-align: right; /* Выравнивание значения по правому краю */
+    flex-grow: 1; /* Значение может занимать оставшееся пространство */
+}
+
+/* Адаптивность для мобильных устройств */
+@media (max-width: 768px) {
+    .device-list-items-container {
+        grid-template-columns: 1fr; /* Одна колонка на мобильных */
+        gap: 10px;
+    }
+
+    .device-list-item {
+        padding: 12px;
+        gap: 8px;
+    }
+
+    .device-list-item .device-info-label {
+        font-size: 0.85rem;
+        min-width: 90px;
+    }
+
+    .device-list-item .device-info-value {
+        font-size: 0.95rem;
+        padding-left: 6px;
+    }
+}
+
+.history-textarea-display {
+  background-color: var(--bg-table-stripe, #f8fafc); /* Subtle background, fallback if var is not defined */
+  border: 1px solid var(--border-color, #dee2e6);    /* Consistent border */
+  border-radius: var(--border-radius, 6px);         /* Consistent border radius */
+  padding: 10px;                                   /* Inner padding */
+  min-height: 60px;                                /* Minimum height for a few lines */
+  max-height: 200px;                               /* Maximum height before scrolling */
+  overflow-y: auto;                                /* Enable vertical scrollbar when needed */
+  white-space: pre-wrap;                           /* Preserve line breaks and spaces */
+  word-break: break-word;                          /* Break long words to prevent overflow */
+  font-size: 14px;                                 /* Consistent font size */
+  line-height: 1.5;                                /* Standard line height */
+  color: var(--text-primary, #212529);             /* Primary text color */
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);    /* Subtle inner shadow for depth */
+  width: 100%;                                     /* Take full width of the cell */
+  box-sizing: border-box;                          /* Ensure padding and border are included in width/height */
+}
+
+/* Стили для контейнера списка файлов */
+.file-list-container {
+    margin-top: 20px;
+    background-color: var(--bg-container);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    padding: 15px;
+    box-shadow: var(--shadow-sm);
+}
+
+/* Стили для списка файлов */
+.file-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+/* Стили для отдельного элемента файла в списке */
+.file-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.file-item:last-child {
+    border-bottom: none; /* Убираем границу у последнего элемента */
+}
+
+/* Контейнер для названия файла и даты */
+.file-info {
+    flex-grow: 1;
+    margin-right: 15px;
+    word-break: break-word; /* Перенос длинных названий файлов */
+}
+
+.file-name {
+    font-size: 1rem;
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+.file-date {
+    font-size: 0.85rem;
+    color: var(--secondary-color);
+    margin-top: 4px;
+}
+
+/* Стили для ссылки "Скачать" */
+.download-link {
+    /* Используем классы button и button-secondary из корпоративных стилей */
+    flex-shrink: 0; /* Запрещаем ссылке сжиматься */
+    padding: 8px 16px; /* Меньший padding для кнопки в списке */
+    font-size: 0.9rem; /* Меньший шрифт */
+}
+
+/* Заголовок страницы файлов */
+.file-header {
+    margin-bottom: 1.5rem;
+    text-align: center;
+    color: var(--primary-color);
+}
+
+/* Дополнительные стили, необходимые для интегрированного хедера и улучшенного макета */
+
+/* Стиль для основного контейнера содержимого */
+.accounting-container {
+  max-width: 1400px; /* Может быть шире для таблиц */
+  margin: 0 auto;
+  padding: 0 24px;
+  width: 100%;
+}
+
+/* Стиль для групп формы для добавления отступов */
+.form-group {
+  margin-bottom: 1.2rem;
+}
+
+/* Стиль для полей ввода, чтобы соответствовать корпоративному стилю */
+.input-field {
+  display: block;
+  width: 100%;
+  padding: 10px 12px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text-primary);
+  background-color: var(--bg-input);
+  background-clip: padding-box;
+  border: var(--border-width) solid var(--border-color-input);
+  appearance: none;
+  border-radius: var(--border-radius);
+  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.input-field:focus {
+  border-color: var(--border-color-focus);
+  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25); /* Скорректированная тень для согласованности */
+  outline: none;
+}
+
+/* Стиль для текстового поля SQL запроса */
+.sql-textarea {
+    min-height: 150px; /* Увеличиваем пространство для запросов */
+    resize: vertical; /* Разрешаем вертикальное изменение размера */
+}
+
+/* Стиль для кнопки закрытия модального окна */
+.modal-close-button {
+  padding: 0.5rem;
+  margin: -0.5rem -0.5rem -0.5rem auto;
+  background-color: transparent;
+  border: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1;
+  color: #000; /* Корректировка цвета при необходимости */
+  text-shadow: 0 1px 0 #fff; /* Корректировка тени при необходимости */
+  opacity: 0.5;
+  cursor: pointer;
+}
+
+.modal-close-button:hover {
+  opacity: 0.75;
+}
+
+/* Стиль для контейнера адаптивной таблицы */
+.table-responsive {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin-bottom: 1.5rem; /* Добавляем пространство под таблицей */
+}
+
+.table-responsive > .data-table {
+  margin-bottom: 0; /* Убираем нижний отступ у таблицы внутри обертки */
+}
+
+/* Корректировка стилей для меню администратора */
+.dropdown-menu-container {
+    background-color: var(--bg-container);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    padding: 15px;
+    box-shadow: var(--shadow-sm);
+    margin-bottom: 20px; /* Пространство под меню */
+}
+
+#admin-menu ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+#admin-menu ul li {
+    margin-bottom: 5px; /* Пространство между пунктами меню */
+}
+
+#admin-menu ul li a {
+    display: block; /* Делаем ссылки блочными для лучшей области клика */
+    padding: 8px 10px;
+    color: var(--text-primary);
+    text-decoration: none;
+    transition: background-color 0.2s ease;
+    border-radius: var(--border-radius); /* Небольшое скругление */
+}
+
+#admin-menu ul li a:hover {
+    background-color: var(--bg-table-stripe);
+}
+
+#admin-menu ul li a.active {
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+#tables-submenu {
+    margin-top: 5px;
+    padding-left: 15px; /* Отступ для подменю */
+    border-top: 1px solid var(--border-color); /* Разделитель */
+    padding-top: 5px;
+}
+
+#tables-submenu li {
+    margin-bottom: 3px;
+}
+
+#tables-submenu li a {
+    font-size: 0.9em; /* Меньший шрифт для пунктов подменю */
+    color: var(--text-secondary);
+    padding: 5px 10px;
+}
+
+#tables-submenu li a:hover {
+    background-color: var(--bg-button-secondary-hover);
+    color: var(--primary-color);
+}
+
+
+
+/* Стили для сообщений об успехе/ошибке */
+.device-info {
+    padding: 12px 20px;
+    margin-bottom: 1.5rem;
+    border: 1px solid transparent;
+    border-radius: var(--border-radius);
+    font-size: 1rem;
+    font-weight: 500;
+}
+
+.device-info.text-success {
+    color: var(--success-color);
+    background-color: rgba(25, 135, 84, 0.1); /* Светло-зеленый фон */
+    border-color: rgba(25, 135, 84, 0.2);
+}
+
+.device-info.text-danger {
+    color: var(--danger-color);
+    background-color: rgba(220, 53, 69, 0.1); /* Светло-красный фон */
+    border-color: rgba(220, 53, 69, 0.2);
+}
+
+.device-info.text-warning {
+    color: var(--warning-color);
+    background-color: rgba(255, 193, 7, 0.1); /* Светло-желтый фон */
+    border-color: rgba(255, 193, 7, 0.2);
+}
+
+
+/* Стили для текстового поля SQL запроса в модалке */
+/* Если общие стили textarea и .input-field уже достаточны, этот блок можно удалить */
+.sql-textarea {
+    font-family: Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace; /* Моноширинный шрифт для кода */
+    min-height: 150px; /* Немного больше места для запроса */
+}
+
+/* Улучшение стилей для модального окна */
+.modal-content {
+    /* Добавляем возможность изменения размера */
+    resize: both; /* Позволяет изменять размер по горизонтали и вертикали */
+    overflow: auto; /* Добавляем скроллбары, если контент не помещается */
+    min-width: 300px; /* Минимальная ширина */
+    min-height: 200px; /* Минимальная высота */
+}
+
+/* Стили для мобильного меню (добавлены для адаптивности хедера) */
+@media (max-width: 768px) {
+    .site-header .header-container {
+        flex-wrap: wrap; /* Разрешаем перенос элементов */
+    }
+
+    .site-header .header-left {
+        flex-grow: 1; /* Логотип может занимать доступное место */
+    }
+
+    .site-header .header-nav,
+    .site-header .header-right {
+        flex-basis: 100%; /* Занимают всю ширину */
+        margin-top: 10px; /* Отступ сверху */
+    }
+
+    .site-header .header-nav.mobile-active,
+    .site-header .header-right.mobile-active {
+      display: flex; /* Переопределяем display: none */
+    }
+
+    .site-header .header-nav ul {
+        flex-direction: column; /* Элементы списка вертикально */
+        align-items: stretch; /* Растягиваем элементы по ширине */
+    }
+
+    .site-header .header-nav ul li {
+        margin: 0; /* Убираем горизонтальные отступы */
+    }
+
+    .site-header .header-nav ul li a {
+        padding: 12px 20px; /* Увеличиваем область клика */
+        text-align: left; /* Выравнивание текста по левому краю */
+    }
+
+     .site-header .header-right {
+         flex-direction: column; /* Элементы справа вертикально */
+         align-items: stretch; /* Растягиваем по ширине */
+         gap: 10px; /* Уменьшаем расстояние */
+     }
+
+     .site-header .user-info {
+         flex-direction: column;
+         align-items: stretch;
+         gap: 10px;
+     }
+
+     .site-header .auth-form {
+         flex-direction: column;
+         align-items: stretch;
+         gap: 10px;
+     }
+      .site-header .auth-form input[type="text"],
+      .site-header .auth-form input[type="password"],
+      .site-header .login-button {
+          width: 100%; /* Поля ввода и кнопка занимают всю ширину */
+      }
+
+      .site-header .logout-form {
+          width: 100%;
+      }
+      .site-header .logout-link {
+          justify-content: center; /* Центрируем кнопку выхода */
+      }
+
+      .site-header .user-link-container {
+          width: 100%; /* Контейнер ссылки на профиль занимает всю ширину */
+          justify-content: center; /* Центрируем содержимое */
+      }
+       .site-header .user-profile-link {
+           justify-content: center; /* Центрируем содержимое */
+       }
+
+
+     body.menu-open {
+       overflow: hidden; /* Блокировка прокрутки при открытом мобильном меню */
+     }
+}
+
+/* НОВЫЕ СТИЛИ ДЛЯ ПРОСМОТРА ТАБЛИЦ */
+.admin-section {
+    margin-top: 25px;
+    padding: 20px;
+    background: var(--bg-container);
+    border: 1px solid var(--border-color); /* Добавлена рамка для секции */
+    border-radius: calc(var(--border-radius) + 2px);
+    box-shadow: var(--shadow-sm);
+}
+
+.table-list-container {
+    margin-bottom: 20px;
+}
+
+.table-list-container h3 {
+    margin-bottom: 15px;
+    color: var(--primary-color);
+    font-size: 1.2rem;
+}
+
+.table-list-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); /* Адаптивная сетка для названий таблиц */
+    gap: 10px; /* Пространство между ссылками на таблицы */
+}
+
+.table-name-link {
+    display: block;
+    padding: 10px 15px;
+    background-color: var(--bg-table-header);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    text-align: center;
+    color: var(--text-primary);
+    font-weight: 500;
+    transition: all 0.2s ease;
+    word-break: break-word; /* Перенос длинных названий */
+    overflow-wrap: break-word; /* Перенос длинных названий */
+}
+
+.table-name-link:hover {
+    background-color: var(--bg-button-secondary-hover);
+    border-color: var(--accent-color);
+    color: var(--primary-color);
+}
+
+.table-name-link.active {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+    color: var(--text-light);
+    font-weight: 600;
+}
+
+.table-data-container {
+    /* Существующие стили таблицы будут применяться к таблице внутри этого контейнера */
+}
+
+.table-data-container h2 {
+    margin-bottom: 15px;
+    color: var(--primary-color);
+    font-size: 1.4rem;
+}
+
+/* Добавляем отступ сверху для контейнера данных таблицы, когда он отображается */
+.table-viewer-area .table-data-container {
+    margin-top: 20px;
+}
+
+/* Стили для мобильного меню (добавлены для адаптивности хедера) */
+@media (max-width: 768px) {
+    .site-header .header-container {
+        flex-wrap: wrap; /* Разрешаем перенос элементов */
+    }
+
+    .site-header .header-left {
+        flex-grow: 1; /* Логотип может занимать доступное место */
+    }
+
+    .site-header .header-nav,
+    .site-header .header-right {
+        flex-basis: 100%; /* Занимают всю ширину */
+        margin-top: 10px; /* Отступ сверху */
+    }
+
+    .site-header .header-nav.mobile-active,
+    .site-header .header-right.mobile-active {
+      display: flex; /* Переопределяем display: none */
+    }
+
+    .site-header .header-nav ul {
+        flex-direction: column; /* Элементы списка вертикально */
+        align-items: stretch; /* Растягиваем элементы по ширине */
+    }
+
+    .site-header .header-nav ul li {
+        margin: 0; /* Убираем горизонтальные отступы */
+    }
+
+    .site-header .header-nav ul li a {
+        padding: 12px 20px; /* Увеличиваем область клика */
+        text-align: left; /* Выравнивание текста по левому краю */
+    }
+
+     .site-header .header-right {
+         flex-direction: column; /* Элементы справа вертикально */
+         align-items: stretch; /* Растягиваем по ширине */
+         gap: 10px; /* Уменьшаем расстояние */
+     }
+
+     .site-header .user-info {
+         flex-direction: column;
+         align-items: stretch;
+         gap: 10px;
+     }
+
+     .site-header .auth-form {
+         flex-direction: column;
+         align-items: stretch;
+         gap: 10px;
+     }
+      .site-header .auth-form input[type="text"],
+      .site-header .auth-form input[type="password"],
+      .site-header .login-button {
+          width: 100%; /* Поля ввода и кнопка занимают всю ширину */
+      }
+
+      .site-header .logout-form {
+          width: 100%;
+      }
+      .site-header .logout-link {
+          justify-content: center; /* Центрируем кнопку выхода */
+      }
+
+      .site-header .user-link-container {
+          width: 100%; /* Контейнер ссылки на профиль занимает всю ширину */
+          justify-content: center; /* Центрируем содержимое */
+      }
+       .site-header .user-profile-link {
+           justify-content: center; /* Центрируем содержимое */
+       }
+
+
+     body.menu-open {
+       overflow: hidden; /* Блокировка прокрутки при открытом мобильном меню */
+     }
+}
+
+#viewDeviceParams,
+#createDeviceForm,
+#searchDeviceForm {
+    display: none;
+}
