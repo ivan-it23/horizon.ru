@@ -138,19 +138,31 @@ if ($is_logged_in) {
                 <div class="action-selector-container">
                     <div class="action-cards">
                         <div class="action-card" data-action="view">
-                            <i class="fas fa-search"></i>
-                            <h3>Получить список приборов</h3>
-                            <p>Поиск приборов по параметрам</p>
+                            <div class="action-card-icon">
+                                <i class="fas fa-search"></i>
+                            </div>
+                            <div class="action-card-content">
+                                <h3>Получить список приборов</h3>
+                                <p>Поиск приборов по параметрам</p>
+                            </div>
                         </div>
                         <div class="action-card" data-action="create">
-                            <i class="fas fa-plus-circle"></i>
-                            <h3>Создать прибор</h3>
-                            <p>Добавление нового прибора в систему</p>
+                            <div class="action-card-icon">
+                                <i class="fas fa-plus-circle"></i>
+                            </div>
+                            <div class="action-card-content">
+                                <h3>Создать прибор</h3>
+                                <p>Добавление нового прибора в систему</p>
+                            </div>
                         </div>
                         <div class="action-card" data-action="search">
-                            <i class="fas fa-barcode"></i>
-                            <h3>Найти прибор</h3>
-                            <p>Поиск по серийному номеру и/или номеру корпуса</p>
+                            <div class="action-card-icon">
+                                <i class="fas fa-barcode"></i>
+                            </div>
+                            <div class="action-card-content">
+                                <h3>Найти прибор</h3>
+                                <p>Поиск по серийному номеру и/или номеру корпуса</p>
+                            </div>
                         </div>
                     </div>
                     <select id="actionSelect" name="action" style="display: none;">
@@ -161,37 +173,54 @@ if ($is_logged_in) {
                     </select>
                 </div>
 
-                <div id="viewDeviceParams">
-                    <h3>Параметры прибора</h3>
+                <div id="viewDeviceParams" class="device-params-section">
+                    <h3 class="section-title">Параметры прибора</h3>
                     <div class="params-container">
-                        <div class="form-group">
-                            <label for="viewDeviceType" class="param-label"><i class="fas fa-microchip"></i> Тип прибора</label>
-                            <select id="viewDeviceType" class="param-select">
-                                <option value="Автономный">Автономный</option>
-                                <option value="LWD">LWD</option>
-                                <option value="Картограф">Картограф</option>
-                            </select>
+                        <div class="form-group param-group">
+                            <label for="viewDeviceType" class="param-label">
+                                <i class="fas fa-microchip param-icon"></i>
+                                <span>Тип прибора</span>
+                            </label>
+                            <div class="param-input-wrapper">
+                                <select id="viewDeviceType" class="param-select">
+                                    <option value="Автономный">Автономный</option>
+                                    <option value="LWD">LWD</option>
+                                    <option value="Картограф">Картограф</option>
+                                </select>
+                            </div>
                         </div>
-                        <div class="form-group">
-                            <label for="viewNominalDiameter" class="param-label"><i class="fas fa-ruler-combined"></i> Номинальный диаметр</label>
-                            <select id="viewNominalDiameter" class="param-select">
-                                <option value="90">90</option>
-                                <option value="120">120</option>
-                                <option value="172">172</option>
-                            </select>
+                        <div class="form-group param-group">
+                            <label for="viewNominalDiameter" class="param-label">
+                                <i class="fas fa-ruler-combined param-icon"></i>
+                                <span>Номинальный диаметр</span>
+                            </label>
+                            <div class="param-input-wrapper">
+                                <select id="viewNominalDiameter" class="param-select">
+                                    <option value="90">90</option>
+                                    <option value="120">120</option>
+                                    <option value="172">172</option>
+                                </select>
+                            </div>
                         </div>
-                        <div class="form-group">
-                            <label for="viewTransmitterCount" class="param-label"><i class="fas fa-broadcast-tower"></i> Количество передатчиков</label>
-                            <select id="viewTransmitterCount" class="param-select">
-                                <option value="3">3</option>
-                                <option value="4">4</option>
-                                <option value="5">5</option>
-                            </select>
+                        <div class="form-group param-group">
+                            <label for="viewTransmitterCount" class="param-label">
+                                <i class="fas fa-broadcast-tower param-icon"></i>
+                                <span>Количество передатчиков</span>
+                            </label>
+                            <div class="param-input-wrapper">
+                                <select id="viewTransmitterCount" class="param-select">
+                                    <option value="3">3</option>
+                                    <option value="4">4</option>
+                                    <option value="5">5</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
-                    <button type="button" id="fetchDevicesButton" class="button button-primary">
-                        <i class="fas fa-search"></i> Найти приборы
-                    </button>
+                    <div class="action-buttons">
+                        <button type="button" id="fetchDevicesButton" class="button button-primary">
+                            <i class="fas fa-search"></i> Найти приборы
+                        </button>
+                    </div>
                     <div id="deviceList" class="device-list-container mt-4"></div>
                 </div>
 
