@@ -2486,19 +2486,22 @@ document.addEventListener('DOMContentLoaded', function () {
     // --- Логика отображения истории изменений прибора (Tab 1) ---
 
 
+// --- Логика отображения истории изменений прибора (Tab 1) ---
 function fetchDeviceHistory(deviceId, initialHistoryType = 'parameters') {
     const deviceHistoryDiv = document.getElementById('deviceHistory');
     if (!deviceHistoryDiv) {
         console.error("Элемент #deviceHistory не найден!");
         return;
     }
+
     const showHistoryBtn = document.querySelector(
         `.view-history-btn[data-device-id="${deviceId}"]`
     );
 
+    // Проверяем, если история для этого прибора и типа уже отображается, и кнопка активна, то скрываем ее
     const isCurrentlyShowingThisHistory = deviceHistoryDiv.style.display !== 'none' &&
-                                        deviceHistoryDiv.dataset.currentHistoryDeviceId === deviceId.toString() &&
-                                        deviceHistoryDiv.dataset.currentHistoryType === initialHistoryType;
+                                          deviceHistoryDiv.dataset.currentHistoryDeviceId === deviceId.toString() &&
+                                          deviceHistoryDiv.dataset.currentHistoryType === initialHistoryType;
 
     if (isCurrentlyShowingThisHistory && showHistoryBtn && showHistoryBtn.textContent === 'Скрыть историю изменений') {
         deviceHistoryDiv.style.display = 'none';
@@ -2514,16 +2517,12 @@ function fetchDeviceHistory(deviceId, initialHistoryType = 'parameters') {
     deviceHistoryDiv.style.display = 'block';
     deviceHistoryDiv.dataset.currentHistoryDeviceId = deviceId;
     deviceHistoryDiv.dataset.currentHistoryType = initialHistoryType;
+
     if (showHistoryBtn) {
         showHistoryBtn.textContent = 'Скрыть историю изменений';
     }
+
     deviceHistoryDiv.innerHTML = ''; // Очищаем перед отрисовкой
-
-    // Цвета для выделения изменений (можно вынести в константы, если используются еще где-то)
-    const CorporateLightGreen = '#e6ffe6'; // Для новых/измененных значений
-    const CorporateLightBlue = '#e6f7ff';  // Для добавленных значений (когда старое было пусто)
-    const CorporateLightRed = '#ffe6e6';   // Для удаленных плат в истории состава
-
 
     // Создаем кнопки для переключения типа истории (Параметры/Состав)
     const toggleDiv = document.createElement('div');
@@ -2583,7 +2582,6 @@ function fetchDeviceHistory(deviceId, initialHistoryType = 'parameters') {
     changesOnlyLabel.appendChild(document.createTextNode(' Посмотреть только изменения'));
     checkboxesDiv.appendChild(changesOnlyLabel);
 
-
     // Контейнер для самого контента истории
     const historyContentDiv = document.createElement('div');
     historyContentDiv.id = 'historyActualContent';
@@ -2596,18 +2594,18 @@ function fetchDeviceHistory(deviceId, initialHistoryType = 'parameters') {
     deviceHistoryDiv.appendChild(checkboxesDiv); // Добавляем чекбоксы
     deviceHistoryDiv.appendChild(historyContentDiv);
 
-
     // Обработчики для кнопок переключения типа истории
     [btnParameters, btnComposition].forEach(btn => {
         btn.addEventListener('click', function () {
             // Снимаем класс active со всех кнопок и добавляем текущей
             toggleDiv.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
             this.classList.add('active');
-
             const historyType = this.dataset.historyType;
             deviceHistoryDiv.dataset.currentHistoryType = historyType; // Обновляем тип в dataset
+
             // Показываем/скрываем чекбоксы в зависимости от типа истории
             checkboxesDiv.style.display = (historyType === 'parameters') ? 'flex' : 'none';
+
             loadHistory(historyType); // Загружаем соответствующую историю
         });
     });
@@ -2621,28 +2619,26 @@ function fetchDeviceHistory(deviceId, initialHistoryType = 'parameters') {
         });
     });
 
-
     // Функция загрузки и отображения истории (вызывается при первом показе и при переключении)
     function loadHistory(historyType) {
         historyContentDiv.innerHTML = '<p>Загрузка истории...</p>'; // Индикатор загрузки
+
         // Определяем режим просмотра (только для параметров)
-        const viewMode = historyType === 'parameters' ?
-            (document.getElementById('historyChangesOnlyCheckbox').checked ? 'changes' : 'full') :
-            'full'; // Для состава всегда 'full'
+        const viewMode = historyType === 'parameters' ? (document.getElementById('historyChangesOnlyCheckbox').checked ? 'changes' : 'full') : 'full'; // Для состава всегда 'full'
 
         fetch('fetch_device_history.php', { // Убедитесь, что URL правильный
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded'
-            },
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             body: `device_id=${deviceId}&history_type=${historyType}`
         })
         .then(response => {
-            if (!response.ok) {
-                // Пытаемся прочитать текст ошибки, если он есть
-                return response.text().then(text => { throw new Error(`HTTP error ${response.status}: ${text || response.statusText}`); });
-            }
-            return response.json();
+             if (!response.ok) {
+                 // Пытаемся прочитать текст ошибки, если он есть
+                 return response.text().then(text => {
+                     throw new Error(`HTTP error ${response.status}: ${text || response.statusText}`);
+                 });
+             }
+             return response.json();
         })
         .then(historyData => {
             historyContentDiv.innerHTML = ''; // Очищаем индикатор загрузки
@@ -2694,185 +2690,98 @@ function fetchDeviceHistory(deviceId, initialHistoryType = 'parameters') {
 
                 historyData.forEach((currentRecord, i) => {
                     const isActualRecord = currentRecord.is_current === '1' || currentRecord.is_current === true;
-
                     const recordContainer = document.createElement('div');
                     recordContainer.className = 'history-record-item'; // Класс для общего стиля элемента истории
                     if (isActualRecord) {
-                        recordContainer.style.border = '2px solid #5cb85c'; // Зеленая рамка для текущей записи
-                        recordContainer.style.padding = '10px';
-                        recordContainer.style.marginBottom = '15px';
+                        recordContainer.classList.add('is-current'); // Новый класс для текущей записи
                     }
 
-                    const recordHeader = document.createElement('h5'); // Заголовок для каждой записи
-                    if (isActualRecord) {
-                        recordHeader.textContent = `Текущие параметры (от: ${currentRecord.changed_at}, Автор: ${currentRecord.creator_lastname || 'Неизвестно'})`;
-                        recordHeader.style.color = '#3c763d'; // Темно-зеленый цвет для заголовка текущей записи
-                    } else {
-                        recordHeader.textContent = `Изменение от: ${currentRecord.changed_at} (Автор: ${currentRecord.creator_lastname || 'Неизвестно'})`;
-                    }
+                    const recordHeader = document.createElement('div'); // Используем div вместо h5 для гибкости
+                    recordHeader.className = 'history-header'; // Класс для стилизации заголовка
+                    recordHeader.innerHTML = `
+                        <p>Дата: <strong>${currentRecord.changed_at ? htmlspecialchars(currentRecord.changed_at) : 'Неизвестно'}</strong></p>
+                        <p>Автор: <strong>${currentRecord.creator_lastname ? htmlspecialchars(currentRecord.creator_lastname) : 'Неизвестно'}</strong></p>
+                    `;
+                    recordContainer.appendChild(recordHeader);
 
                     const table = document.createElement('table');
                     table.className = 'data-table history-table'; // Используем существующие классы для таблиц
                     const tbody = document.createElement('tbody');
-
                     let hasChangesToShowForThisRecord = false; // Флаг, что в этой записи есть что показать (для режима "только изменения")
 
                     // Итерация по ключам из fieldDisplayNames для сохранения порядка и фильтрации
                     Object.keys(fieldDisplayNames).forEach(fieldKey => {
                         const currentValueInRecord = currentRecord[fieldKey];
-                        const isCurrentValueAbsent = (currentValueInRecord === null || currentValueInRecord === undefined || String(currentValueInRecord).trim() === '');
+                        const oldValue = currentRecord.diff_details ? currentRecord.diff_details[fieldKey] : undefined;
 
-                        // ========================= НАЧАЛО ИЗМЕНЕННОГО УЧАСТКА =========================
-                        // Если значение отсутствует, решаем, нужно ли пропускать поле.
-                        if (isCurrentValueAbsent) {
-                            // В режиме "только изменения":
-                            if (viewMode === 'changes' && !isActualRecord && i > 0) {
-                                // Сравниваем с более новой записью, чтобы увидеть, было ли значение удалено.
-                                const newerRecordToCompare = historyData[i - 1]; // Более новая запись (предыдущая в отсортированном массиве)
-                                const valueInNewerRecord = newerRecordToCompare ? newerRecordToCompare[fieldKey] : null;
-
-                                if (valueInNewerRecord !== null && valueInNewerRecord !== undefined && String(valueInNewerRecord).trim() !== '') {
-                                    // Значение было удалено (изменилось с существующего на отсутствующее).
-                                    // Помечаем, что у этой записи есть изменения, чтобы она отобразилась.
-                                    hasChangesToShowForThisRecord = true;
-                                    // Не выходим (return), т.к. это изменение нужно показать (будет отображено как '-').
-                                } else {
-                                    // Значение отсутствует и в текущей (старой), и в более новой записи.
-                                    // Это не изменение на "отсутствующее", поэтому пропускаем поле.
-                                    return; // Пропустить текущую итерацию fieldKey
-                                }
-                            } else {
-                                // В режиме "полного просмотра" (viewMode === 'full'), ИЛИ
-                                // для "текущей актуальной записи" (isActualRecord === true), ИЛИ
-                                // для самой первой исторической записи в режиме "изменения" (i === 0 && !isActualRecord):
-                                // если значение отсутствует, просто пропускаем это поле.
-                                return; // Пропустить текущую итерацию fieldKey
-                            }
+                        // Пропускаем поля, если они NULL и не являются измененными
+                        if ((currentValueInRecord === null || currentValueInRecord === undefined || String(currentValueInRecord).trim() === '') && oldValue === undefined) {
+                            return; // Пропускаем строку, если значение NULL и не было изменено
                         }
-                        // Если мы дошли сюда, значит:
-                        // 1. Значение присутствует (isCurrentValueAbsent === false).
-                        // 2. Значение отсутствует (isCurrentValueAbsent === true), НО это изменение типа "значение было удалено"
-                        //    в режиме "только изменения", и мы должны показать это изменение.
-                        // ========================== КОНЕЦ ИЗМЕНЕННОГО УЧАСТКА ==========================
 
-                        let isValueChanged = false;
-                        let valueInNewerRecord = null; // Объявляем здесь для доступа ниже
+                        // Если режим "только изменения" и поле не изменилось, пропускаем
+                        if (viewMode === 'changes' && oldValue === undefined && !isActualRecord) {
+                            return;
+                        }
 
-                        if (!isActualRecord && i > 0) { // Сравниваем только для исторических записей, кроме самой новой из истории
-                            const newerRecordToCompare = historyData[i-1]; // Более новая запись (предыдущая в отсортированном массиве)
-                            valueInNewerRecord = newerRecordToCompare ? newerRecordToCompare[fieldKey] : null;
+                        let displayValue = (currentValueInRecord !== null && currentValueInRecord !== undefined) ? htmlspecialchars(currentValueInRecord) : '-';
+                        let rowClass = '';
+                        let oldValueHtml = '';
 
-                            // Приводим значения к строкам для сравнения, обрабатывая null/undefined как пустые строки для сравнения
-                            const currentComparableValue = (currentValueInRecord === null || currentValueInRecord === undefined) ? "" : String(currentValueInRecord);
-                            const newerComparableValue = (valueInNewerRecord === null || valueInNewerRecord === undefined) ? "" : String(valueInNewerRecord);
-
-                            if (currentComparableValue !== newerComparableValue) {
-                                isValueChanged = true;
-                                hasChangesToShowForThisRecord = true; // Помечаем, что есть изменения для этой записи
-                            }
+                        if (oldValue !== undefined) {
+                            rowClass = 'changed';
+                            // Форматируем старое значение: если оно было NULL, показываем "пусто", иначе само значение
+                            const formattedOldValue = (oldValue === null || oldValue === undefined || String(oldValue).trim() === '') ? 'пусто' : htmlspecialchars(oldValue);
+                            oldValueHtml = `<span class="history-old-value"> (${formattedOldValue})</span>`;
+                            hasChangesToShowForThisRecord = true;
+                        } else if (isActualRecord && (currentValueInRecord !== null && currentValueInRecord !== undefined && String(currentValueInRecord).trim() !== '')) {
+                            // Для актуальной записи, если значение не NULL, оно всегда отображается
+                            // Не добавляем класс 'changed' для актуальной записи, если она не была изменена
+                        } else if (currentValueInRecord === null || currentValueInRecord === undefined || String(currentValueInRecord).trim() === '') {
+                            // Если значение NULL и не было изменено (т.е. oldValue === undefined),
+                            // и мы дошли до этого места, значит, мы не в режиме "changes" или это актуальная запись.
+                            // В этом случае, если значение NULL, отображаем "-"
+                            displayValue = '-';
                         }
 
 
-                        // В режиме "только изменения", если это не текущая запись и значение не изменилось, пропускаем эту строку
-                        if (viewMode === 'changes' && !isActualRecord && !isValueChanged) {
-                            return; // Пропустить текущую итерацию fieldKey
-                        }
-
-                        const tr = document.createElement('tr');
-                        const nameCell = document.createElement('td');
-                        nameCell.textContent = fieldDisplayNames[fieldKey];
-                        const valueCell = document.createElement('td');
-
-                        // Отображаем значение или '-' если оно отсутствует
-                        valueCell.textContent = !isCurrentValueAbsent ? String(currentValueInRecord) : '-';
-
-                        // Подсветка изменений
-                        if (isValueChanged && !isActualRecord) { // Только для исторических записей, которые изменились
-                            valueCell.style.fontWeight = 'bold';
-                            if (!isCurrentValueAbsent && (valueInNewerRecord === null || valueInNewerRecord === undefined || String(valueInNewerRecord).trim() === '')) {
-                                // Значение было добавлено (раньше было пусто, теперь есть)
-                                valueCell.style.backgroundColor = CorporateLightBlue; // Светло-синий для добавленных
-                                const explanationSpan = document.createElement('span');
-                                explanationSpan.style.fontWeight = 'normal';
-                                explanationSpan.style.fontSize = '0.9em';
-                                explanationSpan.style.marginLeft = '5px';
-                                explanationSpan.style.color = '#555';
-                                explanationSpan.textContent = ` (добавлено значение)`;
-                                valueCell.appendChild(explanationSpan);
-                            } else if (isCurrentValueAbsent && (valueInNewerRecord !== null && valueInNewerRecord !== undefined && String(valueInNewerRecord).trim() !== '')) {
-                                // Значение было удалено (раньше было, теперь пусто)
-                                valueCell.style.backgroundColor = CorporateLightRed; // Светло-красный для удаленных
-                                const explanationSpan = document.createElement('span');
-                                explanationSpan.style.fontWeight = 'normal';
-                                explanationSpan.style.fontSize = '0.9em';
-                                explanationSpan.style.marginLeft = '5px';
-                                explanationSpan.style.color = '#555';
-                                explanationSpan.textContent = ` (значение "${String(valueInNewerRecord)}" удалено)`;
-                                valueCell.appendChild(explanationSpan);
-                            } else {
-                                // Значение было изменено
-                                valueCell.style.backgroundColor = CorporateLightGreen; // Светло-зеленый для измененных
-                                const explanationSpan = document.createElement('span');
-                                explanationSpan.style.fontWeight = 'normal';
-                                explanationSpan.style.fontSize = '0.9em';
-                                explanationSpan.style.marginLeft = '5px';
-                                explanationSpan.style.color = '#555';
-                                const prevValText = (valueInNewerRecord === null || valueInNewerRecord === undefined || String(valueInNewerRecord).trim() === '') ? 'пусто' : String(valueInNewerRecord);
-                                explanationSpan.textContent = ` (было "${prevValText}")`;
-                                valueCell.appendChild(explanationSpan);
-                            }
-                        }
-
-                        tr.appendChild(nameCell);
-                        tr.appendChild(valueCell);
-                        tbody.appendChild(tr);
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${htmlspecialchars(fieldDisplayNames[fieldKey])}</td>
+                            <td class="${rowClass}">${displayValue}${oldValueHtml}</td>
+                        `;
+                        tbody.appendChild(row);
                     });
 
-                    // Добавляем заголовок и таблицу в контейнер записи, только если есть строки в tbody
-                    // или если это текущая запись в режиме полного просмотра (чтобы показать даже если все поля пустые, хотя это маловероятно)
-                    if (tbody.rows.length > 0) {
-                        recordContainer.appendChild(recordHeader);
+                    // Добавляем запись в контейнер только если она актуальна ИЛИ (режим "полный" ИЛИ есть изменения)
+                    if (isActualRecord || viewMode === 'full' || hasChangesToShowForThisRecord) {
                         table.appendChild(tbody);
                         recordContainer.appendChild(table);
                         historyContentDiv.appendChild(recordContainer);
-                    } else if (isActualRecord && viewMode === 'full') {
-                        // Если это текущая запись и режим полного просмотра, но все поля оказались пустыми (и были пропущены)
-                        // все равно показываем заголовок и сообщение об отсутствии данных.
-                        recordContainer.appendChild(recordHeader);
-                        const noDataMsg = document.createElement('p');
-                        noDataMsg.textContent = 'Нет данных для отображения (все параметры отсутствуют).';
-                        noDataMsg.style.padding = '10px 0';
-                        recordContainer.appendChild(noDataMsg);
-                        historyContentDiv.appendChild(recordContainer);
-                    } else if (viewMode === 'changes' && !isActualRecord && !hasChangesToShowForThisRecord && tbody.rows.length === 0) {
-                        // В режиме "только изменения", если это историческая запись без изменений и без отображаемых полей,
-                        // она не будет добавлена, что корректно.
                     }
                 });
-
-            // Логика отображения для ИСТОРИИ СОСТАВА
             } else if (historyType === 'composition') {
-                // Эта часть остается без изменений, так как запрос касался только истории параметров
-                const versionsList = historyData; // historyData здесь - это массив версий состава
+                const fieldDisplayNames = {
+                    board_name: 'Плата',
+                    type: 'Тип',
+                    version: 'Номер версии',
+                    serial_number: 'Серийный номер'
+                };
 
-                versionsList.forEach((versionData, versionIndex) => {
-                    const isActualVersion = versionData.is_current_version === true;
-
+                historyData.forEach(versionRecord => {
+                    const isCurrentVersion = versionRecord.is_current_version === true;
                     const versionContainer = document.createElement('div');
-                    versionContainer.className = 'history-record-item composition-version'; // Общий класс
-                     if (isActualVersion) {
-                        versionContainer.style.border = '2px solid #5cb85c';
-                        versionContainer.style.padding = '10px';
-                        versionContainer.style.marginBottom = '15px';
+                    versionContainer.className = 'history-record-item';
+                    if (isCurrentVersion) {
+                        versionContainer.classList.add('is-current');
                     }
 
-                    const versionHeader = document.createElement('h5');
-                    if (isActualVersion) {
-                        versionHeader.textContent = `Текущий состав (от: ${versionData.changed_at}, Автор: ${versionData.creator_name || 'Неизвестно'})`;
-                        versionHeader.style.color = '#3c763d';
-                    } else {
-                        versionHeader.textContent = `Версия состава от: ${versionData.changed_at} (Автор: ${versionData.creator_name || 'Неизвестно'})`;
-                    }
+                    const versionHeader = document.createElement('div');
+                    versionHeader.className = 'history-header';
+                    versionHeader.innerHTML = `
+                        <p>Дата: <strong>${versionRecord.changed_at ? htmlspecialchars(versionRecord.changed_at) : 'Неизвестно'}</strong></p>
+                        <p>Автор: <strong>${versionRecord.creator_name ? htmlspecialchars(versionRecord.creator_name) : 'Неизвестно'}</strong></p>
+                    `;
                     versionContainer.appendChild(versionHeader);
 
                     const table = document.createElement('table');
@@ -2882,123 +2791,122 @@ function fetchDeviceHistory(deviceId, initialHistoryType = 'parameters') {
                     table.appendChild(thead);
                     const tbody = document.createElement('tbody');
 
-                    const boardsInThisVersion = versionData.records;
-                    const newerVersionData = (versionIndex > 0) ? versionsList[versionIndex-1] : null; // Более новая версия (предыдущая в массиве)
-                    const boardsInNewerVersion = newerVersionData ? newerVersionData.records : [];
+                    // Отображение плат для этой версии
+                    versionRecord.records.forEach(board => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${htmlspecialchars(board.board_name || '-')}</td>
+                            <td>${htmlspecialchars(board.type || '-')}</td>
+                            <td>${htmlspecialchars(board.version || '-')}</td>
+                            <td>${htmlspecialchars(board.serial_number || '-')}</td>
+                        `;
+                        tbody.appendChild(row);
+                    });
 
+                    // Отображение изменений (только если это не текущая версия и есть diff_details)
+                    if (!isCurrentVersion && versionRecord.diff_details) {
+                        const diffs = versionRecord.diff_details;
 
-                    if (!isActualVersion && newerVersionData) { // Сравнение для исторических версий
-                        // Сначала обрабатываем платы из текущей (старой) версии, чтобы найти измененные или удаленные
-                        boardsInThisVersion.forEach(boardOlder => {
-                            const tr = document.createElement('tr');
-                            const cells = {
-                                name: document.createElement('td'),
-                                type: document.createElement('td'),
-                                version: document.createElement('td'),
-                                serial: document.createElement('td')
-                            };
-                            cells.name.textContent = boardOlder.board_name || '-';
-                            cells.type.textContent = boardOlder.type || '-';
-                            cells.version.textContent = boardOlder.version || '-';
-                            cells.serial.textContent = boardOlder.serial_number || '-';
+                        // Платы, которые были ДОБАВЛЕНЫ (отсутствовали в этой исторической версии, но есть в следующей, более новой)
+                        // Сервер присылает их в diffs.removed
+                        if (diffs.removed && diffs.removed.length > 0) {
+                            const headerRow = tbody.insertRow();
+                            const headerCell = headerRow.insertCell();
+                            headerCell.colSpan = 4;
+                            headerCell.className = 'history-field-label';
+                            headerCell.textContent = 'Добавлено:'; // КОРРЕКТНО: Отображаем как "Добавлено"
+                            headerCell.style.backgroundColor = 'var(--corporate-yellow-light)';
+                            headerCell.style.fontWeight = 'bold';
+                            headerCell.style.color = 'var(--primary-color)';
 
-                            const boardInNewer = boardsInNewerVersion.find(bNew =>
-                                bNew.board_name === boardOlder.board_name && bNew.serial_number === boardOlder.serial_number
-                            );
+                            diffs.removed.forEach(board => {
+                                const row = tbody.insertRow();
+                                row.className = 'added'; // Стиль для добавленных
+                                row.innerHTML = `
+                                    <td>${htmlspecialchars(board.board_name || '-')}</td>
+                                    <td>${htmlspecialchars(board.type || '-')}</td>
+                                    <td>${htmlspecialchars(board.version || '-')}</td>
+                                    <td>${htmlspecialchars(board.serial_number || '-')}</td>
+                                `;
+                            });
+                        }
 
-                            if (!boardInNewer) { // Плата была удалена
-                                tr.style.backgroundColor = CorporateLightRed; // Светло-красный
-                                Object.values(cells).forEach(cell => {
-                                    cell.style.textDecoration = 'line-through';
-                                    cell.style.fontWeight = 'bold';
+                        // Платы, которые были УДАЛЕНЫ (присутствовали в этой исторической версии, но отсутствуют в следующей, более новой)
+                        // Сервер присылает их в diffs.added
+                        if (diffs.added && diffs.added.length > 0) {
+                            const headerRow = tbody.insertRow();
+                            const headerCell = headerRow.insertCell();
+                            headerCell.colSpan = 4;
+                            headerCell.className = 'history-field-label';
+                            headerCell.textContent = 'Удалено:'; // КОРРЕКТНО: Отображаем как "Удалено"
+                            headerCell.style.backgroundColor = 'var(--corporate-orange-light)';
+                            headerCell.style.fontWeight = 'bold';
+                            headerCell.style.color = 'var(--primary-color)';
+
+                            diffs.added.forEach(board => {
+                                const row = tbody.insertRow();
+                                row.className = 'removed'; // Стиль для удаленных
+                                row.innerHTML = `
+                                    <td>${htmlspecialchars(board.board_name || '-')}</td>
+                                    <td>${htmlspecialchars(board.type || '-')}</td>
+                                    <td>${htmlspecialchars(board.version || '-')}</td>
+                                    <td>${htmlspecialchars(board.serial_number || '-')}</td>
+                                `;
+                            });
+                        }
+
+                        // Измененные платы
+                        if (diffs.changed && diffs.changed.length > 0) {
+                            const headerRow = tbody.insertRow();
+                            const headerCell = headerRow.insertCell();
+                            headerCell.colSpan = 4;
+                            headerCell.className = 'history-field-label';
+                            headerCell.textContent = 'Изменено:';
+                            headerCell.style.backgroundColor = 'var(--corporate-yellow-light)'; // Светлый желтый фон для заголовка
+                            headerCell.style.fontWeight = 'bold';
+                            headerCell.style.color = 'var(--primary-color)';
+
+                            diffs.changed.forEach(change => {
+                                const row = tbody.insertRow();
+                                row.innerHTML = `<td>${htmlspecialchars(change.board_name || '-')}</td>`;
+                                const fields = ['type', 'version', 'serial_number'];
+                                fields.forEach(field => {
+                                    const currentVal = (change.current_values[field] !== null && change.current_values[field] !== undefined) ? htmlspecialchars(change.current_values[field]) : '-';
+                                    const prevVal = change.previous_values[field];
+                                    let cellContent = currentVal;
+                                    let cellClass = '';
+                                    if (prevVal !== undefined) {
+                                        cellClass = 'changed';
+                                        const formattedPrevVal = (prevVal === null || prevVal === undefined || String(prevVal).trim() === '') ? 'пусто' : htmlspecialchars(prevVal);
+                                        cellContent += `<span class="history-old-value"> (${formattedPrevVal})</span>`;
+                                    }
+                                    const cell = document.createElement('td');
+                                    cell.className = cellClass;
+                                    cell.innerHTML = cellContent;
+                                    row.appendChild(cell);
                                 });
-                                cells.serial.textContent += ' (удалена)';
-                            } else { // Плата существует, проверяем изменения в полях type и version
-                                let changed = false;
-                                if (String(boardOlder.type || '') !== String(boardInNewer.type || '')) {
-                                    cells.type.style.fontWeight = 'bold';
-                                    cells.type.style.backgroundColor = CorporateLightGreen; // Светло-зеленый
-                                    cells.type.textContent += ` (было "${boardInNewer.type || 'пусто'}")`;
-                                    changed = true;
-                                }
-                                if (String(boardOlder.version || '') !== String(boardInNewer.version || '')) {
-                                    cells.version.style.fontWeight = 'bold';
-                                    cells.version.style.backgroundColor = CorporateLightGreen; // Светло-зеленый
-                                    cells.version.textContent += ` (было "${boardInNewer.version || 'пусто'}")`;
-                                    changed = true;
-                                }
-                                // Если не было изменений в type/version, но плата есть, просто отображаем
-                            }
-                            tr.appendChild(cells.name); tr.appendChild(cells.type); tr.appendChild(cells.version); tr.appendChild(cells.serial);
-                            tbody.appendChild(tr);
-                        });
-
-                        // Затем обрабатываем платы из более новой версии, чтобы найти добавленные
-                        boardsInNewerVersion.forEach(boardNewer => {
-                            const boardInOlder = boardsInThisVersion.find(bOlder =>
-                                bOlder.board_name === boardNewer.board_name && bOlder.serial_number === boardNewer.serial_number
-                            );
-                            if (!boardInOlder) { // Плата была добавлена
-                                const tr = document.createElement('tr');
-                                tr.style.backgroundColor = CorporateLightBlue; // Светло-синий
-                                tr.style.fontWeight = 'bold';
-                                const nameCell = document.createElement('td'); nameCell.textContent = boardNewer.board_name || '-';
-                                const typeCell = document.createElement('td'); typeCell.textContent = boardNewer.type || '-';
-                                const versionCell = document.createElement('td'); versionCell.textContent = boardNewer.version || '-';
-                                const serialCell = document.createElement('td');
-                                serialCell.textContent = `${boardNewer.serial_number || '-'} (добавлена)`;
-                                tr.appendChild(nameCell); tr.appendChild(typeCell); tr.appendChild(versionCell); tr.appendChild(serialCell);
-                                tbody.appendChild(tr);
-                            }
-                        });
-                    } else { // Для текущей актуальной версии или самой старой исторической (без сравнения)
-                        boardsInThisVersion.forEach(board => {
-                            const tr = document.createElement('tr');
-                            const nameCell = document.createElement('td'); nameCell.textContent = board.board_name || '-';
-                            const typeCell = document.createElement('td'); typeCell.textContent = board.type || '-';
-                            const versionCell = document.createElement('td'); versionCell.textContent = board.version || '-';
-                            const serialCell = document.createElement('td'); serialCell.textContent = board.serial_number || '-';
-                            tr.appendChild(nameCell); tr.appendChild(typeCell); tr.appendChild(versionCell); tr.appendChild(serialCell);
-                            tbody.appendChild(tr);
-                        });
+                                tbody.appendChild(row);
+                            });
+                        }
                     }
 
-
-                    if (tbody.rows.length > 0 || isActualVersion) { // Показываем таблицу, если есть строки или это текущая версия
-                        table.appendChild(tbody);
-                        versionContainer.appendChild(table);
-                    } else if (!isActualVersion && tbody.rows.length === 0) {
-                        // Для исторических версий без отображаемых плат (например, если все были удалены и нет новых)
-                        const noBoardsMsg = document.createElement('p');
-                        noBoardsMsg.textContent = 'Нет данных о составе для этой версии (возможно, все платы были удалены и нет новых).';
-                        noBoardsMsg.style.padding = '10px 0';
-                        versionContainer.appendChild(noBoardsMsg);
-                    }
+                    table.appendChild(tbody);
+                    versionContainer.appendChild(table);
                     historyContentDiv.appendChild(versionContainer);
                 });
             }
         })
         .catch(error => {
-            console.error('Ошибка при загрузке истории:', error);
-            historyContentDiv.innerHTML = `<p class="error-message">Произошла ошибка при загрузке истории: ${error.message}</p>`;
+            console.error('Ошибка при загрузке истории прибора:', error);
+            const errorMsg = document.createElement('p');
+            errorMsg.className = 'error-message';
+            errorMsg.textContent = `Произошла ошибка при загрузке истории: ${error.message}`;
+            historyContentDiv.innerHTML = '';
+            historyContentDiv.appendChild(errorMsg);
         });
     }
 
-
-    // Вспомогательная функция для экранирования HTML (если не используется глобально)
-    function htmlspecialchars(str) {
-        if (typeof str !== 'string') return str;
-        const map = {
-            '&': '&amp;',
-            '<': '&lt;',
-            '>': '&gt;',
-            '"': '&quot;',
-            "'": '&#039;'
-        };
-        return str.replace(/[&<>"']/g, function(m) { return map[m]; });
-    }
-
-    // Загружаем историю с начальным типом
+    // Загружаем историю при первом вызове функции
     loadHistory(initialHistoryType);
 }
 

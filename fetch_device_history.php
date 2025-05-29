@@ -99,27 +99,34 @@ if ($historyType === 'parameters') {
         exit;
     }
 
-    // 3. Фильтруем исторические записи
-    // `previous_record_to_compare_with` будет записью, которая хронологически *новее* текущей исторической записи в цикле.
-    // Начинаем сравнение с текущей активной записью.
+    // 3. Фильтруем исторические записи и добавляем previous_value для измененных полей
     $previous_record_to_compare_with = $current_record_data;
 
     foreach ($all_historical_records as $historical_record) {
         $is_different = false;
-        if ($previous_record_to_compare_with === null) { // Это самая первая историческая запись (самая новая из истории)
-            $is_different = true; // Всегда показываем ее, если нет текущей для сравнения (маловероятно, но для полноты)
+        $diff_details = []; // Для хранения измененных полей и их предыдущих значений
+
+        if ($previous_record_to_compare_with === null) {
+            // Это самая первая историческая запись (самая новая из истории).
+            // Если нет текущей записи для сравнения, считаем ее измененной.
+            $is_different = true;
         } else {
             foreach ($fields_to_compare as $field) {
+                // Преобразуем значения в строки для надежного сравнения, обрабатывая NULL
                 $val_hist = isset($historical_record[$field]) ? (string)$historical_record[$field] : "";
                 $val_prev = isset($previous_record_to_compare_with[$field]) ? (string)$previous_record_to_compare_with[$field] : "";
+
                 if ($val_hist !== $val_prev) {
                     $is_different = true;
-                    break;
+                    // Сохраняем предыдущее значение
+                    $diff_details[$field] = $val_prev;
                 }
             }
         }
 
         if ($is_different) {
+            // Добавляем историческую запись
+            $historical_record['diff_details'] = $diff_details; // Добавляем информацию об изменениях
             $final_history_output[] = $historical_record;
             $previous_record_to_compare_with = $historical_record; // Обновляем запись для следующего сравнения
         }
@@ -194,9 +201,7 @@ if ($historyType === 'parameters') {
 
     // Fetch historical composition data
     $historical_versions = [];
-    $sql_history_comp = "SELECT id, device_id, board_name, type, version, serial_number, creator_name, changed_at
-                         FROM device_composition_history
-                         WHERE device_id = ? ORDER BY changed_at DESC, id DESC"; // id DESC для стабильности порядка внутри одной временной метки
+    $sql_history_comp = "SELECT id, device_id, board_name, type, version, serial_number, creator_name, changed_at FROM device_composition_history WHERE device_id = ? ORDER BY changed_at DESC, id DESC"; // id DESC для стабильности порядка внутри одной временной метки
     $stmt_history_comp = $conn->prepare($sql_history_comp);
     if ($stmt_history_comp === false) {
         echo json_encode(['error' => 'Ошибка подготовки запроса для истории состава: ' . $conn->error]);
@@ -209,11 +214,12 @@ if ($historyType === 'parameters') {
         $temp_history_boards = [];
         while ($row_comp_history = $result_history_comp->fetch_assoc()) {
             if (isset($row_comp_history['changed_at'])) {
-                 $row_comp_history['changed_at'] = date('Y-m-d H:i:s', strtotime($row_comp_history['changed_at']));
+                $row_comp_history['changed_at'] = date('Y-m-d H:i:s', strtotime($row_comp_history['changed_at']));
             }
             $temp_history_boards[] = $row_comp_history;
         }
 
+        // Group historical records by changed_at and creator_name
         $grouped_by_version = [];
         foreach ($temp_history_boards as $board_record) {
             $version_key = $board_record['changed_at'] . '_' . $board_record['creator_name'];
@@ -227,32 +233,79 @@ if ($historyType === 'parameters') {
             }
             $grouped_by_version[$version_key]['records'][] = $board_record;
         }
-        $historical_versions = array_values($grouped_by_version); // Преобразуем в индексированный массив
+        $historical_versions = array_values($grouped_by_version); // Convert to indexed array
     }
     $stmt_history_comp->close();
 
-    // Добавляем отфильтрованные исторические версии состава
-    $previous_composition_to_compare_with = $current_composition_version_data ? $current_composition_version_data['records'] : [];
+    // Now, compare historical versions to filter out duplicates and add diff_details
+    $previous_composition_to_compare_with = $current_composition_version_data;
 
-    foreach($historical_versions as $hist_version) {
-        $boards_in_hist_version = $hist_version['records'];
-        $is_comp_different = false;
+    foreach ($historical_versions as $historical_version) {
+        $is_different_version = false;
+        $diff_boards = [
+            'added'   => [], // Платы, которые были добавлены в этой версии
+            'removed' => [], // Платы, которые были удалены в этой версии
+            'changed' => []  // Платы, у которых изменились параметры
+        ];
 
-        if (count($boards_in_hist_version) != count($previous_composition_to_compare_with)) {
-            $is_comp_different = true;
-        } else {
-
-            $is_comp_different = true;
+        $current_boards_map = [];
+        if ($previous_composition_to_compare_with) {
+            foreach ($previous_composition_to_compare_with['records'] as $board) {
+                $current_boards_map[$board['board_name']] = $board;
+            }
         }
 
-        if ($is_comp_different) {
-            $final_history_output[] = $hist_version;
+        $historical_boards_map = [];
+        foreach ($historical_version['records'] as $board) {
+            $historical_boards_map[$board['board_name']] = $board;
+        }
 
+        // Check for added and changed boards
+        foreach ($historical_boards_map as $board_name => $h_board) {
+            if (!isset($current_boards_map[$board_name])) {
+                // Board added in this historical version
+                $diff_boards['added'][] = $h_board;
+                $is_different_version = true;
+            } else {
+                // Board exists in both, check for changes
+                $c_board = $current_boards_map[$board_name];
+                $board_diff = [];
+                $fields_to_compare_comp = ['type', 'version', 'serial_number'];
+                foreach ($fields_to_compare_comp as $field) {
+                    $h_val = isset($h_board[$field]) ? (string)$h_board[$field] : "";
+                    $c_val = isset($c_board[$field]) ? (string)$c_board[$field] : "";
+                    if ($h_val !== $c_val) {
+                        $board_diff[$field] = $c_val; // Store the previous value
+                        $is_different_version = true;
+                    }
+                }
+                if (!empty($board_diff)) {
+                    $diff_boards['changed'][] = [
+                        'board_name' => $board_name,
+                        'current_values' => $h_board, // Current values in this historical record
+                        'previous_values' => $board_diff // Previous values (from the newer record)
+                    ];
+                }
+            }
+        }
+
+        // Check for removed boards
+        foreach ($current_boards_map as $board_name => $c_board) {
+            if (!isset($historical_boards_map[$board_name])) {
+                // Board removed in this historical version (was present in the newer version)
+                $diff_boards['removed'][] = $c_board;
+                $is_different_version = true;
+            }
+        }
+
+        if ($is_different_version) {
+            $historical_version['diff_details'] = $diff_boards;
+            $final_history_output[] = $historical_version;
+            $previous_composition_to_compare_with = $historical_version; // Update for next comparison
         }
     }
 }
 
-echo json_encode($final_history_output);
-
 $conn->close();
+echo json_encode($final_history_output);
 ?>

@@ -39,11 +39,17 @@
   --warning-color: #ffc107; /* Желтый */
   --info-color: #0dcaf0; /* Бирюзовый */
 
+  --corporate-yellow: #FFC107; /* Корпоративный желтый (измененный warning-color) */
+  --corporate-orange: #fd7e14; /* Корпоративный оранжевый */
+  --corporate-yellow-light: #fff8e1; /* Светлый оттенок желтого для фона */
+  --corporate-orange-light: #ffe8d4; /* Светлый оттенок оранжевого для фона */
+
+
   --disabled-bg: #e9ecef; /* Фон отключенных элементов */
   --disabled-border: #ced4da; /* Граница отключенных элементов */
   --disabled-text: #6c757d; /* Текст отключенных элементов */
 
-  --font-family-base: 'Open Sans', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-family-base: 'Open Sans', system-ui, -apple-system, BlinkMacMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --font-size-base: 16px;
   --line-height-base: 1.6;
 
@@ -1681,6 +1687,192 @@ button:disabled {
 
 
 /* Стили для истории изменений (из Page1.css, адаптированные) */
+.history-record-item {
+    background-color: var(--bg-container);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    margin-bottom: 1.5rem;
+    padding: 0;
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+}
+
+/* Стили для текущей (актуальной) записи */
+.history-record-item.is-current {
+    border: 2px solid var(--primary-color); /* Темно-синяя рамка, соответствующая корпоративному стилю */
+    box-shadow: 0 0 10px rgba(44, 62, 80, 0.1); /* Легкая тень */
+}
+
+.history-record-item .history-header {
+    background-color: var(--bg-table-header);
+    padding: 12px 20px;
+    border-bottom: 1px solid var(--border-color);
+    color: var(--text-primary);
+    font-weight: 600;
+    font-size: 1.1em;
+    margin: 0;
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+/* Заголовок для текущей записи */
+.history-record-item.is-current .history-header {
+    background-color: var(--primary-color); /* Темно-синий фон */
+    color: var(--text-light); /* Белый текст */
+    border-bottom-color: var(--primary-color);
+}
+.history-record-item.is-current .history-header p,
+.history-record-item.is-current .history-header p strong,
+.history-record-item.is-current .history-header p span {
+    color: var(--text-light); /* Белый текст для всех элементов заголовка */
+}
+
+.history-record-item .history-table {
+    width: 100%;
+    margin-bottom: 0; /* Убираем отступ, т.к. контейнер уже имеет margin-bottom */
+    color: var(--text-primary);
+    vertical-align: top;
+    border-collapse: separate;
+    border-spacing: 0;
+    /* border: 1px solid var(--border-color); /* Таблица внутри уже имеет рамку */ */
+    border-radius: var(--border-radius);
+    overflow: hidden;
+    /* box-shadow: var(--shadow-sm); /* Тень на уровне элемента истории, не таблицы */ */
+    background-color: var(--bg-container);
+}
+
+.history-record-item .history-table th,
+.history-record-item .history-table td {
+    padding: 12px 16px;
+    border-bottom: var(--border-width) solid var(--border-color);
+    line-height: 1.5;
+    font-size: 14px;
+}
+
+.history-record-item .history-table th {
+    background-color: var(--bg-table-header);
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.history-record-item .history-table > tbody > tr:last-of-type > td {
+  border-bottom: 0;
+}
+
+/* Подсветка измененных полей в истории (желтый/оранжевый) */
+.history-table td.changed {
+    background-color: var(--corporate-yellow-light) !important; /* Светлый желтый */
+    position: relative;
+    font-weight: 500;
+}
+.history-table td.changed::before { /* Маркер изменения */
+    content: '→'; /* Измененный маркер */
+    color: var(--corporate-orange); /* Оранжевый цвет для маркера */
+    font-weight: bold;
+    margin-right: 5px;
+}
+
+.history-table td.added {
+    background-color: var(--corporate-yellow-light) !important; /* Светлый желтый для добавленных */
+    font-weight: 500;
+}
+.history-table td.removed {
+    background-color: var(--corporate-orange-light) !important; /* Светлый оранжевый для удаленных */
+    text-decoration: line-through; /* Зачеркнутый текст */
+    color: var(--text-secondary);
+    font-weight: 400;
+}
+
+/* Стили для отображения предыдущего значения */
+.history-old-value {
+    font-size: 0.85em;
+    color: var(--text-secondary); /* Серый цвет для старого значения */
+    margin-left: 8px;
+    white-space: nowrap; /* Предотвращает перенос скобок */
+}
+
+/* Стили для вложенных таблиц в истории */
+.history-table .nested-table {
+    margin: 5px 0;
+    border: 1px solid var(--border-color); /* Используем общую переменную */
+    background: var(--bg-table-stripe); /* Фон как у чередующихся строк */
+    width: 100%;
+    font-size: 0.9em;
+}
+.history-table .nested-table th,
+.history-table .nested-table td {
+    padding: 6px 8px;
+    border-color: var(--border-color); /* Используем общую переменную */
+}
+.history-table .nested-table th {
+    background-color: var(--bg-table-header);
+    font-weight: 500;
+}
+
+/* Классы для цветов фона (обновленные) */
+.bg-danger-light { background-color: rgba(var(--danger-color-rgb), 0.1); }
+.bg-success-light { background-color: rgba(var(--success-color-rgb), 0.1); }
+.bg-warning-light { background-color: var(--corporate-yellow-light); } /* Обновлено для использования корпоративного желтого */
+.bg-info-light { background-color: rgba(var(--info-color-rgb), 0.1); }
+
+/* Дополнительные классы для истории */
+.history-section-container {
+    background-color: var(--bg-container);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    margin-bottom: 1.5rem;
+    padding: 1.5rem; /* Добавляем внутренний отступ для всего контейнера истории */
+    box-shadow: var(--shadow-sm);
+}
+
+.history-toggle-buttons {
+    margin-bottom: 1rem;
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.history-option-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    cursor: pointer;
+}
+
+.history-option-radio {
+    margin-right: 5px;
+}
+
+.history-content {
+    margin-top: 1.5rem;
+}
+
+/* Стили для отображения textarea в истории */
+.history-textarea-display {
+    background-color: var(--bg-table-stripe);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    padding: 10px;
+    margin-top: 5px;
+    white-space: pre-wrap; /* Сохраняет переносы строк */
+    word-wrap: break-word; /* Переносит длинные слова */
+    max-height: 150px; /* Ограничиваем высоту */
+    overflow-y: auto; /* Добавляем прокрутку */
+    font-size: 0.9em;
+    color: var(--text-primary);
+}
+
+.history-field-label {
+    font-weight: 600;
+    color: var(--primary-color);
+    margin-bottom: 5px;
+    margin-top: 10px;
+}
+
 .history-item {
     margin-bottom: 1rem;
     border: 1px solid var(--border-color);
