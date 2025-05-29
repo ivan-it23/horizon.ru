@@ -1474,12 +1474,15 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
     // --- Логика отображения данных прибора на вкладке 1 после выбора/поиска ---
-    // Объявляем массив для хранения названий плат, помеченных к удалению
-    //let boardsToDelete = [];
 
     function showDeviceData(deviceId) {
-        // Очищаем список плат для удаления при загрузке новых данных прибора
-        boardsToDelete = [];
+
+        let boardsToDelete = []; // Инициализируем/очищаем для каждого нового вызова showDeviceData
+
+        // Элементы для отображения данных (предполагается, что они существуют)
+        const searchResultDiv = document.getElementById('searchResult');
+        const deviceListDiv = document.getElementById('deviceList');
+        const deviceHistoryDiv = document.getElementById('deviceHistory'); // Для очистки истории при смене прибора
 
         fetch('fetch_devices.php', {
             method: 'POST',
@@ -1497,8 +1500,31 @@ document.addEventListener('DOMContentLoaded', function () {
              return response.json();
         })
         .then(devices => {
+            if (!devices || devices.length === 0) {
+                const targetDiv = document.getElementById('searchDeviceForm').classList.contains('active') ? searchResultDiv : deviceListDiv;
+                if (targetDiv) {
+                    targetDiv.innerHTML = '<p class="info-message">Прибор не найден.</p>';
+                }
+                selectedDeviceId = null; // selectedDeviceId должен быть доступен в этой области видимости
+                selectedSerialNumber = null;
+                selectedCaseNumber = null;
+                selectedDeviceType = null;
+                localStorage.removeItem('selectedDevice');
+                tabItems.forEach(tabItem => { // tabItems должен быть доступен
+                     if (!tabItem.classList.contains('active')) {
+                          tabItem.classList.add('disabled');
+                     }
+                });
+                document.querySelectorAll('.parent-tab').forEach(parentTab => {
+                    parentTab.classList.remove('active');
+                    const sub = parentTab.querySelector('.sub-tabs');
+                    if (sub) sub.style.display = 'none';
+                });
+                return;
+            }
+
             const device = devices[0];
-            selectedDeviceType = device.device_type; // Обновляем тип прибора
+            selectedDeviceType = device.device_type; // Обновляем тип прибора (selectedDeviceType должен быть доступен)
 
             // Заполнение информации в device-info-box на всех вкладках (2-8)
             ['2','3','4','5','6','7','8'].forEach(tabNum => {
@@ -1511,531 +1537,482 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (caseNumberSpan) caseNumberSpan.textContent = device.case_number || '-';
             });
 
-            // Заполнение скрытых полей на вкладке 8 для форм загрузки и просмотра
+            // Заполнение скрытых полей на вкладке 8
             if (document.getElementById('serialNumberInput')) document.getElementById('serialNumberInput').value = device.serial_number || '';
             if (document.getElementById('caseNumberInput')) document.getElementById('caseNumberInput').value = device.case_number || '';
             if (document.getElementById('deviceTypeInput')) document.getElementById('deviceTypeInput').value = device.device_type || '';
-
             if (document.getElementById('serialNumberInputView')) document.getElementById('serialNumberInputView').value = device.serial_number || '';
             if (document.getElementById('caseNumberInputView')) document.getElementById('caseNumberInputView').value = device.case_number || '';
             if (document.getElementById('deviceTypeInputView')) document.getElementById('deviceTypeInputView').value = device.device_type || '';
 
-
-            // Очищаем контейнеры перед отображением новых данных
+            // Очищаем контейнеры
             if (searchResultDiv) searchResultDiv.innerHTML = '';
-            deviceListDiv.innerHTML = '';
-            deviceHistoryDiv.innerHTML = ''; // Очищаем историю при отображении новых данных прибора
+            if (deviceListDiv) deviceListDiv.innerHTML = '';
+            if (deviceHistoryDiv) deviceHistoryDiv.innerHTML = '';
 
-            if (devices.length > 0) {
-                const deviceDiv = document.createElement('div');
-                deviceDiv.className = 'device-details-container mt-4'; // Новый класс для контейнера деталей прибора
+            const deviceDiv = document.createElement('div');
+            deviceDiv.className = 'device-details-container mt-4';
 
-                // Создаем контейнер для кнопок переключения между "Параметры" и "Состав"
-                const tabContainer = document.createElement('div');
-                tabContainer.className = 'tab-buttons';
-                tabContainer.style.marginBottom = '20px';
+            const tabContainer = document.createElement('div');
+            tabContainer.className = 'tab-buttons';
+            tabContainer.style.marginBottom = '20px';
 
+            const paramsButton = document.createElement('button');
+            paramsButton.type = 'button';
+            paramsButton.className = 'button button-secondary tab-button active';
+            paramsButton.textContent = 'Параметры прибора';
+            paramsButton.dataset.tab = 'device_params_section';
 
-                // Кнопка "Параметры прибора" - Добавлен класс button-secondary
-                const paramsButton = document.createElement('button');
-                paramsButton.type = 'button';
-                paramsButton.className = 'button button-secondary tab-button active'; // Добавлены классы button-secondary и active
-                paramsButton.textContent = 'Параметры прибора';
-                paramsButton.dataset.tab = 'device_params_section';
+            const compositionButton = document.createElement('button');
+            compositionButton.type = 'button';
+            compositionButton.className = 'button button-secondary tab-button';
+            compositionButton.textContent = 'Состав прибора';
+            compositionButton.dataset.tab = 'device_composition_section';
 
-                // Кнопка "Состав прибора" - Добавлен класс button-secondary
-                const compositionButton = document.createElement('button');
-                compositionButton.type = 'button';
-                compositionButton.className = 'button button-secondary tab-button'; // Добавлены классы button-secondary
-                compositionButton.textContent = 'Состав прибора';
-                compositionButton.dataset.tab = 'device_composition_section';
-
-                // Кнопка экспорта данных
-                const exportButton = document.createElement('button');
-                exportButton.type = 'button';
-                exportButton.textContent = 'Скачать данные для прибора';
-                exportButton.classList.add('button', 'button-secondary', 'export-device-btn'); // Новые классы для стилизации
-                exportButton.dataset.deviceId     = device.id;
-                exportButton.dataset.serialNumber = device.serial_number;
-                exportButton.dataset.caseNumber   = device.case_number;
-                exportButton.addEventListener('click', function() {
+            const exportButton = document.createElement('button');
+            exportButton.type = 'button';
+            exportButton.textContent = 'Скачать данные для прибора';
+            exportButton.classList.add('button', 'button-secondary', 'export-device-btn');
+            exportButton.dataset.deviceId     = device.id;
+            exportButton.dataset.serialNumber = device.serial_number;
+            exportButton.dataset.caseNumber   = device.case_number;
+            exportButton.addEventListener('click', function() {
+                // Предполагается, что функция exportDeviceData определена где-то еще
+                if (typeof exportDeviceData === 'function') {
                     exportDeviceData(
                         this.dataset.deviceId,
                         this.dataset.serialNumber,
                         this.dataset.caseNumber
                     );
-                });
+                } else {
+                    console.error('Function exportDeviceData is not defined.');
+                }
+            });
 
-                // Обработчик для "Параметры прибора"
-                paramsButton.addEventListener('click', function() {
-                    // Скрываем все секции контента внутри deviceDiv
-                    deviceDiv.querySelectorAll('.tab-content-section').forEach(section => {
-                        section.style.display = 'none';
-                    });
-                    // Показываем секцию параметров
-                    const paramsSection = deviceDiv.querySelector('#device_params_section');
-                    if (paramsSection) {
-                        paramsSection.style.display = 'block';
-                    }
+            tabContainer.appendChild(paramsButton);
+            tabContainer.appendChild(compositionButton);
 
-                    // Обновляем активные классы кнопок
-                    paramsButton.classList.add('active');
-                    compositionButton.classList.remove('active');
-                });
+            const paramsSection = document.createElement('div');
+            paramsSection.id = 'device_params_section';
+            paramsSection.className = 'tab-content-section';
+            paramsSection.style.display = 'block';
 
+            const compositionSection = document.createElement('div');
+            compositionSection.id = 'device_composition_section';
+            compositionSection.className = 'tab-content-section';
+            compositionSection.style.display = 'none';
+            compositionSection.innerHTML = '<p>Информация о составе прибора появится здесь.</p>';
 
-                // Обработчик для "Состав прибора"
-                compositionButton.addEventListener('click', function () {
-                    // Скрываем все секции контента внутри deviceDiv
-                    deviceDiv.querySelectorAll('.tab-content-section').forEach(section => {
-                        section.style.display = 'none';
-                    });
-                    // Показываем секцию состава
-                    const compSec = deviceDiv.querySelector('#device_composition_section');
-                    if (compSec) {
-                        compSec.style.display = 'block';
-                    }
+            paramsButton.addEventListener('click', function() {
+                paramsSection.style.display = 'block';
+                compositionSection.style.display = 'none';
+                paramsButton.classList.add('active');
+                compositionButton.classList.remove('active');
+            });
 
-                    // Обновляем активные классы кнопок
-                    compositionButton.classList.add('active');
-                    paramsButton.classList.remove('active');
+            compositionButton.addEventListener('click', function () {
+                paramsSection.style.display = 'none';
+                compositionSection.style.display = 'block';
+                compositionButton.classList.add('active');
+                paramsButton.classList.remove('active');
 
-                    // Загружаем и отображаем состав прибора, если он ещё не загружен
-                    if (deviceId
-                        && compSec
-                        && compSec.innerHTML.includes('<p>Информация о составе прибора появится позже</p>')) {
+                if (compositionSection.innerHTML.includes('<p>Информация о составе прибора появится здесь.</p>')) {
+                    fetch('fetch_device_composition.php', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body: 'device_id=' + encodeURIComponent(deviceId)
+                    })
+                    .then(response => {
+                        if (!response.ok) {
+                            return response.text().then(text => {
+                                throw new Error(`HTTP error! Status: ${response.status}. ${text}`);
+                            });
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        compositionSection.innerHTML = ''; // Очищаем перед заполнением
 
-                        fetch('fetch_device_composition.php', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                            body: 'device_id=' + encodeURIComponent(deviceId)
-                        })
-                        .then(response => {
-                            if (!response.ok) {
-                                return response.text().then(text => {
-                                    throw new Error(`HTTP error! Status: ${response.status}. ${text}`);
-                                });
-                            }
-                            return response.json();
-                        })
-                        .then(data => {
-                            compSec.innerHTML = ''; // Очищаем перед заполнением
+                        let table = document.createElement('table');
+                        table.className = 'data-table device-structure-table';
+                        table.style.tableLayout = 'fixed';
+                        table.style.width = '100%';
+                        let thead = document.createElement('thead');
+                        thead.innerHTML = '<tr><th>Плата</th><th>Тип</th><th>Номер версии</th><th>Серийный номер</th></tr>';
+                        table.appendChild(thead);
+                        let tbodyComp = document.createElement('tbody');
+                        tbodyComp.id = `composition_tbody_${deviceId}`; // Уникальный ID для tbody
 
-                            // Строим таблицу состава
-                            let table = document.createElement('table');
-                            table.className = 'data-table device-structure-table';
-                            table.style.tableLayout = 'fixed';
-                            table.style.width = '100%';
-                            let thead = document.createElement('thead');
-                            thead.innerHTML = '<tr><th>Плата</th><th>Тип</th><th>Номер версии</th><th>Серийный номер</th></tr>';
-                            table.appendChild(thead);
-                            let tbodyComp = document.createElement('tbody');
-
-                            if (data.error) {
-                                compSec.innerHTML = `<p class="error-message">Ошибка: ${data.error}</p>`;
-                            } else if (data.length > 0) {
-                                data.forEach(record => {
-                                    let row = document.createElement('tr');
-                                    row.innerHTML = `
-                                        <td><input type="text" name="board_name"    value="${htmlspecialchars(record.board_name    || '')}" class="input-field"></td>
-                                        <td><input type="text" name="type"          value="${htmlspecialchars(record.type          || '')}" class="input-field"></td>
-                                        <td><input type="text" name="version"       value="${htmlspecialchars(record.version       || '')}" class="input-field"></td>
-                                        <td><input type="text" name="serial_number" value="${htmlspecialchars(record.serial_number || '')}" class="input-field"></td>
-                                    `;
-                                    row.dataset.boardName = record.board_name || '';
-                                    tbodyComp.appendChild(row);
-                                });
-                            } else {
-                                // Если данных нет, добавляем пустую строку для возможности добавления
+                        if (data.error) {
+                            compositionSection.innerHTML = `<p class="error-message">Ошибка: ${data.error}</p>`;
+                        } else if (data.length > 0) {
+                            data.forEach(record => {
                                 let row = document.createElement('tr');
+                                row.dataset.boardName = record.board_name || `unknown_board_${Date.now()}`; // Уникальный идентификатор, если имя пустое
                                 row.innerHTML = `
-                                    <td><input type="text" name="board_name"    class="input-field"></td>
-                                    <td><input type="text" name="type"          class="input-field"></td>
-                                    <td><input type="text" name="version"       class="input-field"></td>
-                                    <td><input type="text" name="serial_number" class="input-field"></td>
+                                    <td><input type="text" name="board_name"    value="${htmlspecialchars(record.board_name    || '')}" class="input-field"></td>
+                                    <td><input type="text" name="type"          value="${htmlspecialchars(record.type          || '')}" class="input-field"></td>
+                                    <td><input type="text" name="version"       value="${htmlspecialchars(record.version       || '')}" class="input-field"></td>
+                                    <td><input type="text" name="serial_number" value="${htmlspecialchars(record.serial_number || '')}" class="input-field"></td>
                                 `;
-                                row.dataset.boardName = '';
                                 tbodyComp.appendChild(row);
-                            }
-
-                            table.appendChild(tbodyComp);
-                            compSec.appendChild(table);
-
-                            // Контейнер для кнопок добавления/удаления строк
-                            const rowButtons = document.createElement('div');
-                            rowButtons.className = 'mode-buttons mt-3';
-                            rowButtons.style.justifyContent = 'flex-start';
-
-                            // Кнопка "Добавить плату"
-                            const addBtn = document.createElement('button');
-                            addBtn.type = 'button';
-                            addBtn.className = 'button button-secondary';
-                            addBtn.innerHTML = '<i class="fas fa-plus"></i> Добавить плату';
-                            addBtn.addEventListener('click', () => {
-                                let newRow = document.createElement('tr');
-                                newRow.innerHTML = `
-                                    <td><input type="text" name="board_name"    class="input-field"></td>
-                                    <td><input type="text" name="type"          class="input-field"></td>
-                                    <td><input type="text" name="version"       class="input-field"></td>
-                                    <td><input type="text" name="serial_number" class="input-field"></td>
-                                `;
-                                newRow.dataset.boardName = '';
-                                tbodyComp.appendChild(newRow);
                             });
-                            rowButtons.appendChild(addBtn);
-
-                            // Кнопка "Удалить плату"
-                            const delBtn = document.createElement('button');
-                            delBtn.type = 'button';
-                            delBtn.className = 'button button-secondary';
-                            delBtn.innerHTML = '<i class="fas fa-trash"></i> Удалить плату';
-
-                            // Контейнер для ввода имени платы и кнопки подтверждения удаления
-                            const deleteInputContainer = document.createElement('div');
-                            deleteInputContainer.className = 'delete-board-input-container mt-2';
-                            deleteInputContainer.style.display = 'none';
-                            deleteInputContainer.innerHTML = `
-                                <input type="text" id="boardNameToDelete" class="input-field delete-board-input"
-                                       placeholder="Введите название платы для удаления">
-                                <button type="button" id="confirmDeleteBoardBtn"
-                                        class="button button-danger ml-2">Подтвердить удаление</button>
+                        } else {
+                            let row = document.createElement('tr');
+                            row.dataset.boardName = `new_board_${Date.now()}`;
+                            row.innerHTML = `
+                                <td><input type="text" name="board_name"    class="input-field" placeholder="Название платы"></td>
+                                <td><input type="text" name="type"          class="input-field" placeholder="Тип"></td>
+                                <td><input type="text" name="version"       class="input-field" placeholder="Версия"></td>
+                                <td><input type="text" name="serial_number" class="input-field" placeholder="Серийный номер"></td>
                             `;
-                            rowButtons.appendChild(delBtn);
-                            compSec.appendChild(rowButtons);
-                            compSec.appendChild(deleteInputContainer);
+                            tbodyComp.appendChild(row);
+                        }
 
-                            // Показываем поле ввода при нажатии на "Удалить плату"
-                            delBtn.addEventListener('click', () => {
-                                deleteInputContainer.style.display = 'block';
-                                document.getElementById('boardNameToDelete').value = '';
-                                document.getElementById('boardNameToDelete').focus();
-                            });
+                        table.appendChild(tbodyComp);
+                        compositionSection.appendChild(table);
 
-                            // Обработка подтверждения удаления платы
-                            document.getElementById('confirmDeleteBoardBtn').addEventListener('click', () => {
-                                const boardName = document.getElementById('boardNameToDelete').value.trim();
-                                if (boardName) {
-                                    const rowToDelete = tbodyComp.querySelector(`tr[data-board-name="${boardName}"]`);
-                                    if (rowToDelete) {
-                                        rowToDelete.classList.add('pending-deletion');
-                                        if (!boardsToDelete.includes(boardName)) {
-                                            boardsToDelete.push(boardName);
-                                        }
-                                        deleteInputContainer.style.display = 'none';
-                                        alert(`Плата "${boardName}" помечена к удалению. Изменения будут применены после сохранения.`);
-                                    } else {
-                                        alert(`Плата с названием "${boardName}" не найдена в текущем составе.`);
+                        const rowButtonsContainer = document.createElement('div');
+                        rowButtonsContainer.className = 'composition-actions mode-buttons mt-3';
+                        rowButtonsContainer.style.justifyContent = 'flex-start'; // Выравнивание кнопок
+
+                        const addBtn = document.createElement('button');
+                        addBtn.type = 'button';
+                        addBtn.id = `addBoardRowBtn_${deviceId}`;
+                        addBtn.className = 'button button-secondary';
+                        addBtn.innerHTML = '<i class="fas fa-plus"></i> Добавить плату';
+                        addBtn.addEventListener('click', () => {
+                            let newRow = document.createElement('tr');
+                            const uniqueBoardName = `new_board_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
+                            newRow.dataset.boardName = uniqueBoardName;
+                            newRow.innerHTML = `
+                                <td><input type="text" name="board_name"    class="input-field" placeholder="Название платы"></td>
+                                <td><input type="text" name="type"          class="input-field" placeholder="Тип"></td>
+                                <td><input type="text" name="version"       class="input-field" placeholder="Версия"></td>
+                                <td><input type="text" name="serial_number" class="input-field" placeholder="Серийный номер"></td>
+                            `;
+                            tbodyComp.appendChild(newRow);
+                        });
+                        rowButtonsContainer.appendChild(addBtn);
+
+                        const initiateDeleteBtn = document.createElement('button');
+                        initiateDeleteBtn.type = 'button';
+                        initiateDeleteBtn.id = `initiateDeleteBoardBtn_${deviceId}`;
+                        initiateDeleteBtn.className = 'button button-secondary';
+                        initiateDeleteBtn.innerHTML = '<i class="fas fa-trash"></i> Удалить плату';
+                        rowButtonsContainer.appendChild(initiateDeleteBtn);
+                        compositionSection.appendChild(rowButtonsContainer);
+
+                        // ------------- НАЧАЛО ИЗМЕНЕННОГО УЧАСТКА ДЛЯ УДАЛЕНИЯ ПЛАТЫ -------------
+                        const deleteBoardSelectionContainer = document.createElement('div');
+                        deleteBoardSelectionContainer.id = `deleteBoardSelectionContainer_${deviceId}`;
+                        deleteBoardSelectionContainer.className = 'delete-board-selection-container'; // Новый класс для стилизации
+                        deleteBoardSelectionContainer.style.display = 'none'; // Изначально скрыт
+
+                        deleteBoardSelectionContainer.innerHTML = `
+                            <label for="selectBoardToDelete_${deviceId}" class="form-label">Выберите плату для удаления:</label>
+                            <select id="selectBoardToDelete_${deviceId}" class="form-select delete-board-select"></select>
+                            <div class="delete-board-actions">
+                                <button type="button" id="confirmDeleteSelectedBoardBtn_${deviceId}" class="button button-danger">Подтвердить</button>
+                                <button type="button" id="cancelDeleteBoardBtn_${deviceId}" class="button button-secondary">Отмена</button>
+                            </div>
+                        `;
+                        compositionSection.appendChild(deleteBoardSelectionContainer);
+
+                        initiateDeleteBtn.addEventListener('click', () => {
+                            const selectElement = document.getElementById(`selectBoardToDelete_${deviceId}`);
+                            selectElement.innerHTML = ''; // Очищаем предыдущие опции
+
+                            const rows = tbodyComp.querySelectorAll('tr');
+                            let hasBoardsToSelect = false;
+                            rows.forEach(row => {
+                                if (!row.classList.contains('pending-deletion')) {
+                                    const boardNameInput = row.querySelector('input[name="board_name"]');
+                                    const boardName = boardNameInput ? boardNameInput.value.trim() : row.dataset.boardName;
+                                    if (boardName) { // Добавляем только если есть имя
+                                        const option = document.createElement('option');
+                                        option.value = boardName; // Используем текущее значение из инпута или data-attribute
+                                        option.textContent = boardName;
+                                        option.dataset.rowBoardName = row.dataset.boardName; // Сохраняем исходный data-board-name для поиска строки
+                                        selectElement.appendChild(option);
+                                        hasBoardsToSelect = true;
                                     }
-                                } else {
-                                    alert('Пожалуйста, введите название платы для удаления.');
                                 }
                             });
-                        })
-                        .catch(error => {
-                            console.error('Ошибка при загрузке состава прибора:', error);
-                            if (compSec) {
-                                compSec.innerHTML =
-                                    `<p class="error-message">Ошибка при загрузке данных состава: ${error.message}</p>`;
+
+                            if (hasBoardsToSelect) {
+                                deleteBoardSelectionContainer.style.display = 'flex'; // Показываем контейнер
+                            } else {
+                                alert('Нет плат для удаления или все платы уже помечены к удалению.');
+                                deleteBoardSelectionContainer.style.display = 'none';
                             }
                         });
-                    }
-                });
 
-                // Добавляем кнопки переключения в контейнер
-                tabContainer.appendChild(paramsButton);
-                tabContainer.appendChild(compositionButton);
+                        document.getElementById(`confirmDeleteSelectedBoardBtn_${deviceId}`).addEventListener('click', () => {
+                            const selectElement = document.getElementById(`selectBoardToDelete_${deviceId}`);
+                            const selectedOption = selectElement.options[selectElement.selectedIndex];
 
-                // Секции контента (изначально показываем параметры)
-                const paramsSection = document.createElement('div');
-                paramsSection.id = 'device_params_section';
-                paramsSection.className = 'tab-content-section';
-                // Показываем секцию параметров по умолчанию
-                paramsSection.style.display = 'block';
+                            if (selectedOption) {
+                                const boardNameToDelete = selectedOption.value; // Имя из option value (может быть из инпута)
+                                const rowBoardNameAttribute = selectedOption.dataset.rowBoardName; // Имя из data-board-name строки
 
-                const compositionSection = document.createElement('div');
-                compositionSection.id = 'device_composition_section';
-                compositionSection.className = 'tab-content-section';
-                // Скрываем секцию состава по умолчанию
-                compositionSection.style.display = 'none';
-                compositionSection.innerHTML = '<p>Информация о составе прибора появится позже</p>'; // Placeholder
+                                // Ищем строку по data-board-name, так как имя в инпуте могло измениться
+                                const rowToDelete = tbodyComp.querySelector(`tr[data-board-name="${rowBoardNameAttribute}"]`);
 
+                                if (rowToDelete && !rowToDelete.classList.contains('pending-deletion')) {
+                                    rowToDelete.classList.add('pending-deletion');
+                                    // Используем boardNameToDelete (фактическое имя платы на момент пометки) для массива boardsToDelete
+                                    if (!boardsToDelete.includes(boardNameToDelete)) {
+                                        boardsToDelete.push(boardNameToDelete);
+                                    }
+                                    alert(`Плата "${boardNameToDelete}" помечена к удалению. Изменения будут применены после сохранения.`);
+                                } else if (rowToDelete && rowToDelete.classList.contains('pending-deletion')) {
+                                    alert(`Плата "${boardNameToDelete}" уже помечена к удалению.`);
+                                } else {
+                                    alert(`Плата с идентификатором "${rowBoardNameAttribute}" не найдена для удаления.`);
+                                }
+                            } else {
+                                alert('Пожалуйста, выберите плату для удаления.');
+                            }
+                            deleteBoardSelectionContainer.style.display = 'none';
+                        });
 
-                // Формирование таблицы с параметрами прибора
-                const table = document.createElement('table');
-                table.className = 'data-table device-params-table'; // Классы для стилизации
-                const thead  = document.createElement('thead');
-                const hrow   = document.createElement('tr');
-                const hth1   = document.createElement('th'); hth1.textContent = 'Поле';
-                const hth2   = document.createElement('th'); hth2.textContent = 'Значение';
-                hrow.appendChild(hth1);
-                hrow.appendChild(hth2);
-                thead.appendChild(hrow);
-                table.appendChild(thead);
-                const tbody = document.createElement('tbody');
+                        document.getElementById(`cancelDeleteBoardBtn_${deviceId}`).addEventListener('click', () => {
+                            deleteBoardSelectionContainer.style.display = 'none';
+                        });
+                        // ------------- КОНЕЦ ИЗМЕНЕННОГО УЧАСТКА ДЛЯ УДАЛЕНИЯ ПЛАТЫ -------------
 
-                // Определение полей и их порядка для отображения
-                const fieldNames = {
-                    id:             'ID',
-                    device_type:    'Тип прибора',
-                    serial_number:  'Серийный номер',
-                    case_number:    'Номер корпуса',
-                    length_mm:      'Длина, мм',
-                    diameter_mm:    'Диаметр, мм',
-                    upper_thread:   'Резьба верхняя',
-                    lower_thread:   'Резьба нижняя',
-                    frequency1_khz: 'Рабочая частота 1, кГц',
-                    frequency2_khz: 'Рабочая частота 2, кГц'
-                };
+                    })
+                    .catch(error => {
+                        console.error('Ошибка при загрузке состава прибора:', error);
+                        if (compositionSection) {
+                            compositionSection.innerHTML =
+                                `<p class="error-message">Ошибка при загрузке данных состава: ${error.message}</p>`;
+                        }
+                    });
+                }
+            });
 
-                // Добавляем статические поля
-                for (const key in fieldNames) {
+            // Формирование таблицы с параметрами прибора
+            const tableParams = document.createElement('table');
+            tableParams.className = 'data-table device-params-table';
+            const theadParams  = document.createElement('thead');
+            theadParams.innerHTML = '<tr><th>Поле</th><th>Значение</th></tr>';
+            tableParams.appendChild(theadParams);
+            const tbodyParams = document.createElement('tbody');
+
+            const fieldNames = {
+                id:             'ID',
+                device_type:    'Тип прибора',
+                serial_number:  'Серийный номер',
+                case_number:    'Номер корпуса',
+                length_mm:      'Длина, мм',
+                diameter_mm:    'Диаметр, мм',
+                upper_thread:   'Резьба верхняя',
+                lower_thread:   'Резьба нижняя',
+                frequency1_khz: 'Рабочая частота 1, кГц',
+                frequency2_khz: 'Рабочая частота 2, кГц'
+            };
+
+            for (const key in fieldNames) {
+                const row = document.createElement('tr');
+                const th  = document.createElement('td');
+                th.textContent = fieldNames[key];
+                const td  = document.createElement('td');
+                const inp = document.createElement('input');
+                inp.type      = 'text';
+                inp.className = 'input-field';
+                inp.name      = key;
+                inp.value     = device[key] || '';
+                inp.style.width = '100%';
+                 if (key === 'id' || key === 'device_type' || key === 'serial_number' || key === 'case_number') {
+                     inp.readOnly = true;
+                     inp.classList.add('readonly-field');
+                 }
+                td.appendChild(inp);
+                row.appendChild(th);
+                row.appendChild(td);
+                tbodyParams.appendChild(row);
+            }
+
+            const recvCount = (device.device_type === 'Картограф') ? 3 : 1;
+            for (let i = 1; i <= recvCount; i++) {
+                const key = `receiver_base${i}_mm`;
+                if (device[key] !== undefined && device[key] !== null) {
                     const row = document.createElement('tr');
                     const th  = document.createElement('td');
-                    th.textContent = fieldNames[key];
+                    th.textContent = `База приёмника ${i}, мм`;
                     const td  = document.createElement('td');
                     const inp = document.createElement('input');
-                    inp.type      = 'text';
+                    inp.type      = 'number';
                     inp.className = 'input-field';
                     inp.name      = key;
                     inp.value     = device[key] || '';
                     inp.style.width = '100%';
-                    // Делаем поля readOnly, кроме тех, которые можно редактировать
-                     if (key === 'id' || key === 'device_type' || key === 'serial_number' || key === 'case_number') {
-                         inp.readOnly = true;
-                         inp.classList.add('readonly-field'); // Добавляем класс для стилизации readonly
-                     }
                     td.appendChild(inp);
                     row.appendChild(th);
                     row.appendChild(td);
-                    tbody.appendChild(row);
+                    tbodyParams.appendChild(row);
                 }
+            }
 
-                // Динамические строки для баз приёмника (зависит от типа прибора)
-                const recvCount = (device.device_type === 'Картограф') ? 3 : 1;
-                for (let i = 1; i <= recvCount; i++) {
-                    const key = `receiver_base${i}_mm`;
-                     // Проверяем, существует ли поле в данных прибора
-                    if (device[key] !== undefined && device[key] !== null) {
-                        const row = document.createElement('tr');
-                        const th  = document.createElement('td');
-                        th.textContent = `База приёмника ${i}, мм`;
-                        const td  = document.createElement('td');
-                        const inp = document.createElement('input');
-                        inp.type      = 'number';
-                        inp.className = 'input-field';
-                        inp.name      = key;
-                        inp.value     = device[key] || '';
-                        inp.style.width = '100%';
-                        td.appendChild(inp);
-                        row.appendChild(th);
-                        row.appendChild(td);
-                        tbody.appendChild(row);
-                    }
-                }
-
-                // Динамические строки для баз передатчиков (до 5, если есть в данных)
-                for (let i = 1; i <= 5; i++) {
-                    const key = `transmitter_base${i}_mm`;
-                    if (device[key] !== undefined && device[key] !== null) {
-                        const row = document.createElement('tr');
-                        const th  = document.createElement('td');
-                        th.textContent = `База передатчика ${i}, мм`;
-                        const td  = document.createElement('td');
-                        const inp = document.createElement('input');
-                        inp.type      = 'number';
-                        inp.className = 'input-field';
-                        inp.name      = key;
-                        inp.value     = device[key];
-                        inp.style.width = '100%';
-                        td.appendChild(inp);
-                        row.appendChild(th);
-                        row.appendChild(td);
-                        tbody.appendChild(row);
-                    }
-                }
-
-                // Поля "Дата создания записи", "Создатель записи", "Дата изменения записи", "Автор последнего изменения" выводятся последними
-                const fieldNamesLast = {
-                    record_date:     'Дата создания записи',
-                    creator_lastname:'Создатель записи', // Используется для отображения метки поля
-                    changed_at:      'Дата изменения записи',
-                    changer_lastname: 'Автор последнего изменения' // Используется для отображения метки поля
-                };
-
-                // --- Добавляем логику для получения автора последнего изменения ---
-                // Находим поле для автора последнего изменения по его метке
-                let authorLastChangeInput = null;
-
-                for (const key in fieldNamesLast) {
+            for (let i = 1; i <= 5; i++) {
+                const key = `transmitter_base${i}_mm`;
+                if (device[key] !== undefined && device[key] !== null) {
                     const row = document.createElement('tr');
                     const th  = document.createElement('td');
-                    th.textContent = fieldNamesLast[key];
+                    th.textContent = `База передатчика ${i}, мм`;
                     const td  = document.createElement('td');
                     const inp = document.createElement('input');
-                    inp.type      = 'text'; // Используем text, так как даты могут быть строками
+                    inp.type      = 'number';
                     inp.className = 'input-field';
-                    inp.name      = key; // Имя поля в инпуте
-                    inp.readOnly  = true; // Эти поля всегда readOnly
-                    inp.classList.add('readonly-field'); // Добавляем класс для стилизации readonly
-
-                    if (key === 'creator_lastname') {
-                         // Используем поле 'creator_lastname' из данных прибора (из таблицы device_identification)
-                         inp.value = device['creator_lastname'] || 'Нет данных';
-                    } else if (key === 'changer_lastname') {
-                         // Это поле мы будем заполнять после получения истории
-                         inp.value = 'Загрузка...'; // Временный текст
-                         authorLastChangeInput = inp; // Сохраняем ссылку на этот input
-                    } else if (key === 'changed_at' && device[key] == null) {
-                        // Специальная обработка для даты изменения, если она null
-                        inp.value = 'Нет данных';
-                    } else {
-                        // Для остальных полей используем значение из данных прибора
-                        inp.value = device[key] || '';
-                    }
-
+                    inp.name      = key;
+                    inp.value     = device[key];
                     inp.style.width = '100%';
                     td.appendChild(inp);
                     row.appendChild(th);
                     row.appendChild(td);
-                    tbody.appendChild(row);
+                    tbodyParams.appendChild(row);
                 }
-
-                // После создания таблицы, делаем запрос для получения автора последнего изменения
-                if (authorLastChangeInput) {
-                     fetch('fetch_device_history.php', {
-                         method: 'POST',
-                         headers: {
-                             'Content-Type': 'application/x-www-form-urlencoded'
-                         },
-                         // Отправляем device_id и history_type=parameters для получения истории параметров
-                         body: `device_id=${deviceId}&history_type=parameters`
-                     })
-                     .then(response => {
-                         if (!response.ok) {
-                             return response.text().then(text => {
-                                 throw new Error(`HTTP error ${response.status}: ${text}`)
-                             });
-                         }
-                         return response.json();
-                     })
-                     .then(history => {
-                         // Находим самую последнюю запись в истории параметров (она будет первой после сортировки DESC)
-                         const latestHistoryEntry = history && history.length > 0 ? history[0] : null;
-
-                         // Получаем creator_lastname из самой последней записи
-                         const authorName = latestHistoryEntry && latestHistoryEntry.creator_lastname
-                             ? latestHistoryEntry.creator_lastname
-                             : 'Нет данных';
-
-                         // Обновляем значение в поле "Автор последнего изменения"
-                         authorLastChangeInput.value = authorName;
-                     })
-                     .catch(error => {
-                         console.error('Ошибка при загрузке истории для получения автора изменения:', error);
-                         // В случае ошибки устанавливаем "Нет данных"
-                         if (authorLastChangeInput) {
-                              authorLastChangeInput.value = 'Ошибка загрузки';
-                         }
-                     });
-                }
-                // --- Конец логики получения автора последнего изменения ---
-
-
-                table.appendChild(tbody);
-                paramsSection.appendChild(table);
-
-                // Кнопки "Сохранить", "История", "Экспорт"
-                const saveButton   = document.createElement('button');
-                saveButton.type    = 'button';
-                saveButton.textContent = 'Сохранить изменения';
-                saveButton.classList.add('button', 'button-primary', 'save-device-changes-btn'); // Новые классы для стилизации
-                saveButton.dataset.deviceId = device.id;
-                // Передаем список плат для удаления в функцию сохранения
-                saveButton.addEventListener('click', () => saveDeviceChanges(device.id, boardsToDelete));
-
-                const historyButton = document.createElement('button');
-                historyButton.type  = 'button';
-                historyButton.textContent = 'Посмотреть историю записей';
-                historyButton.classList.add('button', 'button-secondary', 'view-history-btn'); // Новые классы для стилизации
-                historyButton.dataset.deviceId = device.id;
-                historyButton.addEventListener('click', () => fetchDeviceHistory(device.id));
-
-                const btnContainer = document.createElement('div');
-                btnContainer.className = 'mode-buttons mt-3'; // Используем класс mode-buttons
-                btnContainer.style.justifyContent = 'flex-start'; // Выравнивание кнопок
-                btnContainer.appendChild(saveButton);
-                btnContainer.appendChild(historyButton);
-                btnContainer.appendChild(exportButton);
-
-                // Сборка и вставка
-                deviceDiv.appendChild(tabContainer);
-                deviceDiv.appendChild(paramsSection);
-                deviceDiv.appendChild(compositionSection);
-                deviceDiv.appendChild(btnContainer);
-
-                // Вставляем контейнер деталей прибора в соответствующий блок
-                if (document.getElementById('searchDeviceForm').classList.contains('active')) {
-                    searchResultDiv.appendChild(deviceDiv);
-                } else {
-                    deviceListDiv.appendChild(deviceDiv);
-                }
-
-                // Активируем кнопку "Параметры прибора" по умолчанию
-                 paramsButton.click();
-
-            } else {
-                // Если прибор не найден (хотя при поиске по ID это маловероятно, но для надежности)
-                if (document.getElementById('searchDeviceForm').classList.contains('active')) {
-                    searchResultDiv.innerHTML = '<p>Прибор не найден</p>';
-                } else {
-                    deviceListDiv.innerHTML = '<p>Прибор не найден</p>';
-                }
-                 selectedDeviceId = null;
-                 selectedSerialNumber = null;
-                 selectedCaseNumber = null;
-                 selectedDeviceType = null;
-                 localStorage.removeItem('selectedDevice');
-                  // Деактивируем вкладки, кроме первой
-                 tabItems.forEach(tabItem => {
-                      if (!tabItem.classList.contains('active')) {
-                           tabItem.classList.add('disabled');
-                      }
-                 });
-                  // Скрываем подвкладки родительских вкладок
-                  document.querySelectorAll('.parent-tab').forEach(parentTab => {
-                      parentTab.classList.remove('active');
-                      const subTabs = parentTab.querySelector('.sub-tabs');
-                      if (subTabs) {
-                          subTabs.style.display = 'none';
-                      }
-                  });
             }
+
+            const fieldNamesLast = {
+                record_date:     'Дата создания записи',
+                creator_lastname:'Создатель записи',
+                changed_at:      'Дата изменения записи',
+                changer_lastname: 'Автор последнего изменения'
+            };
+            let authorLastChangeInput = null;
+
+            for (const key in fieldNamesLast) {
+                const row = document.createElement('tr');
+                const th  = document.createElement('td');
+                th.textContent = fieldNamesLast[key];
+                const td  = document.createElement('td');
+                const inp = document.createElement('input');
+                inp.type      = 'text';
+                inp.className = 'input-field readonly-field'; // Добавлен readonly-field для стилизации
+                inp.name      = key;
+                inp.readOnly  = true;
+
+                if (key === 'creator_lastname') {
+                     inp.value = device['creator_lastname'] || 'Нет данных';
+                } else if (key === 'changer_lastname') {
+                     inp.value = 'Загрузка...';
+                     authorLastChangeInput = inp;
+                } else if (key === 'changed_at' && device[key] == null) {
+                    inp.value = 'Нет данных';
+                } else {
+                    inp.value = device[key] || '';
+                }
+                inp.style.width = '100%';
+                td.appendChild(inp);
+                row.appendChild(th);
+                row.appendChild(td);
+                tbodyParams.appendChild(row);
+            }
+
+            if (authorLastChangeInput) {
+                 fetch('fetch_device_history.php', {
+                     method: 'POST',
+                     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                     body: `device_id=${deviceId}&history_type=parameters`
+                 })
+                 .then(response => {
+                     if (!response.ok) {
+                         return response.text().then(text => { throw new Error(`HTTP error ${response.status}: ${text}`) });
+                     }
+                     return response.json();
+                 })
+                 .then(history => {
+                     const latestHistoryEntry = history && history.length > 0 ? history[0] : null;
+                     const authorName = latestHistoryEntry && latestHistoryEntry.creator_lastname ? latestHistoryEntry.creator_lastname : 'Нет данных';
+                     authorLastChangeInput.value = authorName;
+                 })
+                 .catch(error => {
+                     console.error('Ошибка при загрузке истории для получения автора изменения:', error);
+                     if (authorLastChangeInput) authorLastChangeInput.value = 'Ошибка загрузки';
+                 });
+            }
+
+            tableParams.appendChild(tbodyParams);
+            paramsSection.appendChild(tableParams);
+
+            const saveButton   = document.createElement('button');
+            saveButton.type    = 'button';
+            saveButton.textContent = 'Сохранить изменения';
+            saveButton.classList.add('button', 'button-primary', 'save-device-changes-btn');
+            saveButton.dataset.deviceId = device.id;
+            saveButton.addEventListener('click', () => {
+                // Предполагается, что функция saveDeviceChanges определена где-то еще
+                // и boardsToDelete доступна ей (например, через замыкание или как глобальная переменная, управляемая в showDeviceData)
+                if (typeof saveDeviceChanges === 'function') {
+                     saveDeviceChanges(device.id, boardsToDelete);
+                } else {
+                    console.error('Function saveDeviceChanges is not defined.');
+                }
+            });
+
+
+            const historyButton = document.createElement('button');
+            historyButton.type  = 'button';
+            historyButton.textContent = 'Посмотреть историю записей';
+            historyButton.classList.add('button', 'button-secondary', 'view-history-btn');
+            historyButton.dataset.deviceId = device.id;
+            historyButton.addEventListener('click', () => {
+                // Предполагается, что функция fetchDeviceHistory определена где-то еще
+                 if (typeof fetchDeviceHistory === 'function') {
+                    fetchDeviceHistory(device.id);
+                 } else {
+                    console.error('Function fetchDeviceHistory is not defined.');
+                 }
+            });
+
+
+            const btnContainer = document.createElement('div');
+            btnContainer.className = 'mode-buttons mt-3';
+            btnContainer.style.justifyContent = 'flex-start';
+            btnContainer.appendChild(saveButton);
+            btnContainer.appendChild(historyButton);
+            btnContainer.appendChild(exportButton);
+
+            deviceDiv.appendChild(tabContainer);
+            deviceDiv.appendChild(paramsSection);
+            deviceDiv.appendChild(compositionSection);
+            deviceDiv.appendChild(btnContainer);
+
+            const targetDisplayDiv = document.getElementById('searchDeviceForm').classList.contains('active') ? searchResultDiv : deviceListDiv;
+            if (targetDisplayDiv) {
+                targetDisplayDiv.appendChild(deviceDiv);
+            }
+
+
+            paramsButton.click();
+
         })
         .catch(error => {
             console.error('Ошибка при отображении данных прибора:', error);
-            const target = document.getElementById('searchDeviceForm').classList.contains('active')
-                ? searchResultDiv
-                : deviceListDiv;
-            target.innerHTML = `<p class="error-message">Произошла ошибка при отображении данных прибора: ${error.message}</p>`;
-             selectedDeviceId = null;
-             selectedSerialNumber = null;
-             selectedCaseNumber = null;
-             selectedDeviceType = null;
-             localStorage.removeItem('selectedDevice');
-              // Деактивируем вкладки, кроме первой
-             tabItems.forEach(tabItem => {
-                  if (!tabItem.classList.contains('active')) {
-                       tabItem.classList.add('disabled');
-                  }
-             });
-              // Скрываем подвкладки родительских вкладок
-              document.querySelectorAll('.parent-tab').forEach(parentTab => {
-                  parentTab.classList.remove('active');
-                  const subTabs = parentTab.querySelector('.sub-tabs');
-                  if (subTabs) {
-                      subTabs.style.display = 'none';
-                  }
-              });
+            const target = document.getElementById('searchDeviceForm').classList.contains('active') ? searchResultDiv : deviceListDiv;
+            if (target) {
+                target.innerHTML = `<p class="error-message">Произошла ошибка при отображении данных прибора: ${error.message}</p>`;
+            }
+            selectedDeviceId = null;
+            selectedSerialNumber = null;
+            selectedCaseNumber = null;
+            selectedDeviceType = null;
+            localStorage.removeItem('selectedDevice');
+            if (typeof tabItems !== 'undefined') { // Проверяем, определена ли tabItems
+                tabItems.forEach(tabItem => {
+                    if (!tabItem.classList.contains('active')) {
+                        tabItem.classList.add('disabled');
+                    }
+                });
+            }
+            document.querySelectorAll('.parent-tab').forEach(parentTab => {
+                parentTab.classList.remove('active');
+                const subTabs = parentTab.querySelector('.sub-tabs');
+                if (subTabs) subTabs.style.display = 'none';
+            });
         });
     }
 

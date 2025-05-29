@@ -1922,52 +1922,89 @@ button:disabled {
     background-color: var(--bg-table-stripe); /* Чередование */
 }
 
-/* Стили для контейнера ввода удаления платы */
-.delete-board-input-container {
-    display: flex; /* Используем flexbox для выравнивания элементов в строку */
-    align-items: center; /* Выравниваем элементы по центру по вертикали */
-    gap: 10px; /* Пространство между полем ввода и кнопкой */
-    padding: 10px;
-    border: 1px solid #ccc; /* Легкая рамка */
-    border-radius: 4px; /* Скругленные углы */
-    background-color: #f9f9f9; /* Светлый фон */
-    max-width: 400px; /* Ограничиваем ширину контейнера */
+
+/* ==========================================================================
+   Стили для нового интерфейса удаления плат
+   ========================================================================== */
+
+/* Контейнер для выбора платы к удалению */
+.delete-board-selection-container {
+  display: flex; /* Используем flex для расположения элементов в строку и управления выравниванием */
+  flex-direction: column; /* Элементы располагаются вертикально */
+  gap: 10px; /* Пространство между элементами */
+  padding: 15px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  background-color: var(--bg-table-stripe); /* Слегка отличающийся фон для выделения */
+  margin-top: 15px; /* Отступ сверху от кнопок "Добавить/Удалить плату" */
+  max-width: 450px; /* Ограничиваем ширину для лучшего вида */
+  box-shadow: var(--shadow-sm);
 }
 
-/* Стили для поля ввода названия платы */
-.delete-board-input-container .input-field.delete-board-input {
-    flex-grow: 1; /* Поле ввода занимает все доступное пространство */
-    padding: 8px;
-    border: 1px solid #bbb;
-    border-radius: 4px;
-    font-size: 1rem;
+/* Метка для выпадающего списка */
+.delete-board-selection-container .form-label {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin-bottom: 0; /* Убираем стандартный отступ у label */
 }
 
-/* Стили для кнопки подтверждения удаления */
-.delete-board-input-container .button-danger {
-    /* Используем стандартный класс button-danger, если он определен в вашем CSS */
-    /* Если нет, можно добавить базовые стили */
-    background-color: #dc3545; /* Красный цвет для опасных действий */
-    color: white;
-    border: none;
-    padding: 8px 15px;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: background-color 0.2s ease;
+/* Выпадающий список для выбора платы */
+.delete-board-selection-container .delete-board-select {
+  width: 100%;
+  padding: 10px 12px;
+  font-size: 14px;
+  border: 1px solid var(--border-color-input);
+  border-radius: var(--border-radius);
+  background-color: var(--bg-input);
+  color: var(--text-primary);
+  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+  appearance: none; /* Убираем стандартный вид */
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 16px 12px;
 }
 
-.delete-board-input-container .button-danger:hover {
-    background-color: #c82333; /* Темнее при наведении */
+.delete-board-selection-container .delete-board-select:focus {
+  border-color: var(--border-color-focus);
+  box-shadow: 0 0 0 3px rgba(44, 62, 80, 0.15);
+  outline: none;
 }
 
-/* Стили для строк, помеченных к удалению */
-.pending-deletion {
-    opacity: 0.5; /* Сделать полупрозрачной */
-    text-decoration: line-through; /* Перечеркнуть текст */
-    background-color: #ffebee; /* Светло-красный фон */
-    /* Можете добавить другие стили, например, рамку */
-    /* border: 1px dashed red; */
+/* Контейнер для кнопок "Подтвердить" и "Отмена" */
+.delete-board-actions {
+  display: flex;
+  gap: 10px; /* Пространство между кнопками */
+  margin-top: 5px; /* Небольшой отступ сверху */
+  justify-content: flex-end; /* Кнопки справа */
 }
+
+/* Стили для кнопок внутри .delete-board-actions (используют общие классы .button) */
+.delete-board-actions .button {
+  padding: 8px 16px; /* Немного уменьшенный padding для кнопок в этом блоке */
+  font-size: 14px;
+}
+
+/* Класс для строк, помеченных к удалению (если еще не определен или требует корректировки) */
+.pending-deletion td { /* Применяем стили к ячейкам строки */
+  opacity: 0.6;
+  text-decoration: line-through;
+  background-color: #ffebee !important; /* Светло-красный фон, !important для переопределения чередующихся строк */
+  color: #c62828; /* Темно-красный текст */
+}
+
+.pending-deletion input {
+    pointer-events: none; /* Запрещаем взаимодействие с инпутами в помеченной строке */
+}
+
+/* Стили для контейнера кнопок "Добавить плату" / "Удалить плату" */
+.composition-actions.mode-buttons {
+    /* Стили уже должны быть определены в вашем файле, но можно добавить специфичные отступы, если нужно */
+    margin-bottom: 10px; /* Уменьшаем отступ, если deleteBoardSelectionContainer появляется сразу под ним */
+}
+
+
 
 /* Стили для измененных значений в истории */
 .changed-value {
