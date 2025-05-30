@@ -325,21 +325,43 @@ if ($is_logged_in) {
                 </div>
 
                 <div id="searchDeviceForm">
-                    <h3>Поиск прибора</h3>
-                    <div class="params-container">
-                        <div class="form-group">
-                            <label for="searchSerialNumber" class="param-label"><i class="fas fa-barcode"></i> Серийный номер</label>
-                            <input type="text" id="searchSerialNumber" placeholder="Введите серийный номер">
+                    <div class="device-params-section">
+                        <h3 class="section-title">Поиск прибора</h3>
+
+                        <div class="params-container">
+                            <div class="form-group">
+                                <label for="searchSerialNumber" class="param-label">
+                                    <i class="fas fa-barcode param-icon"></i> Серийный номер
+                                </label>
+                                <div class="param-input-wrapper">
+                                    <input type="text" id="searchSerialNumber"
+                                           class="input-field"
+                                           placeholder="Введите серийный номер">
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="searchCaseNumber" class="param-label">
+                                    <i class="fas fa-cube param-icon"></i> Номер корпуса
+                                </label>
+                                <div class="param-input-wrapper">
+                                    <input type="text" id="searchCaseNumber"
+                                           class="input-field"
+                                           placeholder="Введите номер корпуса">
+                                </div>
+                            </div>
                         </div>
-                        <div class="form-group">
-                            <label for="searchCaseNumber" class="param-label"><i class="fas fa-cube"></i> Номер корпуса</label>
-                            <input type="text" id="searchCaseNumber" placeholder="Введите номер корпуса">
+
+                        <div class="action-buttons">
+                            <button type="button" id="searchDeviceButton"
+                                    class="button button-primary">
+                                <i class="fas fa-search"></i> Найти прибор
+                            </button>
                         </div>
                     </div>
-                    <button type="button" id="searchDeviceButton" class="button button-primary">
-                        <i class="fas fa-search"></i> Найти прибор
-                    </button>
-                    <div id="searchResult" class="result-container mt-4"></div>
+
+                    <div id="searchResult" class="result-container mt-4">
+                    </div>
                 </div>
 
                 <div id="deviceHistory" class="mt-4"></div>
