@@ -1866,6 +1866,14 @@ button:disabled {
     color: var(--text-primary);
 }
 
+.cell-valid {
+    background-color: var(--bg-success-light);
+}
+
+.cell-invalid {
+    background-color: var(--bg-danger-light);
+}
+
 .history-field-label {
     font-weight: 600;
     color: var(--primary-color);
@@ -2686,6 +2694,22 @@ button:disabled {
         padding: 8px 10px;
         font-size: 0.9rem;
     }
+}
+
+/* Стили для подсветки ячеек в таблице испытаний (вкладка 3) */
+.nested-table td.tolerance-valid {
+  background-color: rgba(25, 135, 84, 0.15) !important; /* Светло-зеленый фон (из --success-color) */
+  /* color: var(--success-color); */ /* Можно раскомментировать, если нужен цвет текста */
+}
+
+.nested-table td.tolerance-invalid {
+  background-color: rgba(220, 53, 69, 0.15) !important; /* Светло-красный фон (из --danger-color) */
+  /* color: var(--danger-color); */ /* Можно раскомментировать, если нужен цвет текста */
+}
+
+/* Стиль для ячеек, где допуск не определен или значение нечисловое/пустое */
+.nested-table td.no-highlight {
+  background-color: transparent !important;
 }
 
 #viewDeviceParams,

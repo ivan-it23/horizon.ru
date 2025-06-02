@@ -268,8 +268,8 @@ if ($is_logged_in) {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <tr><td>Серийный номер</td><td><input type="number" name="serial_number"></td></tr>
-                                    <tr><td>Номер корпуса</td><td><input type="number" name="case_number"></td></tr>
+                                    <tr><td>Серийный номер</td><td><input type="text" name="serial_number"></td></tr>
+                                    <tr><td>Номер корпуса</td><td><input type="text" name="case_number"></td></tr>
                                     <tr><td>Длина, мм</td><td><input type="number" name="length_mm"></td></tr>
                                     <tr><td>Диаметр, мм</td><td><input type="number" name="diameter_mm"></td></tr>
                                     <tr><td>Резьба верхняя</td><td><input type="text" name="upper_thread"></td></tr>
@@ -1847,7 +1847,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 inp.name      = key;
                 inp.value     = device[key] || '';
                 inp.style.width = '100%';
-                 if (key === 'id' || key === 'device_type' || key === 'serial_number' || key === 'case_number') {
+                 if (key === 'id' || key === 'device_type') {
                      inp.readOnly = true;
                      inp.classList.add('readonly-field');
                  }
@@ -2485,434 +2485,436 @@ document.addEventListener('DOMContentLoaded', function () {
     // --- Логика отображения истории изменений прибора (Tab 1) ---
 
 
-// --- Логика отображения истории изменений прибора (Tab 1) ---
-function fetchDeviceHistory(deviceId, initialHistoryType = 'parameters') {
-    const deviceHistoryDiv = document.getElementById('deviceHistory');
-    if (!deviceHistoryDiv) {
-        console.error("Элемент #deviceHistory не найден!");
-        return;
-    }
-
-    const showHistoryBtn = document.querySelector(
-        `.view-history-btn[data-device-id="${deviceId}"]`
-    );
-
-    // Проверяем, если история для этого прибора и типа уже отображается, и кнопка активна, то скрываем ее
-    const isCurrentlyShowingThisHistory = deviceHistoryDiv.style.display !== 'none' &&
-                                          deviceHistoryDiv.dataset.currentHistoryDeviceId === deviceId.toString() &&
-                                          deviceHistoryDiv.dataset.currentHistoryType === initialHistoryType;
-
-    if (isCurrentlyShowingThisHistory && showHistoryBtn && showHistoryBtn.textContent === 'Скрыть историю изменений') {
-        deviceHistoryDiv.style.display = 'none';
-        deviceHistoryDiv.innerHTML = '';
-        if (showHistoryBtn) {
-            showHistoryBtn.textContent = 'Посмотреть историю записей';
+    // --- Логика отображения истории изменений прибора (Tab 1) ---
+    function fetchDeviceHistory(deviceId, initialHistoryType = 'parameters') {
+        const deviceHistoryDiv = document.getElementById('deviceHistory');
+        if (!deviceHistoryDiv) {
+            console.error("Элемент #deviceHistory не найден!");
+            return;
         }
-        delete deviceHistoryDiv.dataset.currentHistoryDeviceId;
-        delete deviceHistoryDiv.dataset.currentHistoryType;
-        return;
-    }
 
-    deviceHistoryDiv.style.display = 'block';
-    deviceHistoryDiv.dataset.currentHistoryDeviceId = deviceId;
-    deviceHistoryDiv.dataset.currentHistoryType = initialHistoryType;
+        const showHistoryBtn = document.querySelector(
+            `.view-history-btn[data-device-id="${deviceId}"]`
+        );
 
-    if (showHistoryBtn) {
-        showHistoryBtn.textContent = 'Скрыть историю изменений';
-    }
+        // Проверяем, если история для этого прибора и типа уже отображается, и кнопка активна, то скрываем ее
+        const isCurrentlyShowingThisHistory = deviceHistoryDiv.style.display !== 'none' &&
+                                              deviceHistoryDiv.dataset.currentHistoryDeviceId === deviceId.toString() &&
+                                              deviceHistoryDiv.dataset.currentHistoryType === initialHistoryType;
 
-    deviceHistoryDiv.innerHTML = ''; // Очищаем перед отрисовкой
-
-    // Создаем кнопки для переключения типа истории (Параметры/Состав)
-    const toggleDiv = document.createElement('div');
-    toggleDiv.className = 'mode-buttons history-toggle-buttons'; // Используем существующий класс для стилизации
-    toggleDiv.style.marginBottom = '15px'; // Отступ снизу
-
-    const btnParameters = document.createElement('button');
-    btnParameters.textContent = 'Параметры прибора';
-    btnParameters.className = 'button button-secondary tab-button'; // Стилизация как у других кнопок-табов
-    btnParameters.dataset.historyType = 'parameters';
-
-    const btnComposition = document.createElement('button');
-    btnComposition.textContent = 'Состав прибора';
-    btnComposition.className = 'button button-secondary tab-button';
-    btnComposition.dataset.historyType = 'composition';
-
-    // Устанавливаем активную кнопку в зависимости от initialHistoryType
-    if (initialHistoryType === 'composition') {
-        btnComposition.classList.add('active');
-    } else {
-        btnParameters.classList.add('active');
-    }
-
-    // Контейнер для чекбоксов (только для истории параметров)
-    const checkboxesDiv = document.createElement('div');
-    checkboxesDiv.id = 'historyParamsCheckboxes';
-    checkboxesDiv.className = 'history-options'; // Класс для возможных стилей
-    checkboxesDiv.style.marginTop = '10px';
-    checkboxesDiv.style.display = (initialHistoryType === 'parameters') ? 'flex' : 'none'; // Показываем только для параметров
-    checkboxesDiv.style.gap = '20px'; // Расстояние между чекбоксами
-    checkboxesDiv.style.flexWrap = 'wrap'; // Перенос на новую строку при необходимости
-
-    // Чекбокс "Посмотреть полные формы"
-    const fullViewLabel = document.createElement('label');
-    fullViewLabel.className = 'history-option-label';
-    const fullViewCheckbox = document.createElement('input');
-    fullViewCheckbox.type = 'radio';
-    fullViewCheckbox.id = 'historyFullViewCheckbox';
-    fullViewCheckbox.name = 'historyViewType'; // Для группировки радиокнопок
-    fullViewCheckbox.value = 'full';
-    fullViewCheckbox.className = 'history-option-radio';
-    fullViewCheckbox.checked = true; // По умолчанию выбран полный вид
-    fullViewLabel.appendChild(fullViewCheckbox);
-    fullViewLabel.appendChild(document.createTextNode(' Посмотреть полные формы'));
-    checkboxesDiv.appendChild(fullViewLabel);
-
-    // Чекбокс "Посмотреть только изменения"
-    const changesOnlyLabel = document.createElement('label');
-    changesOnlyLabel.className = 'history-option-label';
-    const changesOnlyCheckbox = document.createElement('input');
-    changesOnlyCheckbox.type = 'radio';
-    changesOnlyCheckbox.id = 'historyChangesOnlyCheckbox';
-    changesOnlyCheckbox.name = 'historyViewType';
-    changesOnlyCheckbox.value = 'changes';
-    changesOnlyCheckbox.className = 'history-option-radio';
-    changesOnlyLabel.appendChild(changesOnlyCheckbox);
-    changesOnlyLabel.appendChild(document.createTextNode(' Посмотреть только изменения'));
-    checkboxesDiv.appendChild(changesOnlyLabel);
-
-    // Контейнер для самого контента истории
-    const historyContentDiv = document.createElement('div');
-    historyContentDiv.id = 'historyActualContent';
-    historyContentDiv.className = 'history-content'; // Класс для возможных стилей
-
-    // Добавляем элементы управления в главный div истории
-    toggleDiv.appendChild(btnParameters);
-    toggleDiv.appendChild(btnComposition);
-    deviceHistoryDiv.appendChild(toggleDiv);
-    deviceHistoryDiv.appendChild(checkboxesDiv); // Добавляем чекбоксы
-    deviceHistoryDiv.appendChild(historyContentDiv);
-
-    // Обработчики для кнопок переключения типа истории
-    [btnParameters, btnComposition].forEach(btn => {
-        btn.addEventListener('click', function () {
-            // Снимаем класс active со всех кнопок и добавляем текущей
-            toggleDiv.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
-            this.classList.add('active');
-            const historyType = this.dataset.historyType;
-            deviceHistoryDiv.dataset.currentHistoryType = historyType; // Обновляем тип в dataset
-
-            // Показываем/скрываем чекбоксы в зависимости от типа истории
-            checkboxesDiv.style.display = (historyType === 'parameters') ? 'flex' : 'none';
-
-            loadHistory(historyType); // Загружаем соответствующую историю
-        });
-    });
-
-    // Обработчики для радиокнопок режима просмотра (только для параметров)
-    [fullViewCheckbox, changesOnlyCheckbox].forEach(radio => {
-        radio.addEventListener('change', function() {
-            if (this.checked && deviceHistoryDiv.dataset.currentHistoryType === 'parameters') {
-                loadHistory('parameters'); // Перезагружаем историю параметров с новым режимом
+        if (isCurrentlyShowingThisHistory && showHistoryBtn && showHistoryBtn.textContent === 'Скрыть историю изменений') {
+            deviceHistoryDiv.style.display = 'none';
+            deviceHistoryDiv.innerHTML = '';
+            if (showHistoryBtn) {
+                showHistoryBtn.textContent = 'Посмотреть историю записей';
             }
+            delete deviceHistoryDiv.dataset.currentHistoryDeviceId;
+            delete deviceHistoryDiv.dataset.currentHistoryType;
+            return;
+        }
+
+        deviceHistoryDiv.style.display = 'block';
+        deviceHistoryDiv.dataset.currentHistoryDeviceId = deviceId;
+        deviceHistoryDiv.dataset.currentHistoryType = initialHistoryType;
+
+        if (showHistoryBtn) {
+            showHistoryBtn.textContent = 'Скрыть историю изменений';
+        }
+
+        deviceHistoryDiv.innerHTML = ''; // Очищаем перед отрисовкой
+
+        // Создаем кнопки для переключения типа истории (Параметры/Состав)
+        const toggleDiv = document.createElement('div');
+        toggleDiv.className = 'mode-buttons history-toggle-buttons'; // Используем существующий класс для стилизации
+        toggleDiv.style.marginBottom = '15px'; // Отступ снизу
+
+        const btnParameters = document.createElement('button');
+        btnParameters.textContent = 'Параметры прибора';
+        btnParameters.className = 'button button-secondary tab-button'; // Стилизация как у других кнопок-табов
+        btnParameters.dataset.historyType = 'parameters';
+
+        const btnComposition = document.createElement('button');
+        btnComposition.textContent = 'Состав прибора';
+        btnComposition.className = 'button button-secondary tab-button';
+        btnComposition.dataset.historyType = 'composition';
+
+        // Устанавливаем активную кнопку в зависимости от initialHistoryType
+        if (initialHistoryType === 'composition') {
+            btnComposition.classList.add('active');
+        } else {
+            btnParameters.classList.add('active');
+        }
+
+        // Контейнер для чекбоксов (только для истории параметров)
+        const checkboxesDiv = document.createElement('div');
+        checkboxesDiv.id = 'historyParamsCheckboxes';
+        checkboxesDiv.className = 'history-options'; // Класс для возможных стилей
+        checkboxesDiv.style.marginTop = '10px';
+        checkboxesDiv.style.display = (initialHistoryType === 'parameters') ? 'flex' : 'none'; // Показываем только для параметров
+        checkboxesDiv.style.gap = '20px'; // Расстояние между чекбоксами
+        checkboxesDiv.style.flexWrap = 'wrap'; // Перенос на новую строку при необходимости
+
+        // Чекбокс "Посмотреть полные формы"
+        const fullViewLabel = document.createElement('label');
+        fullViewLabel.className = 'history-option-label';
+        const fullViewCheckbox = document.createElement('input');
+        fullViewCheckbox.type = 'radio';
+        fullViewCheckbox.id = 'historyFullViewCheckbox';
+        fullViewCheckbox.name = 'historyViewType'; // Для группировки радиокнопок
+        fullViewCheckbox.value = 'full';
+        fullViewCheckbox.className = 'history-option-radio';
+        fullViewCheckbox.checked = true; // По умолчанию выбран полный вид
+        fullViewLabel.appendChild(fullViewCheckbox);
+        fullViewLabel.appendChild(document.createTextNode(' Посмотреть полные формы'));
+        checkboxesDiv.appendChild(fullViewLabel);
+
+        // Чекбокс "Посмотреть только изменения"
+        const changesOnlyLabel = document.createElement('label');
+        changesOnlyLabel.className = 'history-option-label';
+        const changesOnlyCheckbox = document.createElement('input');
+        changesOnlyCheckbox.type = 'radio';
+        changesOnlyCheckbox.id = 'historyChangesOnlyCheckbox';
+        changesOnlyCheckbox.name = 'historyViewType';
+        changesOnlyCheckbox.value = 'changes';
+        changesOnlyCheckbox.className = 'history-option-radio';
+        changesOnlyLabel.appendChild(changesOnlyCheckbox);
+        changesOnlyLabel.appendChild(document.createTextNode(' Посмотреть только изменения'));
+        checkboxesDiv.appendChild(changesOnlyLabel);
+
+        // Контейнер для самого контента истории
+        const historyContentDiv = document.createElement('div');
+        historyContentDiv.id = 'historyActualContent';
+        historyContentDiv.className = 'history-content'; // Класс для возможных стилей
+
+        // Добавляем элементы управления в главный div истории
+        toggleDiv.appendChild(btnParameters);
+        toggleDiv.appendChild(btnComposition);
+        deviceHistoryDiv.appendChild(toggleDiv);
+        deviceHistoryDiv.appendChild(checkboxesDiv); // Добавляем чекбоксы
+        deviceHistoryDiv.appendChild(historyContentDiv);
+
+        // Обработчики для кнопок переключения типа истории
+        [btnParameters, btnComposition].forEach(btn => {
+            btn.addEventListener('click', function () {
+                // Снимаем класс active со всех кнопок и добавляем текущей
+                toggleDiv.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                const historyType = this.dataset.historyType;
+                deviceHistoryDiv.dataset.currentHistoryType = historyType; // Обновляем тип в dataset
+
+                // Показываем/скрываем чекбоксы в зависимости от типа истории
+                checkboxesDiv.style.display = (historyType === 'parameters') ? 'flex' : 'none';
+
+                loadHistory(historyType); // Загружаем соответствующую историю
+            });
         });
-    });
 
-    // Функция загрузки и отображения истории (вызывается при первом показе и при переключении)
-    function loadHistory(historyType) {
-        historyContentDiv.innerHTML = '<p>Загрузка истории...</p>'; // Индикатор загрузки
+        // Обработчики для радиокнопок режима просмотра (только для параметров)
+        [fullViewCheckbox, changesOnlyCheckbox].forEach(radio => {
+            radio.addEventListener('change', function() {
+                if (this.checked && deviceHistoryDiv.dataset.currentHistoryType === 'parameters') {
+                    loadHistory('parameters'); // Перезагружаем историю параметров с новым режимом
+                }
+            });
+        });
 
-        // Определяем режим просмотра (только для параметров)
-        const viewMode = historyType === 'parameters' ? (document.getElementById('historyChangesOnlyCheckbox').checked ? 'changes' : 'full') : 'full'; // Для состава всегда 'full'
+        // Функция загрузки и отображения истории (вызывается при первом показе и при переключении)
+        function loadHistory(historyType) {
+            historyContentDiv.innerHTML = '<p>Загрузка истории...</p>'; // Индикатор загрузки
 
-        fetch('fetch_device_history.php', { // Убедитесь, что URL правильный
-            method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: `device_id=${deviceId}&history_type=${historyType}`
-        })
-        .then(response => {
-             if (!response.ok) {
-                 // Пытаемся прочитать текст ошибки, если он есть
-                 return response.text().then(text => {
-                     throw new Error(`HTTP error ${response.status}: ${text || response.statusText}`);
-                 });
-             }
-             return response.json();
-        })
-        .then(historyData => {
-            historyContentDiv.innerHTML = ''; // Очищаем индикатор загрузки
+            // Определяем режим просмотра (только для параметров)
+            const viewMode = historyType === 'parameters' ? (document.getElementById('historyChangesOnlyCheckbox').checked ? 'changes' : 'full') : 'full'; // Для состава всегда 'full'
 
-            if (historyData.error) {
+            fetch('fetch_device_history.php', { // Убедитесь, что URL правильный
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: `device_id=${deviceId}&history_type=${historyType}`
+            })
+            .then(response => {
+                 if (!response.ok) {
+                     // Пытаемся прочитать текст ошибки, если он есть
+                     return response.text().then(text => {
+                         throw new Error(`HTTP error ${response.status}: ${text || response.statusText}`);
+                     });
+                 }
+                 return response.json();
+            })
+            .then(historyData => {
+                historyContentDiv.innerHTML = ''; // Очищаем индикатор загрузки
+
+                if (historyData.error) {
+                    const errorMsg = document.createElement('p');
+                    errorMsg.className = 'error-message';
+                    errorMsg.textContent = `Ошибка: ${historyData.error}`;
+                    historyContentDiv.appendChild(errorMsg);
+                    return;
+                }
+
+                if (!historyData || historyData.length === 0) {
+                    const noHistoryMsg = document.createElement('p');
+                    noHistoryMsg.textContent = 'История изменений отсутствует.';
+                    historyContentDiv.appendChild(noHistoryMsg);
+                    return;
+                }
+
+                // Логика отображения для ИСТОРИИ ПАРАМЕТРОВ
+                if (historyType === 'parameters') {
+                    const fieldDisplayNames = {
+                        // Основные идентификационные поля
+                        device_type: 'Тип прибора',
+                        serial_number: 'Серийный номер',
+                        case_number: 'Номер корпуса',
+                        // Геометрические и физические параметры
+                        length_mm: 'Длина, мм',
+                        diameter_mm: 'Диаметр, мм',
+                        upper_thread: 'Резьба верхняя',
+                        lower_thread: 'Резьба нижняя',
+                        // Частотные характеристики
+                        frequency1_khz: 'Рабочая частота 1, кГц',
+                        frequency2_khz: 'Рабочая частота 2, кГц',
+                        // Базы приемников
+                        receiver_base1_mm: 'База приёмника 1, мм',
+                        receiver_base2_mm: 'База приёмника 2, мм',
+                        receiver_base3_mm: 'База приёмника 3, мм',
+                        // Базы передатчиков
+                        transmitter_base1_mm: 'База передатчика 1, мм',
+                        transmitter_base2_mm: 'База передатчика 2, мм',
+                        transmitter_base3_mm: 'База передатчика 3, мм',
+                        transmitter_base4_mm: 'База передатчика 4, мм',
+                        transmitter_base5_mm: 'База передатчика 5, мм',
+                        // Дата создания записи (из device_identification или device_history)
+                        record_date: 'Дата создания записи'
+                        // Поля 'creator_lastname' и 'changed_at' обрабатываются в заголовке записи
+                    };
+
+                    historyData.forEach((currentRecord, i) => {
+                        const isActualRecord = currentRecord.is_current === '1' || currentRecord.is_current === true;
+                        const recordContainer = document.createElement('div');
+                        recordContainer.className = 'history-record-item'; // Класс для общего стиля элемента истории
+                        if (isActualRecord) {
+                            recordContainer.classList.add('is-current'); // Новый класс для текущей записи
+                        }
+
+                        const recordHeader = document.createElement('div'); // Используем div вместо h5 для гибкости
+                        recordHeader.className = 'history-header'; // Класс для стилизации заголовка
+                        recordHeader.innerHTML = `
+                            <p>Дата: <strong>${currentRecord.changed_at ? htmlspecialchars(currentRecord.changed_at) : 'Неизвестно'}</strong></p>
+                            <p>Автор: <strong>${currentRecord.creator_lastname ? htmlspecialchars(currentRecord.creator_lastname) : 'Неизвестно'}</strong></p>
+                        `;
+                        recordContainer.appendChild(recordHeader);
+
+                        const table = document.createElement('table');
+                        table.className = 'data-table history-table'; // Используем существующие классы для таблиц
+                        const tbody = document.createElement('tbody');
+                        let hasChangesToShowForThisRecord = false; // Флаг, что в этой записи есть что показать (для режима "только изменения")
+
+                        // Итерация по ключам из fieldDisplayNames для сохранения порядка и фильтрации
+                        Object.keys(fieldDisplayNames).forEach(fieldKey => {
+                            const currentValueInRecord = currentRecord[fieldKey];
+                            const oldValue = currentRecord.diff_details ? currentRecord.diff_details[fieldKey] : undefined;
+
+                            // Пропускаем поля, если они NULL и не являются измененными
+                            if ((currentValueInRecord === null || currentValueInRecord === undefined || String(currentValueInRecord).trim() === '') && oldValue === undefined) {
+                                return; // Пропускаем строку, если значение NULL и не было изменено
+                            }
+
+                            // Если режим "только изменения" и поле не изменилось, пропускаем
+                            if (viewMode === 'changes' && oldValue === undefined && !isActualRecord) {
+                                return;
+                            }
+
+                            let displayValue = (currentValueInRecord !== null && currentValueInRecord !== undefined) ? htmlspecialchars(currentValueInRecord) : '-';
+                            let rowClass = '';
+                            let oldValueHtml = '';
+
+                            if (oldValue !== undefined) {
+                                rowClass = 'changed';
+                                // Форматируем старое значение: если оно было NULL, показываем "пусто", иначе само значение
+                                const formattedOldValue = (oldValue === null || oldValue === undefined || String(oldValue).trim() === '') ? 'пусто' : htmlspecialchars(oldValue);
+                                oldValueHtml = `<span class="history-old-value"> (${formattedOldValue})</span>`;
+                                hasChangesToShowForThisRecord = true;
+                            } else if (isActualRecord && (currentValueInRecord !== null && currentValueInRecord !== undefined && String(currentValueInRecord).trim() !== '')) {
+                                // Для актуальной записи, если значение не NULL, оно всегда отображается
+                                // Не добавляем класс 'changed' для актуальной записи, если она не была изменена
+                            } else if (currentValueInRecord === null || currentValueInRecord === undefined || String(currentValueInRecord).trim() === '') {
+                                // Если значение NULL и не было изменено (т.е. oldValue === undefined),
+                                // и мы дошли до этого места, значит, мы не в режиме "changes" или это актуальная запись.
+                                // В этом случае, если значение NULL, отображаем "-"
+                                displayValue = '-';
+                            }
+
+
+                            const row = document.createElement('tr');
+                            row.innerHTML = `
+                                <td>${htmlspecialchars(fieldDisplayNames[fieldKey])}</td>
+                                <td class="${rowClass}">${displayValue}${oldValueHtml}</td>
+                            `;
+                            tbody.appendChild(row);
+                        });
+
+                        // Добавляем запись в контейнер только если она актуальна ИЛИ (режим "полный" ИЛИ есть изменения)
+                        if (isActualRecord || viewMode === 'full' || hasChangesToShowForThisRecord) {
+                            table.appendChild(tbody);
+                            recordContainer.appendChild(table);
+                            historyContentDiv.appendChild(recordContainer);
+                        }
+                    });
+                } else if (historyType === 'composition') {
+                    const fieldDisplayNames = {
+                        board_name: 'Плата',
+                        type: 'Тип',
+                        version: 'Номер версии',
+                        serial_number: 'Серийный номер'
+                    };
+
+                    historyData.forEach(versionRecord => {
+                        const isCurrentVersion = versionRecord.is_current_version === true;
+                        const versionContainer = document.createElement('div');
+                        versionContainer.className = 'history-record-item';
+                        if (isCurrentVersion) {
+                            versionContainer.classList.add('is-current');
+                        }
+
+                        const versionHeader = document.createElement('div');
+                        versionHeader.className = 'history-header';
+                        versionHeader.innerHTML = `
+                            <p>Дата: <strong>${versionRecord.changed_at ? htmlspecialchars(versionRecord.changed_at) : 'Неизвестно'}</strong></p>
+                            <p>Автор: <strong>${versionRecord.creator_name ? htmlspecialchars(versionRecord.creator_name) : 'Неизвестно'}</strong></p>
+                        `;
+                        versionContainer.appendChild(versionHeader);
+
+                        const table = document.createElement('table');
+                        table.className = 'data-table history-table';
+                        const thead = document.createElement('thead');
+                        thead.innerHTML = '<tr><th>Плата</th><th>Тип</th><th>Номер версии</th><th>Серийный номер</th></tr>';
+                        table.appendChild(thead);
+                        const tbody = document.createElement('tbody');
+
+                        // Отображение плат для этой версии
+                        versionRecord.records.forEach(board => {
+                            const row = document.createElement('tr');
+                            row.innerHTML = `
+                                <td>${htmlspecialchars(board.board_name || '-')}</td>
+                                <td>${htmlspecialchars(board.type || '-')}</td>
+                                <td>${htmlspecialchars(board.version || '-')}</td>
+                                <td>${htmlspecialchars(board.serial_number || '-')}</td>
+                            `;
+                            tbody.appendChild(row);
+                        });
+
+                        // Отображение изменений (только если это не текущая версия и есть diff_details)
+                        if (!isCurrentVersion && versionRecord.diff_details) {
+                            const diffs = versionRecord.diff_details;
+
+                            // Платы, которые были ДОБАВЛЕНЫ (отсутствовали в этой исторической версии, но есть в следующей, более новой)
+                            // Сервер присылает их в diffs.removed
+                            if (diffs.removed && diffs.removed.length > 0) {
+                                const headerRow = tbody.insertRow();
+                                const headerCell = headerRow.insertCell();
+                                headerCell.colSpan = 4;
+                                headerCell.className = 'history-field-label';
+                                headerCell.textContent = 'Добавлено:'; // КОРРЕКТНО: Отображаем как "Добавлено"
+                                headerCell.style.backgroundColor = 'var(--corporate-yellow-light)';
+                                headerCell.style.fontWeight = 'bold';
+                                headerCell.style.color = 'var(--primary-color)';
+
+                                diffs.removed.forEach(board => {
+                                    const row = tbody.insertRow();
+                                    row.className = 'added'; // Стиль для добавленных
+                                    row.innerHTML = `
+                                        <td>${htmlspecialchars(board.board_name || '-')}</td>
+                                        <td>${htmlspecialchars(board.type || '-')}</td>
+                                        <td>${htmlspecialchars(board.version || '-')}</td>
+                                        <td>${htmlspecialchars(board.serial_number || '-')}</td>
+                                    `;
+                                });
+                            }
+
+                            // Платы, которые были УДАЛЕНЫ (присутствовали в этой исторической версии, но отсутствуют в следующей, более новой)
+                            // Сервер присылает их в diffs.added
+                            if (diffs.added && diffs.added.length > 0) {
+                                const headerRow = tbody.insertRow();
+                                const headerCell = headerRow.insertCell();
+                                headerCell.colSpan = 4;
+                                headerCell.className = 'history-field-label';
+                                headerCell.textContent = 'Удалено:'; // КОРРЕКТНО: Отображаем как "Удалено"
+                                headerCell.style.backgroundColor = 'var(--corporate-orange-light)';
+                                headerCell.style.fontWeight = 'bold';
+                                headerCell.style.color = 'var(--primary-color)';
+
+                                diffs.added.forEach(board => {
+                                    const row = tbody.insertRow();
+                                    row.className = 'removed'; // Стиль для удаленных
+                                    row.innerHTML = `
+                                        <td>${htmlspecialchars(board.board_name || '-')}</td>
+                                        <td>${htmlspecialchars(board.type || '-')}</td>
+                                        <td>${htmlspecialchars(board.version || '-')}</td>
+                                        <td>${htmlspecialchars(board.serial_number || '-')}</td>
+                                    `;
+                                });
+                            }
+
+                            // Измененные платы
+                            if (diffs.changed && diffs.changed.length > 0) {
+                                const headerRow = tbody.insertRow();
+                                const headerCell = headerRow.insertCell();
+                                headerCell.colSpan = 4;
+                                headerCell.className = 'history-field-label';
+                                headerCell.textContent = 'Изменено:';
+                                headerCell.style.backgroundColor = 'var(--corporate-yellow-light)'; // Светлый желтый фон для заголовка
+                                headerCell.style.fontWeight = 'bold';
+                                headerCell.style.color = 'var(--primary-color)';
+
+                                diffs.changed.forEach(change => {
+                                    const row = tbody.insertRow();
+                                    row.innerHTML = `<td>${htmlspecialchars(change.board_name || '-')}</td>`;
+                                    const fields = ['type', 'version', 'serial_number'];
+                                    fields.forEach(field => {
+                                        const currentVal = (change.current_values[field] !== null && change.current_values[field] !== undefined) ? htmlspecialchars(change.current_values[field]) : '-';
+                                        const prevVal = change.previous_values[field];
+                                        let cellContent = currentVal;
+                                        let cellClass = '';
+                                        if (prevVal !== undefined) {
+                                            cellClass = 'changed';
+                                            const formattedPrevVal = (prevVal === null || prevVal === undefined || String(prevVal).trim() === '') ? 'пусто' : htmlspecialchars(prevVal);
+                                            cellContent += `<span class="history-old-value"> (${formattedPrevVal})</span>`;
+                                        }
+                                        const cell = document.createElement('td');
+                                        cell.className = cellClass;
+                                        cell.innerHTML = cellContent;
+                                        row.appendChild(cell);
+                                    });
+                                    tbody.appendChild(row);
+                                });
+                            }
+                        }
+
+                        table.appendChild(tbody);
+                        versionContainer.appendChild(table);
+                        historyContentDiv.appendChild(versionContainer);
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Ошибка при загрузке истории прибора:', error);
                 const errorMsg = document.createElement('p');
                 errorMsg.className = 'error-message';
-                errorMsg.textContent = `Ошибка: ${historyData.error}`;
+                errorMsg.textContent = `Произошла ошибка при загрузке истории: ${error.message}`;
+                historyContentDiv.innerHTML = '';
                 historyContentDiv.appendChild(errorMsg);
-                return;
-            }
+            });
+        }
 
-            if (!historyData || historyData.length === 0) {
-                const noHistoryMsg = document.createElement('p');
-                noHistoryMsg.textContent = 'История изменений отсутствует.';
-                historyContentDiv.appendChild(noHistoryMsg);
-                return;
-            }
-
-            // Логика отображения для ИСТОРИИ ПАРАМЕТРОВ
-            if (historyType === 'parameters') {
-                const fieldDisplayNames = {
-                    // Основные идентификационные поля
-                    device_type: 'Тип прибора',
-                    serial_number: 'Серийный номер',
-                    case_number: 'Номер корпуса',
-                    // Геометрические и физические параметры
-                    length_mm: 'Длина, мм',
-                    diameter_mm: 'Диаметр, мм',
-                    upper_thread: 'Резьба верхняя',
-                    lower_thread: 'Резьба нижняя',
-                    // Частотные характеристики
-                    frequency1_khz: 'Рабочая частота 1, кГц',
-                    frequency2_khz: 'Рабочая частота 2, кГц',
-                    // Базы приемников
-                    receiver_base1_mm: 'База приёмника 1, мм',
-                    receiver_base2_mm: 'База приёмника 2, мм',
-                    receiver_base3_mm: 'База приёмника 3, мм',
-                    // Базы передатчиков
-                    transmitter_base1_mm: 'База передатчика 1, мм',
-                    transmitter_base2_mm: 'База передатчика 2, мм',
-                    transmitter_base3_mm: 'База передатчика 3, мм',
-                    transmitter_base4_mm: 'База передатчика 4, мм',
-                    transmitter_base5_mm: 'База передатчика 5, мм',
-                    // Дата создания записи (из device_identification или device_history)
-                    record_date: 'Дата создания записи'
-                    // Поля 'creator_lastname' и 'changed_at' обрабатываются в заголовке записи
-                };
-
-                historyData.forEach((currentRecord, i) => {
-                    const isActualRecord = currentRecord.is_current === '1' || currentRecord.is_current === true;
-                    const recordContainer = document.createElement('div');
-                    recordContainer.className = 'history-record-item'; // Класс для общего стиля элемента истории
-                    if (isActualRecord) {
-                        recordContainer.classList.add('is-current'); // Новый класс для текущей записи
-                    }
-
-                    const recordHeader = document.createElement('div'); // Используем div вместо h5 для гибкости
-                    recordHeader.className = 'history-header'; // Класс для стилизации заголовка
-                    recordHeader.innerHTML = `
-                        <p>Дата: <strong>${currentRecord.changed_at ? htmlspecialchars(currentRecord.changed_at) : 'Неизвестно'}</strong></p>
-                        <p>Автор: <strong>${currentRecord.creator_lastname ? htmlspecialchars(currentRecord.creator_lastname) : 'Неизвестно'}</strong></p>
-                    `;
-                    recordContainer.appendChild(recordHeader);
-
-                    const table = document.createElement('table');
-                    table.className = 'data-table history-table'; // Используем существующие классы для таблиц
-                    const tbody = document.createElement('tbody');
-                    let hasChangesToShowForThisRecord = false; // Флаг, что в этой записи есть что показать (для режима "только изменения")
-
-                    // Итерация по ключам из fieldDisplayNames для сохранения порядка и фильтрации
-                    Object.keys(fieldDisplayNames).forEach(fieldKey => {
-                        const currentValueInRecord = currentRecord[fieldKey];
-                        const oldValue = currentRecord.diff_details ? currentRecord.diff_details[fieldKey] : undefined;
-
-                        // Пропускаем поля, если они NULL и не являются измененными
-                        if ((currentValueInRecord === null || currentValueInRecord === undefined || String(currentValueInRecord).trim() === '') && oldValue === undefined) {
-                            return; // Пропускаем строку, если значение NULL и не было изменено
-                        }
-
-                        // Если режим "только изменения" и поле не изменилось, пропускаем
-                        if (viewMode === 'changes' && oldValue === undefined && !isActualRecord) {
-                            return;
-                        }
-
-                        let displayValue = (currentValueInRecord !== null && currentValueInRecord !== undefined) ? htmlspecialchars(currentValueInRecord) : '-';
-                        let rowClass = '';
-                        let oldValueHtml = '';
-
-                        if (oldValue !== undefined) {
-                            rowClass = 'changed';
-                            // Форматируем старое значение: если оно было NULL, показываем "пусто", иначе само значение
-                            const formattedOldValue = (oldValue === null || oldValue === undefined || String(oldValue).trim() === '') ? 'пусто' : htmlspecialchars(oldValue);
-                            oldValueHtml = `<span class="history-old-value"> (${formattedOldValue})</span>`;
-                            hasChangesToShowForThisRecord = true;
-                        } else if (isActualRecord && (currentValueInRecord !== null && currentValueInRecord !== undefined && String(currentValueInRecord).trim() !== '')) {
-                            // Для актуальной записи, если значение не NULL, оно всегда отображается
-                            // Не добавляем класс 'changed' для актуальной записи, если она не была изменена
-                        } else if (currentValueInRecord === null || currentValueInRecord === undefined || String(currentValueInRecord).trim() === '') {
-                            // Если значение NULL и не было изменено (т.е. oldValue === undefined),
-                            // и мы дошли до этого места, значит, мы не в режиме "changes" или это актуальная запись.
-                            // В этом случае, если значение NULL, отображаем "-"
-                            displayValue = '-';
-                        }
-
-
-                        const row = document.createElement('tr');
-                        row.innerHTML = `
-                            <td>${htmlspecialchars(fieldDisplayNames[fieldKey])}</td>
-                            <td class="${rowClass}">${displayValue}${oldValueHtml}</td>
-                        `;
-                        tbody.appendChild(row);
-                    });
-
-                    // Добавляем запись в контейнер только если она актуальна ИЛИ (режим "полный" ИЛИ есть изменения)
-                    if (isActualRecord || viewMode === 'full' || hasChangesToShowForThisRecord) {
-                        table.appendChild(tbody);
-                        recordContainer.appendChild(table);
-                        historyContentDiv.appendChild(recordContainer);
-                    }
-                });
-            } else if (historyType === 'composition') {
-                const fieldDisplayNames = {
-                    board_name: 'Плата',
-                    type: 'Тип',
-                    version: 'Номер версии',
-                    serial_number: 'Серийный номер'
-                };
-
-                historyData.forEach(versionRecord => {
-                    const isCurrentVersion = versionRecord.is_current_version === true;
-                    const versionContainer = document.createElement('div');
-                    versionContainer.className = 'history-record-item';
-                    if (isCurrentVersion) {
-                        versionContainer.classList.add('is-current');
-                    }
-
-                    const versionHeader = document.createElement('div');
-                    versionHeader.className = 'history-header';
-                    versionHeader.innerHTML = `
-                        <p>Дата: <strong>${versionRecord.changed_at ? htmlspecialchars(versionRecord.changed_at) : 'Неизвестно'}</strong></p>
-                        <p>Автор: <strong>${versionRecord.creator_name ? htmlspecialchars(versionRecord.creator_name) : 'Неизвестно'}</strong></p>
-                    `;
-                    versionContainer.appendChild(versionHeader);
-
-                    const table = document.createElement('table');
-                    table.className = 'data-table history-table';
-                    const thead = document.createElement('thead');
-                    thead.innerHTML = '<tr><th>Плата</th><th>Тип</th><th>Номер версии</th><th>Серийный номер</th></tr>';
-                    table.appendChild(thead);
-                    const tbody = document.createElement('tbody');
-
-                    // Отображение плат для этой версии
-                    versionRecord.records.forEach(board => {
-                        const row = document.createElement('tr');
-                        row.innerHTML = `
-                            <td>${htmlspecialchars(board.board_name || '-')}</td>
-                            <td>${htmlspecialchars(board.type || '-')}</td>
-                            <td>${htmlspecialchars(board.version || '-')}</td>
-                            <td>${htmlspecialchars(board.serial_number || '-')}</td>
-                        `;
-                        tbody.appendChild(row);
-                    });
-
-                    // Отображение изменений (только если это не текущая версия и есть diff_details)
-                    if (!isCurrentVersion && versionRecord.diff_details) {
-                        const diffs = versionRecord.diff_details;
-
-                        // Платы, которые были ДОБАВЛЕНЫ (отсутствовали в этой исторической версии, но есть в следующей, более новой)
-                        // Сервер присылает их в diffs.removed
-                        if (diffs.removed && diffs.removed.length > 0) {
-                            const headerRow = tbody.insertRow();
-                            const headerCell = headerRow.insertCell();
-                            headerCell.colSpan = 4;
-                            headerCell.className = 'history-field-label';
-                            headerCell.textContent = 'Добавлено:'; // КОРРЕКТНО: Отображаем как "Добавлено"
-                            headerCell.style.backgroundColor = 'var(--corporate-yellow-light)';
-                            headerCell.style.fontWeight = 'bold';
-                            headerCell.style.color = 'var(--primary-color)';
-
-                            diffs.removed.forEach(board => {
-                                const row = tbody.insertRow();
-                                row.className = 'added'; // Стиль для добавленных
-                                row.innerHTML = `
-                                    <td>${htmlspecialchars(board.board_name || '-')}</td>
-                                    <td>${htmlspecialchars(board.type || '-')}</td>
-                                    <td>${htmlspecialchars(board.version || '-')}</td>
-                                    <td>${htmlspecialchars(board.serial_number || '-')}</td>
-                                `;
-                            });
-                        }
-
-                        // Платы, которые были УДАЛЕНЫ (присутствовали в этой исторической версии, но отсутствуют в следующей, более новой)
-                        // Сервер присылает их в diffs.added
-                        if (diffs.added && diffs.added.length > 0) {
-                            const headerRow = tbody.insertRow();
-                            const headerCell = headerRow.insertCell();
-                            headerCell.colSpan = 4;
-                            headerCell.className = 'history-field-label';
-                            headerCell.textContent = 'Удалено:'; // КОРРЕКТНО: Отображаем как "Удалено"
-                            headerCell.style.backgroundColor = 'var(--corporate-orange-light)';
-                            headerCell.style.fontWeight = 'bold';
-                            headerCell.style.color = 'var(--primary-color)';
-
-                            diffs.added.forEach(board => {
-                                const row = tbody.insertRow();
-                                row.className = 'removed'; // Стиль для удаленных
-                                row.innerHTML = `
-                                    <td>${htmlspecialchars(board.board_name || '-')}</td>
-                                    <td>${htmlspecialchars(board.type || '-')}</td>
-                                    <td>${htmlspecialchars(board.version || '-')}</td>
-                                    <td>${htmlspecialchars(board.serial_number || '-')}</td>
-                                `;
-                            });
-                        }
-
-                        // Измененные платы
-                        if (diffs.changed && diffs.changed.length > 0) {
-                            const headerRow = tbody.insertRow();
-                            const headerCell = headerRow.insertCell();
-                            headerCell.colSpan = 4;
-                            headerCell.className = 'history-field-label';
-                            headerCell.textContent = 'Изменено:';
-                            headerCell.style.backgroundColor = 'var(--corporate-yellow-light)'; // Светлый желтый фон для заголовка
-                            headerCell.style.fontWeight = 'bold';
-                            headerCell.style.color = 'var(--primary-color)';
-
-                            diffs.changed.forEach(change => {
-                                const row = tbody.insertRow();
-                                row.innerHTML = `<td>${htmlspecialchars(change.board_name || '-')}</td>`;
-                                const fields = ['type', 'version', 'serial_number'];
-                                fields.forEach(field => {
-                                    const currentVal = (change.current_values[field] !== null && change.current_values[field] !== undefined) ? htmlspecialchars(change.current_values[field]) : '-';
-                                    const prevVal = change.previous_values[field];
-                                    let cellContent = currentVal;
-                                    let cellClass = '';
-                                    if (prevVal !== undefined) {
-                                        cellClass = 'changed';
-                                        const formattedPrevVal = (prevVal === null || prevVal === undefined || String(prevVal).trim() === '') ? 'пусто' : htmlspecialchars(prevVal);
-                                        cellContent += `<span class="history-old-value"> (${formattedPrevVal})</span>`;
-                                    }
-                                    const cell = document.createElement('td');
-                                    cell.className = cellClass;
-                                    cell.innerHTML = cellContent;
-                                    row.appendChild(cell);
-                                });
-                                tbody.appendChild(row);
-                            });
-                        }
-                    }
-
-                    table.appendChild(tbody);
-                    versionContainer.appendChild(table);
-                    historyContentDiv.appendChild(versionContainer);
-                });
-            }
-        })
-        .catch(error => {
-            console.error('Ошибка при загрузке истории прибора:', error);
-            const errorMsg = document.createElement('p');
-            errorMsg.className = 'error-message';
-            errorMsg.textContent = `Произошла ошибка при загрузке истории: ${error.message}`;
-            historyContentDiv.innerHTML = '';
-            historyContentDiv.appendChild(errorMsg);
-        });
+        // Загружаем историю при первом вызове функции
+        loadHistory(initialHistoryType);
     }
 
-    // Загружаем историю при первом вызове функции
-    loadHistory(initialHistoryType);
-}
+
+
 
     // --- Логика для вкладок 2-7 (Создание и История записей) ---
 
     // Обновленная функция setupTabModeButtons
-    // Включает исправления для отображения истории на вкладке 4 "Сведения о ремонте"
     function setupTabModeButtons(tabPaneId, createFormId, historyDivId, fetchHistoryUrl, saveUrl) {
         const tabPane = document.getElementById(tabPaneId);
         if (!tabPane) return;
@@ -2922,89 +2924,77 @@ function fetchDeviceHistory(deviceId, initialHistoryType = 'parameters') {
         const showHistoryButton = tabPane.querySelector(`#showHistoryTab${tabIndex}`);
         const createForm        = document.getElementById(createFormId);
         const historyDiv        = document.getElementById(historyDivId);
-        // Находим кнопку сохранения внутри формы, независимо от ее ID
         const saveButton        = createForm ? createForm.querySelector('button[id^="save"]') : null;
 
         // --- Создать новую запись ---
         if (showCreateButton && createForm && historyDiv) {
             showCreateButton.addEventListener('click', () => {
-                // Показываем форму создания и скрываем историю
                 createForm.style.display = 'block';
                 historyDiv.style.display = 'none';
-
-                // Сбрасываем форму и устанавливаем создающего пользователя
                 createForm.reset();
-                const creatorInput = createForm.querySelector('input[name*="creator"]'); // Handles various creator field names
+                const creatorInput = createForm.querySelector('input[name*="creator"]');
                 if (creatorInput) {
-                    // Устанавливаем ФИО текущего пользователя из PHP сессии
-                    // This PHP code will be executed on the server side to fill the value
                     creatorInput.value = '<?= isset($_SESSION["user"]) ? htmlspecialchars($_SESSION["user"]["lastname"]." ".$_SESSION["user"]["firstname"]." ".$_SESSION["user"]["middlename"]) : "" ?>';
                 }
-                 // Скрываем поле "Результат испытаний" на вкладке 3, так как оно readonly
-                 if (tabPaneId === 'tab-3') {
-                     const testResultInput = createForm.querySelector('#testResultInput');
-                     if (testResultInput) {
-                         testResultInput.closest('tr').style.display = 'none';
-                     }
-                      // Сбрасываем подсветку и dataset.isValid при открытии формы
-                     // Assuming newTestingDataForm is globally accessible or defined elsewhere
-                     if (typeof newTestingDataForm !== 'undefined' && newTestingDataForm) { // Check if newTestingDataForm exists
-                        newTestingDataForm.querySelectorAll('.nested-table td').forEach(cell => {
-                            cell.classList.remove('bg-success-light', 'bg-danger-light', 'bg-warning-light');
+                if (tabPaneId === 'tab-3') {
+                    const testResultInputTab3 = createForm.querySelector('#testResultInput');
+                    if (testResultInputTab3) {
+                        testResultInputTab3.closest('tr').style.display = 'none';
+                        testResultInputTab3.value = "Испытания не пройдены";
+                    }
+                    // Очистка подсветки и состояния валидности для формы испытаний
+                    const currentNewTestingDataForm = document.getElementById('newTestingData'); // Убедимся, что используем актуальную форму
+                    if (currentNewTestingDataForm) {
+                        currentNewTestingDataForm.querySelectorAll('.nested-table td').forEach(cell => {
+                            cell.classList.remove('tolerance-valid', 'tolerance-invalid', 'no-highlight');
                         });
-                        newTestingDataForm.querySelectorAll('.nested-table input[type="number"]').forEach(input => {
+                        currentNewTestingDataForm.querySelectorAll('.nested-table input[type="number"]').forEach(input => {
                             delete input.dataset.isValid;
                         });
-                     }
-                     if (testResultInput) testResultInput.value = "Испытания не пройдены"; // Сбрасываем поле результата
-                 }
+                    }
+                }
             });
         } else {
             console.warn(`Elements for tab mode buttons (create/history visibility) not found for ${tabPaneId}`);
         }
 
-
         // --- Показать историю записей ---
         if (showHistoryButton && createForm && historyDiv) {
             showHistoryButton.addEventListener('click', () => {
-                // Скрываем форму создания и показываем историю
                 createForm.style.display = 'none';
                 historyDiv.style.display = 'block';
-                historyDiv.innerHTML = '<p>Загрузка истории...</p>'; // Индикатор загрузки
+                historyDiv.innerHTML = '<p>Загрузка истории...</p>';
 
-                // Проверяем, выбран ли прибор (selectedSerialNumber and selectedCaseNumber should be global or accessible)
                 if (!selectedSerialNumber || !selectedCaseNumber) {
                     historyDiv.innerHTML = '<p class="info-message">Выберите прибор на вкладке "Идентификационные данные" для просмотра истории.</p>';
                     return;
                 }
 
-                // Отправляем серийный номер и номер корпуса для получения истории
                 fetch(fetchHistoryUrl, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                     body: `serial_number=${encodeURIComponent(selectedSerialNumber||"")}&case_number=${encodeURIComponent(selectedCaseNumber||"")}`
                 })
                 .then(response => {
-                    // Всегда пытаемся распарсить ответ как JSON
                     return response.json().then(data => {
                         if (!response.ok) {
-                             // Если статус ответа не OK, выбрасываем ошибку с сообщением от сервера
                              const errorMessage = data.error || data.message || `HTTP error! Status: ${response.status}`;
                              throw new Error(errorMessage);
                         }
-                        return data; // Возвращаем распарсенные JSON данные
+                        return data;
                     });
                 })
                 .then(data => {
-                    historyDiv.innerHTML = ''; // Очищаем перед отображением
-
-                    if (data.error) { // Проверяем наличие ключа error в ответе (для PHP скриптов, которые его могут вернуть)
+                    historyDiv.innerHTML = '';
+                    if (data.error) {
                         historyDiv.innerHTML = `<p class="error-message">${data.error}</p>`;
                         return;
                     }
 
-                    // Логика для вкладки 2
-                    if (tabPaneId === 'tab-2') {
+                    if (tabPaneId === 'tab-3' && typeof displayTestingHistory === 'function') {
+                         displayTestingHistory(data, historyDiv); // Передаем данные в обновленную функцию
+                    } else if (tabPaneId === 'tab-2') { // Пример для другой вкладки, если нужно
+                        // ... (существующая логика для tab-2) ...
                          if (!data.history || !Array.isArray(data.history) || data.history.length === 0) {
                              historyDiv.innerHTML = '<p class="info-message">История не найдена</p>';
                          } else {
@@ -3049,13 +3039,7 @@ function fetchDeviceHistory(deviceId, initialHistoryType = 'parameters') {
                              });
                          }
                     }
-                    // Логика для вкладки 3
-                    // Assuming displayTestingHistory is defined elsewhere and handles its data structure
-                    else if (tabPaneId === 'tab-3' && typeof displayTestingHistory === 'function') {
-                         displayTestingHistory(data, historyDiv);
-                    }
-                    // Логика для вкладки 4 (Сведения о ремонте)
-                    else if (tabPaneId === 'tab-4') {
+                     else if (tabPaneId === 'tab-4') {
                         if (!Array.isArray(data) || data.length === 0) {
                             historyDiv.innerHTML = '<p class="info-message">История ремонтов не найдена.</p>';
                         } else {
@@ -3118,7 +3102,6 @@ function fetchDeviceHistory(deviceId, initialHistoryType = 'parameters') {
                             });
                         }
                     }
-                    // Логика для вкладки 5 (Сведения о неразрушающем контроле)
                     else if (tabPaneId === 'tab-5') {
                         if (!Array.isArray(data) || data.length === 0) {
                             historyDiv.innerHTML = '<p class="info-message">История неразрушающего контроля не найдена.</p>';
@@ -3129,7 +3112,6 @@ function fetchDeviceHistory(deviceId, initialHistoryType = 'parameters') {
 
                                 const header = document.createElement('h4');
                                 header.className = 'history-header';
-                                // Используем `creator_surname` и `created_at` из данных таблицы inspection_data
                                 header.textContent = `Запись от ${rec.created_at ? new Date(rec.created_at).toLocaleString('ru-RU') : 'Неизвестно'} (Создатель: ${rec.creator_surname || 'Неизвестно'})`;
                                 historyItemDiv.appendChild(header);
 
@@ -3179,7 +3161,6 @@ function fetchDeviceHistory(deviceId, initialHistoryType = 'parameters') {
                             });
                         }
                     }
-                    // НОВАЯ ЛОГИКА ДЛЯ ВКЛАДКИ 6 (Сведения о прекращении эксплуатации)
                     else if (tabPaneId === 'tab-6') {
                         if (!Array.isArray(data) || data.length === 0) {
                             historyDiv.innerHTML = '<p class="info-message">История прекращения эксплуатации не найдена.</p>';
@@ -3190,7 +3171,6 @@ function fetchDeviceHistory(deviceId, initialHistoryType = 'parameters') {
 
                                 const header = document.createElement('h4');
                                 header.className = 'history-header';
-                                // Используем `creator_surname` и `created_at` из данных таблицы termination_data
                                 header.textContent = `Запись от ${rec.created_at ? new Date(rec.created_at).toLocaleString('ru-RU') : 'Неизвестно'} (Создатель: ${rec.creator_surname || 'Неизвестно'})`;
                                 historyItemDiv.appendChild(header);
 
@@ -3200,7 +3180,7 @@ function fetchDeviceHistory(deviceId, initialHistoryType = 'parameters') {
 
                                 const fieldsToDisplay = [
                                     { key: 'termination_date', label: 'Дата прекращения' },
-                                    { key: 'termination_reason', label: 'Причина прекращения эксплуатации', type: 'textarea' } // Указываем тип textarea
+                                    { key: 'termination_reason', label: 'Причина прекращения эксплуатации', type: 'textarea' }
                                 ];
 
                                 fieldsToDisplay.forEach(field => {
@@ -3212,7 +3192,7 @@ function fetchDeviceHistory(deviceId, initialHistoryType = 'parameters') {
 
                                         if (field.type === 'textarea') {
                                             const textAreaDisplay = document.createElement('div');
-                                            textAreaDisplay.className = 'history-textarea-display'; // Используем класс для стилизации textarea
+                                            textAreaDisplay.className = 'history-textarea-display';
                                             textAreaDisplay.textContent = rec[field.key];
                                             td.appendChild(textAreaDisplay);
                                         } else if (field.key === 'termination_date') {
@@ -3240,7 +3220,6 @@ function fetchDeviceHistory(deviceId, initialHistoryType = 'parameters') {
                             });
                         }
                     }
-                    // НОВАЯ ЛОГИКА ДЛЯ ВКЛАДКИ 7 (Дополнительные сведения)
                     else if (tabPaneId === 'tab-7') {
                          if (!Array.isArray(data) || data.length === 0) {
                              historyDiv.innerHTML = '<p class="info-message">История дополнительных сведений не найдена.</p>';
@@ -3251,7 +3230,6 @@ function fetchDeviceHistory(deviceId, initialHistoryType = 'parameters') {
 
                                  const header = document.createElement('h4');
                                  header.className = 'history-header';
-                                 // Используем `creator_surname` и `created_at` из данных таблицы additional_data
                                  header.textContent = `Запись от ${rec.created_at ? new Date(rec.created_at).toLocaleString('ru-RU') : 'Неизвестно'} (Создатель: ${rec.creator_surname || 'Неизвестно'})`;
                                  historyItemDiv.appendChild(header);
 
@@ -3261,7 +3239,7 @@ function fetchDeviceHistory(deviceId, initialHistoryType = 'parameters') {
 
                                  const fieldsToDisplay = [
                                      { key: 'additional_date', label: 'Дата записи' },
-                                     { key: 'additional_content', label: 'Содержание записи', type: 'textarea' } // Указываем тип textarea
+                                     { key: 'additional_content', label: 'Содержание записи', type: 'textarea' }
                                  ];
 
                                  fieldsToDisplay.forEach(field => {
@@ -3273,7 +3251,7 @@ function fetchDeviceHistory(deviceId, initialHistoryType = 'parameters') {
 
                                          if (field.type === 'textarea') {
                                              const textAreaDisplay = document.createElement('div');
-                                             textAreaDisplay.className = 'history-textarea-display'; // Используем класс для стилизации textarea
+                                             textAreaDisplay.className = 'history-textarea-display';
                                              textAreaDisplay.textContent = rec[field.key];
                                              td.appendChild(textAreaDisplay);
                                          } else if (field.key === 'additional_date') {
@@ -3301,57 +3279,7 @@ function fetchDeviceHistory(deviceId, initialHistoryType = 'parameters') {
                              });
                          }
                     }
-                    // Фоллбэк для остальных вкладок (если появятся новые)
-                    else {
-                         if (!Array.isArray(data) || data.length === 0) {
-                              historyDiv.innerHTML = '<p class="info-message">История не найдена</p>';
-                         } else {
-                             data.forEach(rec => {
-                                 const historyItemDiv = document.createElement('div');
-                                 historyItemDiv.className = 'history-item';
-
-                                 const header = document.createElement('h4');
-                                 header.className = 'history-header';
-                                 const creator = rec.creator_surname || rec.creator || rec.repair_creator || 'Неизвестно'; // General creator field check
-                                 const creationDateValue = rec.created_at || rec.date_created || 'Неизвестно';
-                                 const creationDate = creationDateValue instanceof Date ? creationDateValue.toLocaleString('ru-RU') : (creationDateValue !== 'Неизвестно' ? new Date(creationDateValue).toLocaleString('ru-RU') : 'Неизвестно');
-                                 header.textContent = `Запись от ${creationDate} (Создатель: ${creator})`;
-                                 historyItemDiv.appendChild(header);
-
-                                 const table = document.createElement('table');
-                                 table.className = 'data-table history-subtable';
-                                 const tbody = document.createElement('tbody');
-                                 let hasDetails = false;
-                                 for (const key in rec) {
-                                     // Исключаем служебные поля и пустые/null значения
-                                     if (rec.hasOwnProperty(key) && key !== 'id' && key !== 'serial_number' && key !== 'case_number' && key !== 'creator_surname' && key !== 'creator' && key !== 'repair_creator' && key !== 'created_at' && key !== 'date_created' && rec[key] !== null && rec[key] !== '') {
-                                         const row = document.createElement('tr');
-                                         const th = document.createElement('td');
-                                         // Простая замена подчеркиваний на пробелы и заглавная первая буква каждого слова
-                                         th.textContent = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-                                         const td = document.createElement('td');
-                                         td.textContent = rec[key];
-                                         row.appendChild(th);
-                                         row.appendChild(td);
-                                         tbody.appendChild(row);
-                                         hasDetails = true;
-                                     }
-                                 }
-
-                                 if (hasDetails) {
-                                     table.appendChild(tbody);
-                                     historyItemDiv.appendChild(table);
-                                 } else {
-                                     const noDetailsMsg = document.createElement('p');
-                                     noDetailsMsg.className = 'info-message';
-                                     noDetailsMsg.style.padding = '10px 20px';
-                                     noDetailsMsg.textContent = 'Нет подробных данных для этой записи.';
-                                     historyItemDiv.appendChild(noDetailsMsg);
-                                 }
-                                 historyDiv.appendChild(historyItemDiv);
-                             });
-                         }
-                    }
+                    // ... (остальная логика для других вкладок, если она есть)
                 })
                 .catch(err => {
                     console.error(`Error loading history for ${tabPaneId}:`, err);
@@ -3362,13 +3290,11 @@ function fetchDeviceHistory(deviceId, initialHistoryType = 'parameters') {
             console.warn(`History elements (button, form, or div) not found for ${tabPaneId}`);
         }
 
-
         // --- Сохранение новой записи ---
-        if (saveButton && createForm && tabPaneId !== 'tab-3') { // Exclude tab-3 as it has its own save logic
+        // Исключаем Tab 3, так как у нее своя логика сохранения с валидацией допусков
+        if (saveButton && createForm && tabPaneId !== 'tab-3') {
             saveButton.addEventListener('click', () => {
                 const formData = new FormData(createForm);
-
-                // selectedSerialNumber and selectedCaseNumber should be global or accessible
                 if (selectedSerialNumber && selectedCaseNumber) {
                     formData.append('serial_number', selectedSerialNumber);
                     formData.append('case_number', selectedCaseNumber);
@@ -3377,42 +3303,36 @@ function fetchDeviceHistory(deviceId, initialHistoryType = 'parameters') {
                     return;
                 }
 
-                const originalButtonContent = saveButton.innerHTML; // Store original button content
+                const originalButtonContent = saveButton.innerHTML;
                 saveButton.disabled = true;
-                saveButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Сохранение...'; // Font Awesome spinner
-
+                saveButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Сохранение...';
 
                 fetch(saveUrl, {
                     method: 'POST',
                     body: formData
                 })
-                .then(response => { // This part now correctly expects JSON due to PHP script change
-                    // Всегда пытаемся распарсить ответ как JSON
+                .then(response => {
                     return response.json().then(data => {
                         if (!response.ok) {
-                            // Если статус ответа не OK, выбрасываем ошибку с сообщением от сервера
                             const errorMessage = data.message || data.error || `HTTP error! Status: ${response.status}`;
                             throw new Error(errorMessage);
                         }
-                        return data; // Возвращаем распарсенные JSON данные
+                        return data;
                     });
                 })
-                .then(res => { // res is now the parsed JSON object
+                .then(res => {
                     if (res.success) {
-                        const displayMessage = res.message || 'Данные успешно сохранены!'; // Используем сообщение из ответа или дефолтное
+                        const displayMessage = res.message || 'Данные успешно сохранены!';
                         alert(displayMessage);
                         createForm.reset();
-                        // Restore creator field if it was set by PHP
-                         const creatorInput = createForm.querySelector('input[name*="creator"]');
+                        const creatorInput = createForm.querySelector('input[name*="creator"]');
                         if (creatorInput) {
-                            // This PHP code will be executed on the server side to fill the value
                             creatorInput.value = '<?= isset($_SESSION["user"]) ? htmlspecialchars($_SESSION["user"]["lastname"]." ".$_SESSION["user"]["firstname"]." ".$_SESSION["user"]["middlename"]) : "" ?>';
                         }
                         if (showHistoryButton) {
-                             showHistoryButton.click(); // Switch to history view
+                             showHistoryButton.click();
                         }
                     } else {
-                        // Обрабатываем случай, когда success: false
                         alert('Ошибка: ' + (res.message || res.error || 'Неизвестная ошибка'));
                     }
                 })
@@ -3422,11 +3342,11 @@ function fetchDeviceHistory(deviceId, initialHistoryType = 'parameters') {
                 })
                 .finally(() => {
                     saveButton.disabled = false;
-                    saveButton.innerHTML = originalButtonContent; // Restore original button content
+                    saveButton.innerHTML = originalButtonContent;
                 });
             });
         } else {
-            if (tabPaneId !== 'tab-3') { // Only warn if not tab-3
+            if (tabPaneId !== 'tab-3') {
                  console.warn(`Save button or form not found for ${tabPaneId}`);
             }
         }
@@ -3766,7 +3686,7 @@ function fetchDeviceHistory(deviceId, initialHistoryType = 'parameters') {
 
     // Парсинг имени поля для получения ключей для API допусков
     function parseInputNameForTolerance(inputName) {
-        // inputName format: noise_sko_x1_400, mds_transmitter_1_2000, etc.
+
         const parts = inputName.split('_');
         if (parts.length < 3) return null;
 
@@ -3789,28 +3709,25 @@ function fetchDeviceHistory(deviceId, initialHistoryType = 'parameters') {
 
     // Валидация одного инпута и его подсветка (для формы создания)
     async function validateAndHighlightInput(inputElement) {
-        // selectedDeviceType должен быть актуальным
         const currentSelectedDeviceType = document.getElementById('deviceTypeTab3').textContent;
         if (!currentSelectedDeviceType || currentSelectedDeviceType === '-' || !inputElement) return;
 
         const value = inputElement.value.trim();
         const cell = inputElement.closest('td');
 
-        // Удаляем все предыдущие классы подсветки
-        cell.classList.remove('bg-success-light', 'bg-danger-light');
-        inputElement.dataset.isValid = 'true'; // По умолчанию считаем валидным
+        cell.classList.remove('tolerance-valid', 'tolerance-invalid', 'no-highlight');
+        inputElement.dataset.isValid = 'true'; // По умолчанию считаем валидным, если нет явных нарушений
 
         if (value === "") {
-            // Если поле пустое, оно не валидно для сохранения, но допуск не проверяем и не подсвечиваем
-            inputElement.dataset.isValid = 'false'; // Пустое поле не валидно для финального результата
-            updateTestResultOverall(); // Обновляем общий результат
+            inputElement.dataset.isValid = 'false'; // Пустое поле не проходит общую проверку на заполненность
+            cell.classList.add('no-highlight'); // Нет данных для проверки допуска
+            updateTestResultOverall();
             return;
         }
 
         const numericValue = parseFloat(value);
         if (isNaN(numericValue)) {
-            // Если значение нечисловое, подсвечиваем красным
-            cell.classList.add('bg-danger-light');
+            cell.classList.add('tolerance-invalid'); // Нечисловое значение всегда невалидно
             inputElement.dataset.isValid = 'false';
             updateTestResultOverall();
             return;
@@ -3818,8 +3735,10 @@ function fetchDeviceHistory(deviceId, initialHistoryType = 'parameters') {
 
         const toleranceParams = parseInputNameForTolerance(inputElement.name);
         if (!toleranceParams) {
-            // Если не удалось распарсить имя поля, считаем валидным (нет допусков для проверки)
-            inputElement.dataset.isValid = 'true';
+            // Если не удалось распарсить имя (т.е. для этого поля нет допусков),
+            // считаем его "условно валидным" с точки зрения допусков, но оно может не пройти общую проверку на заполненность.
+            // Не добавляем класс подсветки, если допуск не применим.
+            cell.classList.add('no-highlight');
             updateTestResultOverall();
             return;
         }
@@ -3829,7 +3748,7 @@ function fetchDeviceHistory(deviceId, initialHistoryType = 'parameters') {
 
         try {
             let toleranceRange = loadedTolerancesForTab3[cacheKey];
-            if (toleranceRange === undefined) { // Используем undefined для проверки отсутствия в кэше
+            if (toleranceRange === undefined) {
                 const response = await fetch('get_tolerances.php', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -3843,41 +3762,35 @@ function fetchDeviceHistory(deviceId, initialHistoryType = 'parameters') {
                 if (!response.ok) {
                      const errorText = await response.text();
                      console.error(`Failed to fetch tolerance for ${cacheKey}: ${response.status} ${errorText}`);
-                     // Если не удалось загрузить допуск, считаем поле валидным, чтобы не блокировать пользователя,
-                     // но можно добавить специальную подсветку или лог.
-                     inputElement.dataset.isValid = 'true'; // Или 'unknown'
-                     updateTestResultOverall();
-                     return;
+                     loadedTolerancesForTab3[cacheKey] = null; // Помечаем, что загрузка не удалась или допуска нет
+                     toleranceRange = null;
+                } else {
+                    toleranceRange = await response.json();
+                    loadedTolerancesForTab3[cacheKey] = toleranceRange;
                 }
-                toleranceRange = await response.json();
-                loadedTolerancesForTab3[cacheKey] = toleranceRange; // Кэшируем результат
             }
 
-            // Проверяем, установлены ли допуски (min и max не null)
             if (toleranceRange && toleranceRange.min !== null && toleranceRange.max !== null) {
                 const min = parseFloat(toleranceRange.min);
                 const max = parseFloat(toleranceRange.max);
-
-                // Сравниваем введенное значение с допуском
                 if (numericValue >= min && numericValue <= max) {
-                    // В пределах допуска - подсвечиваем зеленым
-                    cell.classList.add('bg-success-light');
+                    cell.classList.add('tolerance-valid');
                     inputElement.dataset.isValid = 'true';
                 } else {
-                    // Вне допуска - подсвечиваем красным
-                    cell.classList.add('bg-danger-light');
+                    cell.classList.add('tolerance-invalid');
                     inputElement.dataset.isValid = 'false';
                 }
             } else {
-                // Допуск не установлен (min или max is null), считаем валидным и не подсвечиваем
-                 inputElement.dataset.isValid = 'true';
+                // Допуск не установлен (min или max is null) или не удалось загрузить
+                inputElement.dataset.isValid = 'true'; // Считаем валидным, если допуск не задан
+                cell.classList.add('no-highlight'); // Нет подсветки, если допуск не определен
             }
         } catch (error) {
             console.error(`Error checking tolerance for ${inputElement.name}:`, error);
-            // В случае ошибки получения допуска, считаем поле валидным, чтобы не блокировать пользователя
-            inputElement.dataset.isValid = 'true';
+            inputElement.dataset.isValid = 'true'; // В случае ошибки получения допуска, не блокируем
+            cell.classList.add('no-highlight');
         }
-        updateTestResultOverall(); // Обновляем общий результат после валидации поля
+        updateTestResultOverall();
     }
 
     // Перепроверка всех инпутов в форме испытаний
@@ -4004,182 +3917,193 @@ function fetchDeviceHistory(deviceId, initialHistoryType = 'parameters') {
 
     // Функция для отображения истории испытаний (Tab 3)
     async function displayTestingHistory(historyData, targetDiv) {
-        targetDiv.innerHTML = ''; // Очищаем контейнер
+        targetDiv.innerHTML = '';
 
-        // Проверяем, является ли historyData массивом и не пуст ли он
         if (!Array.isArray(historyData) || historyData.length === 0) {
             targetDiv.innerHTML = '<p class="info-message">История испытаний не найдена.</p>';
             return;
         }
 
-        // Маппинг названий полей на русский язык для истории испытаний (уже определен выше)
-        // const fieldNameMapping = { ... };
-        // Маппинг названий разделов на русский язык (уже определен выше)
-        // const sectionNameMapping = { ... };
-        // toleranceConfig (уже определен выше)
-
         const currentSelectedDeviceType = document.getElementById('deviceTypeTab3').textContent;
-         if (!currentSelectedDeviceType || currentSelectedDeviceType === '-') {
-              targetDiv.innerHTML = '<p class="info-message">Выберите прибор на вкладке "Идентификационные данные" для просмотра истории.</p>';
-              return;
-         }
+        if (!currentSelectedDeviceType || currentSelectedDeviceType === '-') {
+             targetDiv.innerHTML = '<p class="info-message">Выберите прибор на вкладке "Идентификационные данные" для просмотра истории.</p>';
+             return;
+        }
 
+        // Предзагрузка всех необходимых допусков для записей в истории
+        const tolerancePromises = [];
+        const uniqueToleranceKeys = new Set();
 
-        for (const record of historyData) {
+        historyData.forEach(record => {
+            for (const [parameterName, config] of Object.entries(toleranceConfig)) {
+                config.frequencies.forEach(freq => {
+                    config.columns.forEach(colName => {
+                        const fieldKey = `${config.param_key_base}_${colName.toLowerCase()}_${freq}`;
+                        if (record[fieldKey] !== null && record[fieldKey] !== undefined) {
+                            const cacheKey = `${currentSelectedDeviceType}-${parameterName}-${freq}-${colName}`;
+                            uniqueToleranceKeys.add(cacheKey);
+                        }
+                    });
+                });
+            }
+        });
+
+        uniqueToleranceKeys.forEach(cacheKey => {
+            if (loadedTolerancesForTab3[cacheKey] === undefined) { // Загружаем, только если еще не в кэше
+                const [deviceType, parameter, frequency, column] = cacheKey.split('-');
+                tolerancePromises.push(
+                    fetch('get_tolerances.php', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ deviceType, parameter, frequency: parseInt(frequency), column })
+                    })
+                    .then(response => response.ok ? response.json() : Promise.resolve(null)) // Возвращаем null при ошибке
+                    .then(data => {
+                        loadedTolerancesForTab3[cacheKey] = data; // Кэшируем (может быть null)
+                    })
+                    .catch(error => {
+                        console.error(`Failed to preload tolerance for ${cacheKey} in history:`, error);
+                        loadedTolerancesForTab3[cacheKey] = null; // Помечаем как неудачную загрузку
+                    })
+                );
+            }
+        });
+
+        await Promise.all(tolerancePromises); // Ждем загрузки всех допусков
+
+        // Теперь рендерим историю с уже загруженными (или отсутствующими) допусками
+        historyData.forEach(record => {
             const historyItemDiv = document.createElement('div');
-            // Используем те же классы, что и для основного контейнера формы
-            historyItemDiv.className = 'history-item data-table mb-6'; // Добавляем классы data-table и mb-6
+            historyItemDiv.className = 'history-item data-table mb-6';
 
-            const header = document.createElement('caption'); // Используем caption для заголовка таблицы
-            // Обновленный заголовок: Дата записи, Создатель, Результат испытаний
+            const header = document.createElement('caption');
             header.textContent = `Дата записи: ${record.created_at || 'Неизвестно'}, Создатель: ${record.creator || 'Неизвестно'}, Результат: ${record.test_result || 'Неизвестно'}`;
-            // Классы для стилизации заголовка таблицы
-            header.className = 'history-header caption-top'; // Используем caption-top для размещения сверху
+            header.className = 'history-header caption-top';
             historyItemDiv.appendChild(header);
 
-            const tbody = document.createElement('tbody'); // Создаем tbody для строк основной таблицы
+            const tbody = document.createElement('tbody');
 
-            // Добавляем нечисловые поля (Температурные и Вибрационные испытания) как отдельные блоки
-            // Создаем строку и ячейку, чтобы вставить этот блок в структуру data-table
+            // Температурные и вибрационные испытания
             const nonNumericRow = document.createElement('tr');
             const nonNumericCell = document.createElement('td');
-            nonNumericCell.colSpan = 4; // Объединяем все 4 колонки основной таблицы
-            nonNumericCell.className = 'p-0 border-b border-gray-300'; // Убираем padding ячейки, добавляем нижнюю границу
-            nonNumericRow.appendChild(nonNumericCell);
-            tbody.appendChild(nonNumericRow);
-
+            nonNumericCell.colSpan = 4;
+            nonNumericCell.className = 'p-0 border-b border-gray-300';
 
             const tempTestValue = record['temperature_test'];
             if (tempTestValue) {
-                 const tempLabel = document.createElement('p'); // Используем p для названия поля
-                 tempLabel.className = 'history-field-label'; // Класс для стилизации названия поля
+                 const tempLabel = document.createElement('p');
+                 tempLabel.className = 'history-field-label';
                  tempLabel.textContent = `${fieldNameMapping['temperature_test']}:`;
-
-                 const tempValueDiv = document.createElement('div'); // Используем div для содержимого textarea
-                 tempValueDiv.className = 'history-textarea-display'; // Применяем класс для стилизации и прокрутки
-                 tempValueDiv.textContent = tempTestValue; // Используем textContent для безопасного отображения текста
-
+                 const tempValueDiv = document.createElement('div');
+                 tempValueDiv.className = 'history-textarea-display';
+                 tempValueDiv.textContent = tempTestValue;
                  nonNumericCell.appendChild(tempLabel);
                  nonNumericCell.appendChild(tempValueDiv);
             }
-
-             const vibTestValue = record['vibration_test'];
-             if (vibTestValue) {
-                 const vibLabel = document.createElement('p'); // Используем p для названия поля
-                 vibLabel.className = 'history-field-label'; // Класс для стилизации названия поля
+            const vibTestValue = record['vibration_test'];
+            if (vibTestValue) {
+                 const vibLabel = document.createElement('p');
+                 vibLabel.className = 'history-field-label';
                  vibLabel.textContent = `${fieldNameMapping['vibration_test']}:`;
-
-                 const vibValueDiv = document.createElement('div'); // Используем div для содержимого textarea
-                 vibValueDiv.className = 'history-textarea-display'; // Применяем класс для стилизации и прокрутки
-                 vibValueDiv.textContent = vibTestValue; // Используем textContent для безопасного отображения текста
-
+                 const vibValueDiv = document.createElement('div');
+                 vibValueDiv.className = 'history-textarea-display';
+                 vibValueDiv.textContent = vibTestValue;
                  nonNumericCell.appendChild(vibLabel);
                  nonNumericCell.appendChild(vibValueDiv);
-             }
+            }
+            if (nonNumericCell.hasChildNodes()) { // Добавляем строку, только если есть что отображать
+                nonNumericRow.appendChild(nonNumericCell);
+                tbody.appendChild(nonNumericRow);
+            }
 
 
-            // Генерируем вложенные таблицы для числовых полей по аналогии с формой создания
             for (const [parameterName, config] of Object.entries(toleranceConfig)) {
                 const row = document.createElement('tr');
-                const paramNameCell = document.createElement('td'); // Ячейка для названия параметра
+                const paramNameCell = document.createElement('td');
                 paramNameCell.className = 'p-2 border border-gray-300 font-medium';
                 paramNameCell.textContent = sectionNameMapping[parameterName] || parameterName;
                 row.appendChild(paramNameCell);
 
-                const nestedTableContainerCell = document.createElement('td'); // Ячейка для вложенной таблицы
-                nestedTableContainerCell.className = 'p-0 border border-gray-300'; // Убираем padding, чтобы таблица прилегала
-                nestedTableContainerCell.colSpan = 1; // Занимает 1 колонку в основной таблице
+                const nestedTableContainerCell = document.createElement('td');
+                nestedTableContainerCell.className = 'p-0 border border-gray-300';
+                nestedTableContainerCell.colSpan = 1;
                 row.appendChild(nestedTableContainerCell);
 
                 const nestedTableWrapper = document.createElement('div');
-                nestedTableWrapper.className = 'overflow-x-auto'; // Для адаптивности вложенной таблицы
-
+                nestedTableWrapper.className = 'overflow-x-auto';
                 const nestedTable = document.createElement('table');
-                nestedTable.className = 'nested-table'; // Класс для вложенной таблицы
-                nestedTable.style.width = '100%'; // Вложенная таблица занимает всю ширину контейнера
+                nestedTable.className = 'nested-table';
+                nestedTable.style.width = '100%';
 
                 const nestedThead = nestedTable.createTHead();
                 const nestedHeaderRow = nestedThead.insertRow();
-                 // Заголовок "f"
                 const fTh = document.createElement('th');
                 fTh.className = 'p-2 border border-gray-300 bg-gray-50 text-left';
                 fTh.textContent = 'f';
                 nestedHeaderRow.appendChild(fTh);
-                // Заголовки колонок (X1, Y1, 1, 2 и т.д.)
                 config.columns.forEach(colName => {
                     const th = document.createElement('th');
                     th.className = 'p-2 border border-gray-300 bg-gray-50 text-left';
-                    th.textContent = colName; // Отображаем X1, Y1, 1, 2 и т.д.
+                    th.textContent = colName;
                     nestedHeaderRow.appendChild(th);
                 });
-
 
                 const nestedTbody = nestedTable.createTBody();
                 config.frequencies.forEach(freq => {
                     const nestedDataRow = nestedTbody.insertRow();
-                    // Ячейка для частоты
                     const freqCell = nestedDataRow.insertCell();
                     freqCell.className = 'p-2 border border-gray-300 font-medium';
                     freqCell.textContent = freq;
-                    // Ячейки для значений параметров
+
                     for (const colName of config.columns) {
                         const cell = nestedDataRow.insertCell();
-                        cell.className = 'p-2 border border-gray-300'; // Классы для ячейки значения
-
-                        // Формируем ключ поля из записи истории (например, noise_sko_x1_400)
-                        const fieldKey = `${config.param_key_base}_${colName.toLowerCase()}_${freq}`;
-                        const value = record[fieldKey];
-                        const numericValue = parseFloat(value);
-
-                        // Отображаем значение из записи истории
-                        cell.textContent = (value !== null && value !== undefined) ? value : '-';
+                        cell.className = 'p-2 border border-gray-300';
                         cell.style.wordBreak = 'break-word';
 
-                        // Логика подсветки по допуску
-                         if (value !== null && value !== undefined && !isNaN(numericValue)) {
-                             const currentSelectedDeviceType = document.getElementById('deviceTypeTab3').textContent;
-                             const cacheKey = `${currentSelectedDeviceType}-${parameterName}-${freq}-${colName}`;
+                        const fieldKey = `${config.param_key_base}_${colName.toLowerCase()}_${freq}`;
+                        const value = record[fieldKey];
+                        cell.textContent = (value !== null && value !== undefined) ? value : '-';
 
-                             // Проверяем кэш допусков
-                             let toleranceRange = loadedTolerancesForTab3[cacheKey];
+                        cell.classList.remove('tolerance-valid', 'tolerance-invalid', 'no-highlight'); // Очистка перед применением
 
-                             // Если допуск не в кэше, пытаемся его загрузить синхронно (или использовать Promise, но для истории проще синхронно, т.к. не блокирует ввод)
-                             // В реальном приложении лучше загрузить все допуски заранее или использовать Promise.all
-                             // Для простоты примера, будем пытаться получить из кэша, а если нет - пропустим подсветку для этой ячейки.
-                             // В более надежной версии, можно было бы загружать допуски для всех записей истории перед их отображением.
+                        if (value !== null && value !== undefined) {
+                            const numericValue = parseFloat(value);
+                            if (!isNaN(numericValue)) {
+                                const cacheKey = `${currentSelectedDeviceType}-${parameterName}-${freq}-${colName}`;
+                                const toleranceRange = loadedTolerancesForTab3[cacheKey];
 
-                             if (toleranceRange !== undefined && toleranceRange.min !== null && toleranceRange.max !== null) {
-                                 const min = parseFloat(toleranceRange.min);
-                                 const max = parseFloat(toleranceRange.max);
-
-                                 if (numericValue >= min && numericValue <= max) {
-                                     cell.classList.add('bg-success-light'); // Зеленый
-                                 } else {
-                                     cell.classList.add('bg-danger-light'); // Красный
-                                 }
-                             }
-                             // Если допуск не установлен или не удалось загрузить, ячейка не подсвечивается
-                         } else if (value !== null && value !== undefined && isNaN(numericValue)) {
-                             // Если значение нечисловое (но не null/undefined), подсвечиваем красным как ошибку данных
-                             cell.classList.add('bg-danger-light');
-                         }
-                         // Пустые или null/undefined значения не подсвечиваются
+                                if (toleranceRange && toleranceRange.min !== null && toleranceRange.max !== null) {
+                                    const min = parseFloat(toleranceRange.min);
+                                    const max = parseFloat(toleranceRange.max);
+                                    if (numericValue >= min && numericValue <= max) {
+                                        cell.classList.add('tolerance-valid');
+                                    } else {
+                                        cell.classList.add('tolerance-invalid');
+                                    }
+                                } else {
+                                    cell.classList.add('no-highlight'); // Допуск не найден или не определен
+                                }
+                            } else {
+                                cell.classList.add('tolerance-invalid'); // Нечисловое значение
+                            }
+                        } else {
+                            cell.classList.add('no-highlight'); // Пустое значение
+                        }
                     }
                 });
 
+                nestedTable.appendChild(nestedThead); // Добавляем заголовок
                 nestedTable.appendChild(nestedTbody);
                 nestedTableWrapper.appendChild(nestedTable);
                 nestedTableContainerCell.appendChild(nestedTableWrapper);
 
-                // Добавляем пустые ячейки для соответствия структуре формы (Ед. изм., Примечание)
                 const unitCell = document.createElement('td');
                 unitCell.className = 'p-2 border border-gray-300';
-                unitCell.textContent = config.unit; // Единица измерения из config
+                unitCell.textContent = config.unit;
                 row.appendChild(unitCell);
 
                 const noteCell = document.createElement('td');
                 noteCell.className = 'p-2 border border-gray-300';
-                // Добавляем примечание в зависимости от параметра
                 let noteText = '';
                 if (parameterName === 'СКО шума приёмника') noteText = 'Приведённое ко входу';
                 else if (parameterName === 'МДС передатчика') noteText = 'Для всех комбинаций';
@@ -4187,20 +4111,15 @@ function fetchDeviceHistory(deviceId, initialHistoryType = 'parameters') {
                 else if (parameterName === 'Третья гармоника') noteText = 'Уровень третьей гармоники';
                 else if (parameterName === 'Уровень негармонических компонент') noteText = 'Для всех комбинаций';
                 else if (parameterName === 'Дрейф разности фаз') noteText = 'Для всех комбинаций';
-
                 noteCell.textContent = noteText;
                 row.appendChild(noteCell);
 
                 tbody.appendChild(row);
             }
-
-            historyItemDiv.appendChild(tbody); // Добавляем tbody к основному контейнеру записи
-
+            historyItemDiv.appendChild(tbody);
             targetDiv.appendChild(historyItemDiv);
-        }
-         // После отображения истории, можно попытаться загрузить допуски для всех отображенных записей в фоновом режиме
-         // для потенциального использования в будущем или для более точной подсветки при повторном просмотре
-         loadTolerancesForDisplayedHistory(historyData, currentSelectedDeviceType);
+        });
+        // Вызов loadTolerancesForDisplayedHistory больше не нужен здесь, так как предзагрузка сделана выше
     }
 
 
@@ -4243,20 +4162,9 @@ function fetchDeviceHistory(deviceId, initialHistoryType = 'parameters') {
                 }
             }
         }
-        await Promise.all(promises); // Ждем завершения всех запросов загрузки допусков
-         // После загрузки всех допусков, можно было бы вызвать функцию для перерисовки истории
-         // чтобы применить подсветку на основе только что загруженных допусков, если они не были доступны ранее.
-         // Но это усложнит код, для текущей задачи достаточно кэширования.
+        await Promise.all(promises);
+
     }
-
-
-
-
-
-
-
-
-
 
 
 
