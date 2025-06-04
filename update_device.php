@@ -13,7 +13,9 @@ $data = json_decode($json_data, true);
 // Проверяем, авторизован ли пользователь
 if (!isset($_SESSION['user']['id'])) {
     echo json_encode(['success' => false, 'message' => "Ошибка: Пользователь не авторизован."]);
-    $conn->close();
+    if (isset($conn) && $conn instanceof mysqli) {
+        $conn->close();
+    }
     exit;
 }
 
@@ -39,7 +41,6 @@ if ($data && isset($data['id'])) {
     $old_data = $result_select->fetch_assoc();
     $stmt_select->close();
 
-    // Если старые данные не найдены, выходим
     if (!$old_data) {
         echo json_encode(['success' => false, 'message' => "Прибор с ID $id не найден."]);
         $conn->close();
@@ -49,95 +50,115 @@ if ($data && isset($data['id'])) {
     // --- Обновление основной таблицы device_identification ---
     $sql_update_main = "UPDATE device_identification SET ";
     $updates = array();
-    $params = []; // Массив для параметров bind_param
-    $types = "";  // Строка типов для bind_param
+    $params = [];
+    $types = "";
 
     // Список разрешенных полей для обновления в device_identification
     $allowed_fields = [
-        'device_type', 'serial_number', 'case_number', 'length_mm', 'diameter_mm',
+        'device_type', 'nominal_diameter', // nominal_diameter теперь включен
+        'serial_number', 'case_number', 'length_mm', 'diameter_mm',
         'upper_thread', 'lower_thread', 'frequency1_khz', 'frequency2_khz',
         'receiver_base1_mm', 'receiver_base2_mm', 'receiver_base3_mm',
         'transmitter_base1_mm', 'transmitter_base2_mm', 'transmitter_base3_mm',
         'transmitter_base4_mm', 'transmitter_base5_mm',
-        'record_date' // creator_lastname больше не обновляем здесь, он берется из сессии
+        'record_date', 'additional_info'
     ];
 
+    $main_fields_to_update_count = 0;
     foreach ($allowed_fields as $field) {
         if (array_key_exists($field, $data)) {
             $updates[] = "`$field` = ?";
             $value = $data[$field];
-
-            if (strpos($field, '_mm') !== false || strpos($field, '_khz') !== false || strpos($field, 'transmitter_base') !== false || strpos($field, 'receiver_base') !== false) {
-                 if ($value === null || $value === '') { // Проверяем и пустую строку
-                     $types .= "s"; // Используем 's' для NULL
-                     $params[] = null;
-                 } else {
-                     $types .= "d";
-                     $params[] = (float)$value;
-                 }
-            } elseif ($field === 'record_date') {
-                $types .= "s";
-                $params[] = ($value === null || $value === '') ? null : $value;
-            } else {
-                $types .= "s";
-                $params[] = ($value === null) ? null : (string)$value;
-            }
+            $types .= "s";
+            $params[] = ($value === null || $value === '') ? null : (string)$value;
+            $main_fields_to_update_count++;
         }
     }
 
-    // Добавляем обновление creator_lastname и changed_at в конец
-    // Обновляем создателя записи на текущего пользователя сессии
     $updates[] = "`creator_lastname` = ?";
     $types .= "s";
-    $params[] = $current_user_name; // Используем имя из сессии
+    $params[] = $current_user_name;
 
     $updates[] = "`changed_at` = NOW()";
 
-    // Собираем SQL запрос
-    $sql_update_main .= implode(', ', $updates) . " WHERE id = ?";
-    $types .= "i"; // Добавляем тип 'i' для ID в WHERE
-    $params[] = $id; // Добавляем ID в массив параметров
+    // Добавляем ID в конец параметров для WHERE
+    $params[] = $id;
+    $types .= "i";
 
-    // Подготавливаем и выполняем запрос на обновление основной таблицы
-    $stmt_update_main = $conn->prepare($sql_update_main);
-    if ($stmt_update_main === false) {
-        echo json_encode(['success' => false, 'message' => "Ошибка подготовки запроса (обновление): " . $conn->error]);
-        $conn->close();
-        exit;
+    $main_update_success = false;
+    $main_update_error = '';
+
+    // Выполняем обновление, только если есть что обновлять или если обновляется хотя бы creator_lastname/changed_at
+    if ($main_fields_to_update_count > 0 || (isset($data['creator_lastname']) || isset($data['changed_at']))) { // Проверяем, есть ли данные для обновления
+        $sql_update_main .= implode(', ', $updates) . " WHERE id = ?";
+
+        $stmt_update_main = $conn->prepare($sql_update_main);
+        if ($stmt_update_main === false) {
+            echo json_encode(['success' => false, 'message' => "Ошибка подготовки запроса (обновление): " . $conn->error]);
+            $conn->close();
+            exit;
+        }
+
+        $stmt_update_main->bind_param($types, ...$params);
+        $main_update_success = $stmt_update_main->execute();
+        $main_update_error = $stmt_update_main->error;
+        $stmt_update_main->close();
+    } else {
+        // Если нет других полей для обновления, но ID прибора есть,
+        // можно обновить только creator_lastname и changed_at (если это предполагается логикой)
+        // Однако, текущая логика добавляет их всегда.
+        // Если $main_fields_to_update_count == 0, значит, из $allowed_fields ничего не пришло.
+        // Но $updates будет содержать creator_lastname и changed_at.
+        // Этот 'else' блок может быть не нужен, если мы всегда хотим выполнить запрос,
+        // даже если он обновляет только creator_lastname и changed_at.
+        // Для безопасности, если $updates содержит только creator_lastname и changed_at,
+        // выполним более простой запрос.
+        if (count($updates) == 2) { // Только creator_lastname и changed_at
+             $sql_simple_update = "UPDATE device_identification SET `creator_lastname` = ?, `changed_at` = NOW() WHERE id = ?";
+             $stmt_simple_update = $conn->prepare($sql_simple_update);
+             if ($stmt_simple_update) {
+                 $stmt_simple_update->bind_param("si", $current_user_name, $id);
+                 $main_update_success = $stmt_simple_update->execute();
+                 $main_update_error = $stmt_simple_update->error;
+                 $stmt_simple_update->close();
+             } else {
+                 $main_update_success = false;
+                 $main_update_error = "Ошибка подготовки простого запроса: " . $conn->error;
+             }
+        } else {
+            // Если и $main_fields_to_update_count == 0 и нет других данных, считаем, что нет ошибки, но и нечего обновлять.
+            // История все равно запишется на основе $old_data.
+            $main_update_success = true;
+        }
     }
 
-    $stmt_update_main->bind_param($types, ...$params);
-
-    // Выполняем обновление основной таблицы
-    $main_update_success = $stmt_update_main->execute();
-    $main_update_error = $stmt_update_main->error; // Сохраняем ошибку, если она есть
-    $stmt_update_main->close(); // Закрываем основной statement обновления
 
     if ($main_update_success) {
         // --- Сохраняем историю изменений параметров прибора (используя $old_data) ---
-        // Создателем записи истории будет пользователь, который ВНОСИЛ изменения ($current_user_name)
         $sql_insert_history = "INSERT INTO device_history (
-            device_id, device_type, serial_number, case_number, length_mm, diameter_mm,
+            device_id, device_type, nominal_diameter, serial_number, case_number, length_mm, diameter_mm,
             upper_thread, lower_thread, frequency1_khz, frequency2_khz,
             receiver_base1_mm, receiver_base2_mm, receiver_base3_mm,
             transmitter_base1_mm, transmitter_base2_mm, transmitter_base3_mm,
             transmitter_base4_mm, transmitter_base5_mm,
-            record_date, creator_lastname, changed_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
+            record_date, creator_lastname, additional_info, changed_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
+        // 22 знака ? перед NOW()
 
         $stmt_insert_history = $conn->prepare($sql_insert_history);
-        $history_save_success = false; // Инициализируем как false
+        $history_save_success = false;
         if ($stmt_insert_history === false) {
              error_log("Ошибка подготовки запроса (история параметров): " . $conn->error);
         } else {
-            // Типы для bind_param истории
-            $history_types = "issssssssssssdddddss"; // Проверьте типы!
+            // Типы для bind_param: device_id(i), затем 21 строковый параметр (s)
+            // (device_type, nominal_diameter, ..., record_date, current_user_name, additional_info)
+            $history_types = "isssssssssssssssssssss"; // 1 'i' + 21 's' (ИСПРАВЛЕНО)
 
-            // Передаем значения из $old_data, но creator_lastname берем из сессии ($current_user_name)
             $stmt_insert_history->bind_param(
                 $history_types,
                 $old_data['id'],
                 $old_data['device_type'],
+                $old_data['nominal_diameter'], // nominal_diameter теперь включен
                 $old_data['serial_number'],
                 $old_data['case_number'],
                 $old_data['length_mm'],
@@ -155,23 +176,22 @@ if ($data && isset($data['id'])) {
                 $old_data['transmitter_base4_mm'],
                 $old_data['transmitter_base5_mm'],
                 $old_data['record_date'],
-                $current_user_name // Используем имя текущего пользователя сессии
+                $current_user_name,
+                $old_data['additional_info']
             );
             $history_save_success = $stmt_insert_history->execute();
             if (!$history_save_success) {
-                 error_log("Ошибка выполнения запроса (история параметров): " . $stmt_insert_history->error);
+                 error_log("Ошибка выполнения запроса (история параметров): " . $stmt_insert_history->error . " | SQL: " . $sql_insert_history . " | Types: " . $history_types);
             }
             $stmt_insert_history->close();
         }
 
-
         // --- Обновление состава прибора (device_composition), если данные пришли ---
-        $composition_save_success = true; // По умолчанию считаем успешным, если данных не было
+        // (Эта часть кода остается без изменений, так как она не затрагивалась вашим запросом)
+        $composition_save_success = true;
         if (isset($data['composition']) && is_array($data['composition'])) {
-            $composition_save_success = false; // Сбрасываем флаг, т.к. нужно выполнить операции
+            $composition_save_success = false;
 
-             // 1. Сохраняем текущий состав прибора в таблицу device_composition_history
-             // Создателем записи истории будет пользователь из сессии ($current_user_id, $current_user_name)
             $sql_select_comp = "SELECT * FROM device_composition WHERE device_id = ?";
             $stmt_select_comp = $conn->prepare($sql_select_comp);
             if ($stmt_select_comp) {
@@ -179,7 +199,6 @@ if ($data && isset($data['id'])) {
                 $stmt_select_comp->execute();
                 $result_comp = $stmt_select_comp->get_result();
 
-                // Используем данные пользователя из сессии для записи истории
                 $sql_insert_comp_hist = "INSERT INTO device_composition_history
                     (device_id, board_name, type, version, serial_number, creator_id, creator_name, changed_at)
                     VALUES (?, ?, ?, ?, ?, ?, ?, NOW())";
@@ -187,14 +206,14 @@ if ($data && isset($data['id'])) {
 
                 if ($stmt_comp_hist) {
                     while ($row = $result_comp->fetch_assoc()) {
-                        $stmt_comp_hist->bind_param("issssis", // Добавили i и s для creator_id и creator_name
+                        $stmt_comp_hist->bind_param("issssis",
                             $row['device_id'],
                             $row['board_name'],
                             $row['type'],
                             $row['version'],
                             $row['serial_number'],
-                            $current_user_id,    // ID пользователя из сессии
-                            $current_user_name   // Имя пользователя из сессии
+                            $current_user_id,
+                            $current_user_name
                         );
                         if (!$stmt_comp_hist->execute()) {
                              error_log("Ошибка сохранения истории состава для платы " . $row['board_name'] . ": " . $stmt_comp_hist->error);
@@ -210,29 +229,26 @@ if ($data && isset($data['id'])) {
             }
 
 
-            // 2. Удаляем старый состав прибора из device_composition
             $sql_delete_comp = "DELETE FROM device_composition WHERE device_id = ?";
             $stmt_delete_comp = $conn->prepare($sql_delete_comp);
-             if ($stmt_delete_comp) {
-                 $stmt_delete_comp->bind_param("i", $id);
-                 if (!$stmt_delete_comp->execute()) {
-                     error_log("Ошибка удаления старого состава: " . $stmt_delete_comp->error);
-                 }
-                 $stmt_delete_comp->close();
-             } else {
-                  error_log("Ошибка подготовки запроса (удаление состава): " . $conn->error);
-             }
+            if ($stmt_delete_comp) {
+                $stmt_delete_comp->bind_param("i", $id);
+                if (!$stmt_delete_comp->execute()) {
+                    error_log("Ошибка удаления старого состава: " . $stmt_delete_comp->error);
+                }
+                $stmt_delete_comp->close();
+            } else {
+                 error_log("Ошибка подготовки запроса (удаление состава): " . $conn->error);
+            }
 
 
-            // 3. Вставляем новый состав прибора в device_composition
-            // Создателем новых записей будет пользователь из сессии
             $sql_insert_comp = "INSERT INTO device_composition
                 (device_id, board_name, type, version, serial_number, creator_id, creator_name)
                 VALUES (?, ?, ?, ?, ?, ?, ?)";
             $stmt_insert_comp = $conn->prepare($sql_insert_comp);
             if ($stmt_insert_comp === false) {
                 error_log("Ошибка при подготовке запроса для обновления состава прибора: " . $conn->error);
-                 $composition_save_success = false;
+                $composition_save_success = false;
             } else {
                 $all_inserts_successful = true;
                 foreach ($data['composition'] as $comp) {
@@ -241,14 +257,14 @@ if ($data && isset($data['id'])) {
                     $version = isset($comp['version']) ? $comp['version'] : null;
                     $serial_number = isset($comp['serial_number']) ? $comp['serial_number'] : null;
 
-                    $stmt_insert_comp->bind_param("issssis", // Добавили i и s для creator_id и creator_name
+                    $stmt_insert_comp->bind_param("issssis",
                         $id,
                         $board_name,
                         $type,
                         $version,
                         $serial_number,
-                        $current_user_id,    // ID пользователя из сессии
-                        $current_user_name   // Имя пользователя из сессии
+                        $current_user_id,
+                        $current_user_name
                     );
                     if (!$stmt_insert_comp->execute()) {
                          error_log("Ошибка вставки нового состава для платы " . $board_name . ": " . $stmt_insert_comp->error);
@@ -259,9 +275,26 @@ if ($data && isset($data['id'])) {
                 $composition_save_success = $all_inserts_successful;
             }
         }
-        // --- Конец логики для состава прибора ---
 
-        // Формируем сообщение об успехе
+        if (isset($data['boardsToDelete']) && is_array($data['boardsToDelete']) && !empty($data['boardsToDelete'])) {
+            $placeholders = implode(',', array_fill(0, count($data['boardsToDelete']), '?'));
+            $sql_delete_specific_boards = "DELETE FROM device_composition WHERE device_id = ? AND board_name IN ($placeholders)";
+            $stmt_delete_specific_boards = $conn->prepare($sql_delete_specific_boards);
+
+            if ($stmt_delete_specific_boards) {
+                $delete_types = 'i' . str_repeat('s', count($data['boardsToDelete']));
+                $delete_params = array_merge([$id], $data['boardsToDelete']);
+
+                $stmt_delete_specific_boards->bind_param($delete_types, ...$delete_params);
+                if (!$stmt_delete_specific_boards->execute()) {
+                    error_log("Ошибка удаления конкретных плат: " . $stmt_delete_specific_boards->error);
+                }
+                $stmt_delete_specific_boards->close();
+            } else {
+                error_log("Ошибка подготовки запроса (удаление конкретных плат): " . $conn->error);
+            }
+        }
+
         $message = "Данные прибора успешно обновлены!";
         if (!$history_save_success) {
             $message .= " (Ошибка сохранения истории параметров)";
@@ -273,14 +306,14 @@ if ($data && isset($data['id'])) {
         echo json_encode(['success' => true, 'message' => $message]);
 
     } else {
-        // Ошибка при обновлении основной таблицы
         echo json_encode(['success' => false, 'message' => "Ошибка при обновлении данных прибора: " . $main_update_error]);
     }
 
 } else {
-    // Ошибка: неверные данные или отсутствует ID
     echo json_encode(['success' => false, 'message' => "Неверные данные для обновления или отсутствует ID."]);
 }
 
-$conn->close(); // Закрываем соединение с БД
+if (isset($conn) && $conn instanceof mysqli) {
+    $conn->close();
+}
 ?>

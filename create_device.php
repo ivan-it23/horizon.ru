@@ -2,9 +2,15 @@
 session_start();
 include 'db_connection.php';
 
-// Функция для безопасного получения данных из POST
+// Функция для безопасного получения данных из POST, всегда возвращает строку или null
 function get_post_data($conn, $key) {
-    return isset($_POST[$key]) ? mysqli_real_escape_string($conn, $_POST[$key]) : null;
+    // Проверяем, существует ли ключ в $_POST и не является ли значение пустым
+    if (isset($_POST[$key]) && $_POST[$key] !== '') {
+        // Используем mysqli_real_escape_string для экранирования, чтобы предотвратить SQL-инъекции
+        return mysqli_real_escape_string($conn, (string)$_POST[$key]);
+    }
+    // Если ключ не существует или значение пустое, возвращаем null
+    return null;
 }
 
 // Устанавливаем заголовок ответа как JSON
@@ -24,21 +30,27 @@ $frequency1_khz      = get_post_data($conn, 'frequency1_khz');
 $frequency2_khz      = get_post_data($conn, 'frequency2_khz');
 
 // Базы передатчиков (максимум 5)
-for ($i = 1; $i <= 5; $i++) {
-    ${"transmitter_base{$i}_mm"} = get_post_data($conn, "transmitter_base{$i}_mm");
-}
+$transmitter_base1_mm = get_post_data($conn, 'transmitter_base1_mm');
+$transmitter_base2_mm = get_post_data($conn, 'transmitter_base2_mm');
+$transmitter_base3_mm = get_post_data($conn, 'transmitter_base3_mm');
+$transmitter_base4_mm = get_post_data($conn, 'transmitter_base4_mm');
+$transmitter_base5_mm = get_post_data($conn, 'transmitter_base5_mm');
 
 // Базы приёмников (текущие поля)
 $receiver_base1_mm   = get_post_data($conn, 'receiver_base1_mm');
 $receiver_base2_mm   = get_post_data($conn, 'receiver_base2_mm');
 $receiver_base3_mm   = get_post_data($conn, 'receiver_base3_mm');
 
+// Новое поле для дополнительной информации
+$additional_info     = get_post_data($conn, 'additional_info');
+
+
 $record_date         = get_post_data($conn, 'record_date');
 $creator_lastname    = isset($_SESSION['user'])
     ? mysqli_real_escape_string($conn, $_SESSION['user']['lastname'] . " " . $_SESSION['user']['firstname'] . " " . $_SESSION['user']['middlename'])
     : 'Неизвестный пользователь';
 
-// Обновлённый SQL‑запрос (добавлены столбцы transmitter_base1_mm…transmitter_base5_mm)
+// Обновлённый SQL‑запрос (добавлены столбцы transmitter_base1_mm…transmitter_base5_mm и additional_info)
 $sql_identification = "
 INSERT INTO device_identification (
     device_type, nominal_diameter, transmitter_count,
@@ -47,8 +59,8 @@ INSERT INTO device_identification (
     transmitter_base1_mm, transmitter_base2_mm, transmitter_base3_mm,
     transmitter_base4_mm, transmitter_base5_mm,
     receiver_base1_mm, receiver_base2_mm, receiver_base3_mm,
-    record_date, creator_lastname
-) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    record_date, creator_lastname, additional_info
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
 $stmt_identification = $conn->prepare($sql_identification);
 if (!$stmt_identification) {
@@ -58,17 +70,17 @@ if (!$stmt_identification) {
     exit;
 }
 
-// Биндим 21 параметр (все как строки)
+// Биндим 22 параметра (все как строки, включая новое поле)
 // Используем 's' для всех, т.к. get_post_data возвращает строки или null
 $stmt_identification->bind_param(
-    str_repeat('s', 21),
+    str_repeat('s', 22), // Увеличиваем количество 's' на 1 для нового поля
     $device_type, $nominal_diameter, $transmitter_count,
     $serial_number, $case_number, $length_mm, $diameter_mm,
     $upper_thread, $lower_thread, $frequency1_khz, $frequency2_khz,
     $transmitter_base1_mm, $transmitter_base2_mm, $transmitter_base3_mm,
     $transmitter_base4_mm, $transmitter_base5_mm,
     $receiver_base1_mm, $receiver_base2_mm, $receiver_base3_mm,
-    $record_date, $creator_lastname
+    $record_date, $creator_lastname, $additional_info // Добавляем новое поле
 );
 
 if (!$stmt_identification->execute()) {
@@ -89,7 +101,7 @@ if ($device_id) {
 
     // Обработка данных из полей для основных плат (Контроллер, Инклинометр, Приёмники, Передатчики)
     // Контроллер
-    if (!empty($_POST['controller_type']) || !empty($_POST['controller_version']) || !empty($_POST['controller_serial'])) {
+    if (get_post_data($conn, 'controller_type') !== null || get_post_data($conn, 'controller_version') !== null || get_post_data($conn, 'controller_serial') !== null) {
          $composition_data[] = [
                 'board_name' => 'Контроллер',
                 'type' => get_post_data($conn, 'controller_type'),
@@ -98,7 +110,7 @@ if ($device_id) {
             ];
     }
     // Инклинометр
-    if (!empty($_POST['inclinometer_type']) || !empty($_POST['inclinometer_version']) || !empty($_POST['inclinometer_serial'])) {
+    if (get_post_data($conn, 'inclinometer_type') !== null || get_post_data($conn, 'inclinometer_version') !== null || get_post_data($conn, 'inclinometer_serial') !== null) {
          $composition_data[] = [
                 'board_name' => 'Инклинометр',
                 'type' => get_post_data($conn, 'inclinometer_type'),
@@ -109,7 +121,7 @@ if ($device_id) {
 
     // Приемники (количество может быть разным, проверяем наличие полей)
     for ($i = 1; isset($_POST["receiver_{$i}_type"]); $i++) {
-        if (!empty($_POST["receiver_{$i}_type"]) || !empty($_POST["receiver_{$i}_version"]) || !empty($_POST["receiver_{$i}_serial"])) {
+        if (get_post_data($conn, "receiver_{$i}_type") !== null || get_post_data($conn, "receiver_{$i}_version") !== null || get_post_data($conn, "receiver_{$i}_serial") !== null) {
            $composition_data[] = [
                 'board_name' => "Приёмник {$i}",
                 'type' => get_post_data($conn, "receiver_{$i}_type"),
@@ -121,7 +133,7 @@ if ($device_id) {
 
     // Передатчики (количество может быть разным, проверяем наличие полей)
     for ($i = 1; isset($_POST["transmitter_{$i}_type"]); $i++) {
-        if (!empty($_POST["transmitter_{$i}_type"]) || !empty($_POST["transmitter_{$i}_version"]) || !empty($_POST["transmitter_{$i}_serial"])) {
+        if (get_post_data($conn, "transmitter_{$i}_type") !== null || get_post_data($conn, "transmitter_{$i}_version") !== null || get_post_data($conn, "transmitter_{$i}_serial") !== null) {
             $composition_data[] = [
                 'board_name' => "Передатчик {$i}",
                 'type' => get_post_data($conn, "transmitter_{$i}_type"),
@@ -141,12 +153,17 @@ if ($device_id) {
 
         for ($i = 0; $i < count($other_board_names); $i++) {
              // Проверяем, что хотя бы одно поле в строке заполнено
-            if (!empty($other_board_names[$i]) || !empty($other_board_types[$i]) || !empty($other_board_versions[$i]) || !empty($other_board_serials[$i])) {
+            $current_board_name = isset($other_board_names[$i]) ? mysqli_real_escape_string($conn, (string)$other_board_names[$i]) : null;
+            $current_type       = isset($other_board_types[$i]) ? mysqli_real_escape_string($conn, (string)$other_board_types[$i]) : null;
+            $current_version    = isset($other_board_versions[$i]) ? mysqli_real_escape_string($conn, (string)$other_board_versions[$i]) : null;
+            $current_serial     = isset($other_board_serials[$i]) ? mysqli_real_escape_string($conn, (string)$other_board_serials[$i]) : null;
+
+            if ($current_board_name !== null || $current_type !== null || $current_version !== null || $current_serial !== null) {
                 $composition_data[] = [
-                    'board_name' => isset($other_board_names[$i]) ? mysqli_real_escape_string($conn, $other_board_names[$i]) : null,
-                    'type' => isset($other_board_types[$i]) ? mysqli_real_escape_string($conn, $other_board_types[$i]) : null,
-                    'version' => isset($other_board_versions[$i]) ? mysqli_real_escape_string($conn, $other_board_versions[$i]) : null,
-                    'serial_number' => isset($other_board_serials[$i]) ? mysqli_real_escape_string($conn, $other_board_serials[$i]) : null,
+                    'board_name' => $current_board_name,
+                    'type' => $current_type,
+                    'version' => $current_version,
+                    'serial_number' => $current_serial,
                 ];
             }
         }

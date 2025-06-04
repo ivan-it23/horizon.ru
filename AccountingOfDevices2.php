@@ -270,15 +270,15 @@ if ($is_logged_in) {
                                 <tbody>
                                     <tr><td>Серийный номер</td><td><input type="text" name="serial_number"></td></tr>
                                     <tr><td>Номер корпуса</td><td><input type="text" name="case_number"></td></tr>
-                                    <tr><td>Длина, мм</td><td><input type="number" name="length_mm"></td></tr>
-                                    <tr><td>Диаметр, мм</td><td><input type="number" name="diameter_mm"></td></tr>
+                                    <tr><td>Длина, мм</td><td><input type="text" name="length_mm"></td></tr>
+                                    <tr><td>Диаметр, мм</td><td><input type="text" name="diameter_mm"></td></tr>
                                     <tr><td>Резьба верхняя</td><td><input type="text" name="upper_thread"></td></tr>
                                     <tr><td>Резьба нижняя</td><td><input type="text" name="lower_thread"></td></tr>
-                                    <tr><td>Рабочая частота 1, кГц</td><td><input type="number" name="frequency1_khz"></td></tr>
-                                    <tr><td>Рабочая частота 2, кГц</td><td><input type="number" name="frequency2_khz"></td></tr>
-                                    <tr><td>База приёмника 1, мм</td><td><input type="number" name="receiver_base1_mm"></td></tr>
-                                    <tr><td>База приёмника 2, мм</td><td><input type="number" name="receiver_base2_mm"></td></tr>
-                                    <tr><td>База приёмника 3, мм</td><td><input type="number" name="receiver_base3_mm"></td></tr>
+                                    <tr><td>Рабочая частота 1, кГц</td><td><input type="text" name="frequency1_khz"></td></tr>
+                                    <tr><td>Рабочая частота 2, кГц</td><td><input type="text" name="frequency2_khz"></td></tr>
+                                    <tr><td>База приёмника 1, мм</td><td><input type="text" name="receiver_base1_mm"></td></tr>
+                                    <tr><td>База приёмника 2, мм</td><td><input type="text" name="receiver_base2_mm"></td></tr>
+                                    <tr><td>База приёмника 3, мм</td><td><input type="text" name="receiver_base3_mm"></td></tr>
                                     <tr><td>Дата создания записи</td><td><input type="date" name="record_date"></td></tr>
                                     <tr>
                                         <td>Создатель записи</td>
@@ -314,6 +314,16 @@ if ($is_logged_in) {
                             <button type="button" id="addOtherBoardRow" class="button button-secondary">
                                 <i class="fas fa-plus"></i> Добавить плату
                             </button>
+                        </div>
+
+                        <div class="additional-info-section mt-4">
+                            <h4 class="table-section-header">Дополнительная информация</h4>
+                            <div class="form-group">
+                                <label for="additional_info" class="param-label">
+                                    <i class="fas fa-info-circle"></i> Описание
+                                </label>
+                                <textarea name="additional_info" id="additional_info" class="param-textarea" rows="5" placeholder="Введите любую дополнительную информацию о приборе"></textarea>
+                            </div>
                         </div>
 
                         <div class="mt-4">
@@ -1497,6 +1507,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // --- Логика отображения данных прибора на вкладке 1 после выбора/поиска ---
 
+// --- Логика отображения данных прибора на вкладке 1 после выбора/поиска ---
+
     function showDeviceData(deviceId) {
 
         let boardsToDelete = []; // Инициализируем/очищаем для каждого нового вызова showDeviceData
@@ -1866,7 +1878,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     th.textContent = `База приёмника ${i}, мм`;
                     const td  = document.createElement('td');
                     const inp = document.createElement('input');
-                    inp.type      = 'number';
+                    inp.type      = 'text';
                     inp.className = 'input-field';
                     inp.name      = key;
                     inp.value     = device[key] || '';
@@ -1886,7 +1898,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     th.textContent = `База передатчика ${i}, мм`;
                     const td  = document.createElement('td');
                     const inp = document.createElement('input');
-                    inp.type      = 'number';
+                    inp.type      = 'text';
                     inp.className = 'input-field';
                     inp.name      = key;
                     inp.value     = device[key];
@@ -1960,6 +1972,34 @@ document.addEventListener('DOMContentLoaded', function () {
             tableParams.appendChild(tbodyParams);
             paramsSection.appendChild(tableParams);
 
+            // --- Дополнительная информация (additional_info) ---
+            const additionalInfoSection = document.createElement('div');
+            additionalInfoSection.className = 'additional-info-section mt-4'; // Используем новый класс для стилей
+
+            const additionalInfoHeader = document.createElement('h4');
+            additionalInfoHeader.className = 'table-section-header';
+            additionalInfoHeader.textContent = 'Дополнительная информация';
+            additionalInfoSection.appendChild(additionalInfoHeader);
+
+            const additionalInfoFormGroup = document.createElement('div');
+            additionalInfoFormGroup.className = 'form-group';
+            additionalInfoSection.appendChild(additionalInfoFormGroup);
+
+            const additionalInfoLabel = document.createElement('label');
+            additionalInfoLabel.htmlFor = 'viewAdditionalInfo';
+            additionalInfoLabel.className = 'param-label';
+            additionalInfoLabel.innerHTML = '<i class="fas fa-info-circle"></i> Описание';
+            additionalInfoFormGroup.appendChild(additionalInfoLabel);
+
+            const additionalInfoTextarea = document.createElement('textarea');
+            additionalInfoTextarea.id = 'viewAdditionalInfo';
+            additionalInfoTextarea.className = 'param-textarea';
+            additionalInfoTextarea.name = 'additional_info';
+            additionalInfoTextarea.rows = '5';
+            additionalInfoTextarea.placeholder = 'Введите любую дополнительную информацию о приборе';
+            additionalInfoTextarea.value = device.additional_info || ''; // Заполняем значением из БД
+            additionalInfoFormGroup.appendChild(additionalInfoTextarea);
+
             const saveButton   = document.createElement('button');
             saveButton.type    = 'button';
             saveButton.textContent = 'Сохранить изменения';
@@ -1982,7 +2022,7 @@ document.addEventListener('DOMContentLoaded', function () {
             historyButton.classList.add('button', 'button-secondary', 'view-history-btn');
             historyButton.dataset.deviceId = device.id;
             historyButton.addEventListener('click', () => {
-                // Предполагается, что функция fetchDeviceHistory определена где-то еще
+
                  if (typeof fetchDeviceHistory === 'function') {
                     fetchDeviceHistory(device.id);
                  } else {
@@ -2001,6 +2041,7 @@ document.addEventListener('DOMContentLoaded', function () {
             deviceDiv.appendChild(tabContainer);
             deviceDiv.appendChild(paramsSection);
             deviceDiv.appendChild(compositionSection);
+            deviceDiv.appendChild(additionalInfoSection); // Добавляем новый блок
             deviceDiv.appendChild(btnContainer);
 
             const targetDisplayDiv = document.getElementById('searchDeviceForm').classList.contains('active') ? searchResultDiv : deviceListDiv;
@@ -2116,10 +2157,7 @@ document.addEventListener('DOMContentLoaded', function () {
         });
 
         // Находим якорную строку для вставки (после "Рабочая частота 2, кГц")
-        const anchorRow = Array.from(paramsTbody.rows).find(row =>
-            row.textContent.includes('Рабочая частота 2, кГц')
-        );
-
+        const anchorRow = Array.from(paramsTbody.rows).find(row => row.textContent.includes('Рабочая частота 2, кГц'));
         if (!anchorRow) {
             console.error('Не найдена якорная строка для вставки баз приемников');
             return;
@@ -2131,9 +2169,11 @@ document.addEventListener('DOMContentLoaded', function () {
             const newRow = paramsTbody.insertRow(anchorRow.rowIndex + i);
             newRow.innerHTML = `
                 <td>База приёмника ${i}, мм</td>
-                <td><input type="number" name="receiver_base${i}_mm" class="param-input"></td>
+                <td><input type="text" name="receiver_base${i}_mm" class="param-input"></td>
             `;
         }
+        // После обновления приемников, вызываем обновление передатчиков, чтобы они встали на правильное место
+        updateTransmitterRows();
     }
 
     // Функция для обновления полей "База передатчика"
@@ -2150,14 +2190,10 @@ document.addEventListener('DOMContentLoaded', function () {
         });
 
         // Находим последнюю строку приемников
-        const lastReceiverRow = Array.from(paramsTbody.rows).reverse().find(row =>
-            row.textContent.includes('База приёмника')
-        );
+        const lastReceiverRow = Array.from(paramsTbody.rows).reverse().find(row => row.textContent.includes('База приёмника'));
 
-        // Якорная строка для вставки передатчиков
-        const anchorRow = lastReceiverRow ||
-            paramsTbody.querySelector('input[name="frequency2_khz"]').closest('tr');
-
+        // Якорная строка для вставки передатчиков: либо после последнего приемника, либо после frequency2_khz
+        const anchorRow = lastReceiverRow || paramsTbody.querySelector('input[name="frequency2_khz"]').closest('tr');
         if (!anchorRow) {
             console.error('Не найдена якорная строка для вставки баз передатчиков');
             return;
@@ -2168,7 +2204,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const newRow = paramsTbody.insertRow(anchorRow.rowIndex + i);
             newRow.innerHTML = `
                 <td>База передатчика ${i}, мм</td>
-                <td><input type="number" name="transmitter_base${i}_mm" class="param-input"></td>
+                <td><input type="text" name="transmitter_base${i}_mm" class="param-input"></td>
             `;
         }
 
@@ -2176,7 +2212,9 @@ document.addEventListener('DOMContentLoaded', function () {
         const finalFields = ['record_date', 'creator_lastname'];
         finalFields.forEach(fieldName => {
             const row = paramsTbody.querySelector(`input[name="${fieldName}"]`).closest('tr');
-            paramsTbody.appendChild(row);
+            if (row) { // Проверяем, что строка существует
+                paramsTbody.appendChild(row);
+            }
         });
     }
 
@@ -2211,7 +2249,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
 
-    // Полный код обработчика, заменяющего старый saveNewDeviceButton.addEventListener('click', ...)
+
     saveNewDeviceButton.addEventListener('click', function() {
         const form = document.getElementById('newDeviceForm');
         const formData = new FormData(form);
@@ -2220,7 +2258,10 @@ document.addEventListener('DOMContentLoaded', function () {
         const serial = (formData.get('serial_number') || '').trim();
         const caseNum = (formData.get('case_number') || '').trim();
         if (!serial || !caseNum) {
-            alert('Пожалуйста, заполните поля "Серийный номер" и "Номер корпуса"');
+            // Заменяем alert на кастомное модальное окно или сообщение
+            // alert('Пожалуйста, заполните поля "Серийный номер" и "Номер корпуса"');
+            // Пример использования кастомного сообщения:
+            displayMessage('Пожалуйста, заполните поля "Серийный номер" и "Номер корпуса"', 'error');
             return;
         }
 
@@ -2229,11 +2270,12 @@ document.addEventListener('DOMContentLoaded', function () {
         for (let i = 1; i <= 5; i++) {
             const fieldName = `transmitter_base${i}_mm`;
             if (i <= transmitterCount) {
-                // если поле реально есть в форме, берем значение (иначе пустая строка — PHP превратит в null)
+                // Если поле реально есть в форме, берем значение
                 const input = form.querySelector(`input[name="${fieldName}"]`);
-                if (input) formData.set(fieldName, input.value);
+                // Убеждаемся, что значение сохраняется как строка, если оно не пустое
+                formData.set(fieldName, input ? (input.value.trim() === '' ? '' : input.value.trim()) : '');
             } else {
-                // удаляем ненужные ключи, чтобы PHP get_post_data вернул null
+                // Удаляем ненужные ключи, чтобы PHP get_post_data вернул null
                 formData.delete(fieldName);
             }
         }
@@ -2245,99 +2287,206 @@ document.addEventListener('DOMContentLoaded', function () {
             const fieldName = `receiver_base${i}_mm`;
             if (i <= recvMax) {
                 const input = form.querySelector(`input[name="${fieldName}"]`);
-                if (input) formData.set(fieldName, input.value);
+                // Убеждаемся, что значение сохраняется как строка, если оно не пустое
+                formData.set(fieldName, input ? (input.value.trim() === '' ? '' : input.value.trim()) : '');
             } else {
                 formData.delete(fieldName);
             }
         }
 
-        // 4) Всё остальное — как есть
+        // 4) Новое поле "additional_info"
+        const additionalInfo = form.querySelector('textarea[name="additional_info"]');
+        if (additionalInfo) {
+            // Убеждаемся, что значение сохраняется как строка, если оно не пустое
+            formData.set('additional_info', additionalInfo.value.trim() === '' ? '' : additionalInfo.value.trim());
+        } else {
+            formData.delete('additional_info'); // Если по какой-то причине поля нет
+        }
+
+        // 5) Все остальные поля (из таблицы device_parameters)
+        // Проходим по всем input-полям в секции device_parameters
+        document.querySelectorAll('#device_parameters input[type="text"], #device_parameters input[type="date"]').forEach(input => {
+            if (input.name && input.name !== 'creator_lastname') { // creator_lastname уже обрабатывается на сервере
+                // Если поле пустое, отправляем пустую строку, чтобы PHP мог преобразовать в null
+                formData.set(input.name, input.value.trim() === '' ? '' : input.value.trim());
+            }
+        });
+
+        // 6) Собираем данные по основным платам (Контроллер, Инклинометр, Приемники, Передатчики)
+        const mainBoards = [];
+        createCompositionTbodyMain.querySelectorAll('tr').forEach(row => {
+            const boardNameInput = row.querySelector('td:first-child').textContent.trim(); // Текст из первой ячейки
+            const typeInput = row.querySelector('input[name*="_type"]');
+            const versionInput = row.querySelector('input[name*="_version"]');
+            const serialInput = row.querySelector('input[name*="_serial"]');
+
+            if (typeInput || versionInput || serialInput) { // Проверяем, что инпуты существуют
+                const typeVal = typeInput ? (typeInput.value.trim() === '' ? '' : typeInput.value.trim()) : '';
+                const versionVal = versionInput ? (versionInput.value.trim() === '' ? '' : versionInput.value.trim()) : '';
+                const serialVal = serialInput ? (serialInput.value.trim() === '' ? '' : serialInput.value.trim()) : '';
+
+                // Добавляем запись, только если хотя бы одно из полей заполнено
+                if (typeVal !== '' || versionVal !== '' || serialVal !== '') {
+                    mainBoards.push({
+                        board_name: boardNameInput,
+                        type: typeVal,
+                        version: versionVal,
+                        serial_number: serialVal
+                    });
+                }
+            }
+        });
+        // Добавляем основные платы в formData как JSON-строку
+        formData.set('main_boards_data', JSON.stringify(mainBoards));
+
+
+        // 7) Собираем данные по прочим платам
+        const otherBoards = [];
+        createCompositionTbodyOther.querySelectorAll('tr').forEach(row => {
+            const nameInput = row.querySelector('input[name="other_board_name[]"]');
+            const typeInput = row.querySelector('input[name="other_board_type[]"]');
+            const versionInput = row.querySelector('input[name="other_board_version[]"]');
+            const serialInput = row.querySelector('input[name="other_board_serial[]"]');
+
+            if (nameInput || typeInput || versionInput || serialInput) { // Проверяем, что инпуты существуют
+                const nameVal = nameInput ? (nameInput.value.trim() === '' ? '' : nameInput.value.trim()) : '';
+                const typeVal = typeInput ? (typeInput.value.trim() === '' ? '' : typeInput.value.trim()) : '';
+                const versionVal = versionInput ? (versionInput.value.trim() === '' ? '' : versionInput.value.trim()) : '';
+                const serialVal = serialInput ? (serialInput.value.trim() === '' ? '' : serialInput.value.trim()) : '';
+
+                // Добавляем запись, только если хотя бы одно из полей заполнено
+                if (nameVal !== '' || typeVal !== '' || versionVal !== '' || serialVal !== '') {
+                    otherBoards.push({
+                        board_name: nameVal,
+                        type: typeVal,
+                        version: versionVal,
+                        serial_number: serialVal
+                    });
+                }
+            }
+        });
+        // Добавляем прочие платы в formData как JSON-строку
+        formData.set('other_boards_data', JSON.stringify(otherBoards));
+
+
         fetch('create_device.php', {
             method: 'POST',
             body: formData
         })
         .then(response => {
             if (!response.ok) {
-                return response.text().then(text => { throw new Error(text); });
+                return response.text().then(text => {
+                    // Заменяем alert на кастомное модальное окно или сообщение
+                    // alert('Ошибка при создании прибора: ' + text);
+                    displayMessage('Ошибка при создании прибора: ' + text, 'error');
+                    throw new Error(text);
+                });
             }
             return response.json();
         })
         .then(data => {
             if (data.success) {
-                alert('Прибор успешно создан!');
+                // Заменяем alert на кастомное модальное окно или сообщение
+                // alert('Прибор успешно создан!');
+                displayMessage('Прибор успешно создан!', 'success');
                 form.reset();
-                generateCompositionTableRows(); // если нужно восстановить динамику таблиц
+                generateCompositionTableRows(); // Если нужно восстановить динамику таблиц
+                updateReceiverRows(); // Обновляем строки приемников после сброса формы
+                updateTransmitterRows(); // Обновляем строки передатчиков после сброса формы
             } else {
-                alert('Ошибка: ' + (data.error || data.message));
+                // Заменяем alert на кастомное модальное окно или сообщение
+                // alert('Ошибка: ' + (data.error || data.message));
+                displayMessage('Ошибка: ' + (data.error || data.message), 'error');
             }
         })
         .catch(err => {
             console.error('Ошибка при создании прибора:', err);
-            alert('Произошла ошибка: ' + err.message);
+            // Заменяем alert на кастомное модальное окно или сообщение
+            // alert('Произошла ошибка: ' + err.message);
+            displayMessage('Произошла ошибка: ' + err.message, 'error');
         });
     });
 
 
+    // Вспомогательная функция для отображения сообщений (замена alert)
+    function displayMessage(message, type) {
+        const messageContainer = document.createElement('div');
+        messageContainer.className = `search-message ${type}`; // Используем существующие классы стилей
+        messageContainer.textContent = message;
 
+        // Находим место для вставки сообщения, например, перед кнопкой сохранения
+        const saveButtonContainer = document.querySelector('#newDeviceForm .mt-4');
+        if (saveButtonContainer) {
+            saveButtonContainer.insertBefore(messageContainer, saveButtonContainer.firstChild);
+        } else {
+            // Если контейнер не найден, можно вывести в консоль или в другое место
+            console.log(`Message (${type}): ${message}`);
+        }
+
+        // Удаляем сообщение через несколько секунд
+        setTimeout(() => {
+            messageContainer.remove();
+        }, 5000); // Сообщение исчезнет через 5 секунд
+    }
 
 
     // Функция для генерации строк таблицы "Состав прибора" (основные платы)
+    // Функция для генерации строк таблицы "Состав прибора" (основные платы)
     function generateCompositionTableRows() {
-         const deviceType = deviceTypeSelectForCreate.value;
-         const transmitterCount = parseInt(transmitterCountSelectForCreate.value, 10);
-         const tbody = createCompositionTbodyMain;
-         // Проверяем наличие tbody перед попыткой манипуляций
+        const deviceType = deviceTypeSelectForCreate.value;
+        const transmitterCount = parseInt(transmitterCountSelectForCreate.value, 10);
+        const tbody = createCompositionTbodyMain;
+
+        // Проверяем наличие tbody перед попыткой манипуляций
         if (!tbody) {
             console.error("Элемент createCompositionTbodyMain не найден!");
             return;
         }
-         tbody.innerHTML = ''; // Очищаем текущие строки
+        tbody.innerHTML = ''; // Очищаем текущие строки
 
-         // Контроллер (всегда есть)
-         let controllerRow = tbody.insertRow();
-         controllerRow.innerHTML = `
-             <td>Контроллер</td>
-             <td><input type="text" name="controller_type" class="input-field"></td>
-             <td><input type="text" name="controller_version" class="input-field"></td>
-             <td><input type="text" name="controller_serial" class="input-field"></td>
-         `;
+        // Контроллер (всегда есть)
+        let controllerRow = tbody.insertRow();
+        controllerRow.innerHTML = `
+            <td>Контроллер</td>
+            <td><input type="text" name="controller_type" class="input-field"></td>
+            <td><input type="text" name="controller_version" class="input-field"></td>
+            <td><input type="text" name="controller_serial" class="input-field"></td>
+        `;
 
-         // Инклинометр (только для Картографа)
-         if (deviceType === 'Картограф') { // Измененное условие
-              let inclinometerRow = tbody.insertRow();
-              inclinometerRow.innerHTML = `
-                 <td>Инклинометр</td>
-                 <td><input type="text" name="inclinometer_type" class="input-field"></td>
-                 <td><input type="text" name="inclinometer_version" class="input-field"></td>
-                 <td><input type="text" name="inclinometer_serial" class="input-field"></td>
-              `;
-         }
+        // Инклинометр (только для Картографа)
+        if (deviceType === 'Картограф') {
+            let inclinometerRow = tbody.insertRow();
+            inclinometerRow.innerHTML = `
+                <td>Инклинометр</td>
+                <td><input type="text" name="inclinometer_type" class="input-field"></td>
+                <td><input type="text" name="inclinometer_version" class="input-field"></td>
+                <td><input type="text" name="inclinometer_serial" class="input-field"></td>
+            `;
+        }
 
-         let receiverCount = 1; // Минимум 1 приемник
-         if (deviceType === 'Картограф') {
-             receiverCount = 3; // 3 приемника для Картографа
-         }
-         for (let i = 1; i <= receiverCount; i++) {
-             let receiverRow = tbody.insertRow();
-             receiverRow.innerHTML = `
-                 <td>Приёмник ${i}</td>
-                 <td><input type="text" name="receiver_${i}_type" class="input-field"></td>
-                 <td><input type="text" name="receiver_${i}_version" class="input-field"></td>
-                 <td><input type="text" name="receiver_${i}_serial" class="input-field"></td>
-             `;
-         }
+        let receiverCount = 1; // Минимум 1 приемник
+        if (deviceType === 'Картограф') {
+            receiverCount = 3; // 3 приемника для Картографа
+        }
+        for (let i = 1; i <= receiverCount; i++) {
+            let receiverRow = tbody.insertRow();
+            receiverRow.innerHTML = `
+                <td>Приёмник ${i}</td>
+                <td><input type="text" name="receiver_${i}_type" class="input-field"></td>
+                <td><input type="text" name="receiver_${i}_version" class="input-field"></td>
+                <td><input type="text" name="receiver_${i}_serial" class="input-field"></td>
+            `;
+        }
 
-
-
-         for (let i = 1; i <= transmitterCount; i++) {
-             let transmitterRow = tbody.insertRow();
-             transmitterRow.innerHTML = `
-                 <td>Передатчик ${i}</td>
-                 <td><input type="text" name="transmitter_${i}_type" class="input-field"></td>
-                 <td><input type="text" name="transmitter_${i}_version" class="input-field"></td>
-                 <td><input type="text" name="transmitter_${i}_serial" class="input-field"></td>
-             `;
-         }
+        for (let i = 1; i <= transmitterCount; i++) {
+            let transmitterRow = tbody.insertRow();
+            transmitterRow.innerHTML = `
+                <td>Передатчик ${i}</td>
+                <td><input type="text" name="transmitter_${i}_type" class="input-field"></td>
+                <td><input type="text" name="transmitter_${i}_version" class="input-field"></td>
+                <td><input type="text" name="transmitter_${i}_serial" class="input-field"></td>
+            `;
+        }
     }
 
 
@@ -2346,10 +2495,10 @@ document.addEventListener('DOMContentLoaded', function () {
     transmitterCountSelectForCreate.addEventListener('change', generateCompositionTableRows);
 
     // Вызываем генерацию строк при загрузке страницы (для формы создания)
-    // generateCompositionTableRows(); // Этот вызов перенесен в toggleCreateFormSections('composition') при необходимости
 
 
     // --- Функция сохранения изменений прибора ---
+// --- Функция сохранения изменений прибора ---
     function saveDeviceChanges(deviceId, boardsToDelete) {
         const updatedData = {};
 
@@ -2357,18 +2506,18 @@ document.addEventListener('DOMContentLoaded', function () {
         const paramsContainer = document.getElementById('device_params_section');
         if (paramsContainer) {
             paramsContainer.querySelectorAll('input').forEach(input => { // Исключаем textarea, т.к. их нет в параметрах
-                // Проверяем, есть ли у поля имя и не является ли оно readOnly
-                 if (input.name && !input.readOnly) {
-                     // Для числовых полей, если значение пустое, отправляем null
-                     if (input.type === 'number' || input.name.includes('_mm') || input.name.includes('_khz')) {
-                         // Используем parseFloat для преобразования в число, если не пустое
-                         updatedData[input.name] = input.value.trim() === '' ? null : parseFloat(input.value);
-                     } else if (input.type === 'date') {
-                         updatedData[input.name] = input.value.trim() === '' ? null : input.value;
-                     }
-                     else {
-                         updatedData[input.name] = input.value.trim(); // Удаляем пробелы по краям
-                     }
+                if (input.name && !input.readOnly) {
+                    const value = input.value.trim();
+                    if (value === '') {
+                        // Отправляем null для пустых строк
+                        updatedData[input.name] = null;
+                    } else if (input.type === 'date') {
+                        // Для полей типа 'date' отправляем значение как есть
+                        updatedData[input.name] = value;
+                    } else {
+                        // Для всех остальных текстовых полей отправляем как строку
+                        updatedData[input.name] = value;
+                    }
                 }
             });
         } else {
@@ -2378,25 +2527,32 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         updatedData['id'] = deviceId; // Добавляем ID прибора
 
+        // --- Сбор данных из секции ДОПОЛНИТЕЛЬНОЙ ИНФОРМАЦИИ ---
+        const additionalInfoTextarea = document.querySelector('textarea[name="additional_info"]');
+        if (additionalInfoTextarea) {
+            const infoValue = additionalInfoTextarea.value.trim();
+            // Если пустая строка, отправляем null, иначе — сам текст
+            updatedData['additional_info'] = infoValue === '' ? null : infoValue;
+        } else {
+            console.warn('Textarea additional_info не найдена. Поле additional_info не будет отправлено.');
+        }
+
         // --- Сбор данных из секции СОСТАВА ПРИБОРА (исключая помеченные к удалению) ---
         const compContainer = document.getElementById('device_composition_section');
         if (compContainer) {
             let composition = [];
-            // Собираем данные из обеих таблиц состава внутри секции
             compContainer.querySelectorAll('table tbody tr').forEach(tr => {
                 // Пропускаем строки, помеченные к удалению
                 if (tr.classList.contains('pending-deletion')) {
                     return;
                 }
-
                 const inputs = tr.querySelectorAll('input');
                 // Проверяем, что в строке есть все 4 инпута
                 if (inputs.length === 4) {
-                    const boardNameInput = inputs[0];
-                    const typeInput = inputs[1];
-                    const versionInput = inputs[2];
+                    const boardNameInput    = inputs[0];
+                    const typeInput         = inputs[1];
+                    const versionInput      = inputs[2];
                     const serialNumberInput = inputs[3];
-
                     // Добавляем запись, если хотя бы одно поле заполнено
                     if (
                         boardNameInput.value.trim() !== '' ||
@@ -2406,86 +2562,61 @@ document.addEventListener('DOMContentLoaded', function () {
                     ) {
                         composition.push({
                             board_name: boardNameInput.value.trim(),
-                            type: typeInput.value.trim(),
-                            version: versionInput.value.trim(),
+                            type:       typeInput.value.trim(),
+                            version:    versionInput.value.trim(),
                             serial_number: serialNumberInput.value.trim()
                         });
                     }
                 }
             });
-
-             // Добавляем состав, только если он не пустой
             if (composition.length > 0) {
-                 updatedData['composition'] = composition;
+                updatedData['composition'] = composition;
             }
-            // Если контейнер состава не был загружен или пуст, поле 'composition' не добавляется.
-
-            // --- Добавляем список плат для удаления ---
             updatedData['boardsToDelete'] = boardsToDelete;
-
         } else {
-             console.warn('Контейнер состава #device_composition_section не найден. Данные состава не будут отправлены.');
-             // В этом случае, отправляем только данные параметров и пустой список на удаление
-             updatedData['boardsToDelete'] = boardsToDelete;
+            console.warn('Контейнер состава #device_composition_section не найден. Данные состава не будут отправлены.');
+            updatedData['boardsToDelete'] = boardsToDelete;
         }
-
 
         console.log('Отправка данных на сервер:', updatedData);
 
         // --- Отправка данных на сервер ---
-        fetch('update_device.php', { // Убедитесь, что этот URL правильный
+        fetch('update_device.php', {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json' // Указываем, что отправляем JSON
+                'Content-Type': 'application/json'
             },
-            body: JSON.stringify(updatedData) // Преобразуем объект в JSON строку
+            body: JSON.stringify(updatedData)
         })
         .then(response => {
-             // Проверяем статус ответа
-             if (!response.ok) {
-                 // Если статус не OK, пытаемся прочитать текст ошибки
-                 return response.text().then(text => {
-                     throw new Error(`Ошибка сервера: ${response.status} ${response.statusText}. ${text || 'Нет дополнительной информации.'}`);
-                 });
-             }
-             // Если все OK, парсим JSON ответ
-             return response.json();
-         })
+            if (!response.ok) {
+                return response.text().then(text => {
+                    throw new Error(`Ошибка сервера: ${response.status} ${response.statusText}. ${text || 'Нет дополнительной информации.'}`);
+                });
+            }
+            return response.json();
+        })
         .then(jsonData => {
-            // Показываем сообщение из JSON ответа, если оно есть
             if (jsonData && jsonData.message) {
-                 alert(jsonData.message); // Показываем только сообщение
+                alert(jsonData.message);
             } else {
-                 // Фоллбэк, если структура ответа неожиданная
-                 alert('Операция завершена, но ответ сервера не содержит ожидаемого сообщения.');
-                 console.log('Неожиданный ответ сервера:', jsonData);
+                alert('Операция завершена, но ответ сервера не содержит ожидаемого сообщения.');
+                console.log('Неожиданный ответ сервера:', jsonData);
             }
-
-            // Опционально: обновить отображение истории после сохранения
-            const historyButton = document.querySelector(`.view-history-btn[data-device-id="${deviceId}"]`);
-            if (historyButton && deviceHistoryDiv && deviceHistoryDiv.style.display !== 'none') {
-                // Проверяем, какой тип истории был активен, и перезагружаем его
-                const activeHistoryTypeButton = deviceHistoryDiv.querySelector('.history-toggle-buttons .tab-button.active');
-                const historyType = activeHistoryTypeButton
-                    ? activeHistoryTypeButton.dataset.historyType
-                    : 'parameters';
-                // Перезагружаем историю с учетом активного типа
-                fetchDeviceHistory(deviceId, historyType);
-            }
-            // Обновляем данные в основной форме, чтобы отобразить актуальную дату изменения и создателя
+            // Обновляем данные в основном интерфейсе после сохранения
             showDeviceData(deviceId);
         })
         .catch(error => {
-            // Обрабатываем ошибки сети или ошибки, выброшенные из .then(response => ...)
             console.error('Ошибка при сохранении изменений:', error);
-            alert(`Произошла ошибка при сохранении: ${error.message}`); // Показываем ошибку пользователю
+            alert(`Произошла ошибка при сохранении: ${error.message}`);
         });
     }
 
-    // --- Логика отображения истории изменений прибора (Tab 1) ---
 
 
+
     // --- Логика отображения истории изменений прибора (Tab 1) ---
+// --- Логика отображения истории изменений прибора (Tab 1) ---
     function fetchDeviceHistory(deviceId, initialHistoryType = 'parameters') {
         const deviceHistoryDiv = document.getElementById('deviceHistory');
         if (!deviceHistoryDiv) {
@@ -2497,12 +2628,17 @@ document.addEventListener('DOMContentLoaded', function () {
             `.view-history-btn[data-device-id="${deviceId}"]`
         );
 
-        // Проверяем, если история для этого прибора и типа уже отображается, и кнопка активна, то скрываем ее
-        const isCurrentlyShowingThisHistory = deviceHistoryDiv.style.display !== 'none' &&
-                                              deviceHistoryDiv.dataset.currentHistoryDeviceId === deviceId.toString() &&
-                                              deviceHistoryDiv.dataset.currentHistoryType === initialHistoryType;
+        // Проверяем, если история для этого прибора и типа уже отображается, и кнопка активна, то скрываем её
+        const isCurrentlyShowingThisHistory =
+            deviceHistoryDiv.style.display !== 'none' &&
+            deviceHistoryDiv.dataset.currentHistoryDeviceId === deviceId.toString() &&
+            deviceHistoryDiv.dataset.currentHistoryType === initialHistoryType;
 
-        if (isCurrentlyShowingThisHistory && showHistoryBtn && showHistoryBtn.textContent === 'Скрыть историю изменений') {
+        if (
+            isCurrentlyShowingThisHistory &&
+            showHistoryBtn &&
+            showHistoryBtn.textContent === 'Скрыть историю изменений'
+        ) {
             deviceHistoryDiv.style.display = 'none';
             deviceHistoryDiv.innerHTML = '';
             if (showHistoryBtn) {
@@ -2550,7 +2686,7 @@ document.addEventListener('DOMContentLoaded', function () {
         checkboxesDiv.id = 'historyParamsCheckboxes';
         checkboxesDiv.className = 'history-options'; // Класс для возможных стилей
         checkboxesDiv.style.marginTop = '10px';
-        checkboxesDiv.style.display = (initialHistoryType === 'parameters') ? 'flex' : 'none'; // Показываем только для параметров
+        checkboxesDiv.style.display = initialHistoryType === 'parameters' ? 'flex' : 'none'; // Показываем только для параметров
         checkboxesDiv.style.gap = '20px'; // Расстояние между чекбоксами
         checkboxesDiv.style.flexWrap = 'wrap'; // Перенос на новую строку при необходимости
 
@@ -2603,7 +2739,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 deviceHistoryDiv.dataset.currentHistoryType = historyType; // Обновляем тип в dataset
 
                 // Показываем/скрываем чекбоксы в зависимости от типа истории
-                checkboxesDiv.style.display = (historyType === 'parameters') ? 'flex' : 'none';
+                checkboxesDiv.style.display = historyType === 'parameters' ? 'flex' : 'none';
 
                 loadHistory(historyType); // Загружаем соответствующую историю
             });
@@ -2623,7 +2759,12 @@ document.addEventListener('DOMContentLoaded', function () {
             historyContentDiv.innerHTML = '<p>Загрузка истории...</p>'; // Индикатор загрузки
 
             // Определяем режим просмотра (только для параметров)
-            const viewMode = historyType === 'parameters' ? (document.getElementById('historyChangesOnlyCheckbox').checked ? 'changes' : 'full') : 'full'; // Для состава всегда 'full'
+            const viewMode =
+                historyType === 'parameters'
+                    ? document.getElementById('historyChangesOnlyCheckbox').checked
+                        ? 'changes'
+                        : 'full'
+                    : 'full'; // Для состава всегда 'full'
 
             fetch('fetch_device_history.php', { // Убедитесь, что URL правильный
                 method: 'POST',
@@ -2631,13 +2772,13 @@ document.addEventListener('DOMContentLoaded', function () {
                 body: `device_id=${deviceId}&history_type=${historyType}`
             })
             .then(response => {
-                 if (!response.ok) {
-                     // Пытаемся прочитать текст ошибки, если он есть
-                     return response.text().then(text => {
-                         throw new Error(`HTTP error ${response.status}: ${text || response.statusText}`);
-                     });
-                 }
-                 return response.json();
+                if (!response.ok) {
+                    // Пытаемся прочитать текст ошибки, если он есть
+                    return response.text().then(text => {
+                        throw new Error(`HTTP error ${response.status}: ${text || response.statusText}`);
+                    });
+                }
+                return response.json();
             })
             .then(historyData => {
                 historyContentDiv.innerHTML = ''; // Очищаем индикатор загрузки
@@ -2657,8 +2798,9 @@ document.addEventListener('DOMContentLoaded', function () {
                     return;
                 }
 
-                // Логика отображения для ИСТОРИИ ПАРАМЕТРОВ
+                // --- Логика отображения для ИСТОРИИ ПАРАМЕТРОВ ---
                 if (historyType === 'parameters') {
+                    // Расширенный список полей, кроме additional_info (оно выведется ниже таблицы)
                     const fieldDisplayNames = {
                         // Основные идентификационные поля
                         device_type: 'Тип прибора',
@@ -2672,7 +2814,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         // Частотные характеристики
                         frequency1_khz: 'Рабочая частота 1, кГц',
                         frequency2_khz: 'Рабочая частота 2, кГц',
-                        // Базы приемников
+                        // Базы приёмников
                         receiver_base1_mm: 'База приёмника 1, мм',
                         receiver_base2_mm: 'База приёмника 2, мм',
                         receiver_base3_mm: 'База приёмника 3, мм',
@@ -2682,13 +2824,14 @@ document.addEventListener('DOMContentLoaded', function () {
                         transmitter_base3_mm: 'База передатчика 3, мм',
                         transmitter_base4_mm: 'База передатчика 4, мм',
                         transmitter_base5_mm: 'База передатчика 5, мм',
-                        // Дата создания записи (из device_identification или device_history)
+                        // Дата создания записи
                         record_date: 'Дата создания записи'
-                        // Поля 'creator_lastname' и 'changed_at' обрабатываются в заголовке записи
+                        // Поле additional_info будет ниже таблицы
                     };
 
                     historyData.forEach((currentRecord, i) => {
-                        const isActualRecord = currentRecord.is_current === '1' || currentRecord.is_current === true;
+                        const isActualRecord =
+                            currentRecord.is_current === '1' || currentRecord.is_current === true;
                         const recordContainer = document.createElement('div');
                         recordContainer.className = 'history-record-item'; // Класс для общего стиля элемента истории
                         if (isActualRecord) {
@@ -2711,11 +2854,18 @@ document.addEventListener('DOMContentLoaded', function () {
                         // Итерация по ключам из fieldDisplayNames для сохранения порядка и фильтрации
                         Object.keys(fieldDisplayNames).forEach(fieldKey => {
                             const currentValueInRecord = currentRecord[fieldKey];
-                            const oldValue = currentRecord.diff_details ? currentRecord.diff_details[fieldKey] : undefined;
+                            const oldValue = currentRecord.diff_details
+                                ? currentRecord.diff_details[fieldKey]
+                                : undefined;
 
-                            // Пропускаем поля, если они NULL и не являются измененными
-                            if ((currentValueInRecord === null || currentValueInRecord === undefined || String(currentValueInRecord).trim() === '') && oldValue === undefined) {
-                                return; // Пропускаем строку, если значение NULL и не было изменено
+                            // Пропускаем поля, если они NULL/undefined/пустая строка и не являются изменёнными
+                            if (
+                                (currentValueInRecord === null ||
+                                    currentValueInRecord === undefined ||
+                                    String(currentValueInRecord).trim() === '') &&
+                                oldValue === undefined
+                            ) {
+                                return; // Пропускаем строку
                             }
 
                             // Если режим "только изменения" и поле не изменилось, пропускаем
@@ -2723,26 +2873,42 @@ document.addEventListener('DOMContentLoaded', function () {
                                 return;
                             }
 
-                            let displayValue = (currentValueInRecord !== null && currentValueInRecord !== undefined) ? htmlspecialchars(currentValueInRecord) : '-';
+                            let displayValue = currentValueInRecord !== null &&
+                                currentValueInRecord !== undefined
+                                ? htmlspecialchars(currentValueInRecord)
+                                : '-';
                             let rowClass = '';
                             let oldValueHtml = '';
 
                             if (oldValue !== undefined) {
                                 rowClass = 'changed';
-                                // Форматируем старое значение: если оно было NULL, показываем "пусто", иначе само значение
-                                const formattedOldValue = (oldValue === null || oldValue === undefined || String(oldValue).trim() === '') ? 'пусто' : htmlspecialchars(oldValue);
+                                // Форматируем старое значение: если оно было NULL/undefined/пустая строка, показываем "пусто"
+                                const formattedOldValue =
+                                    oldValue === null ||
+                                    oldValue === undefined ||
+                                    String(oldValue).trim() === ''
+                                        ? 'пусто'
+                                        : htmlspecialchars(oldValue);
                                 oldValueHtml = `<span class="history-old-value"> (${formattedOldValue})</span>`;
                                 hasChangesToShowForThisRecord = true;
-                            } else if (isActualRecord && (currentValueInRecord !== null && currentValueInRecord !== undefined && String(currentValueInRecord).trim() !== '')) {
+                            } else if (
+                                isActualRecord &&
+                                currentValueInRecord !== null &&
+                                currentValueInRecord !== undefined &&
+                                String(currentValueInRecord).trim() !== ''
+                            ) {
                                 // Для актуальной записи, если значение не NULL, оно всегда отображается
                                 // Не добавляем класс 'changed' для актуальной записи, если она не была изменена
-                            } else if (currentValueInRecord === null || currentValueInRecord === undefined || String(currentValueInRecord).trim() === '') {
-                                // Если значение NULL и не было изменено (т.е. oldValue === undefined),
-                                // и мы дошли до этого места, значит, мы не в режиме "changes" или это актуальная запись.
+                            } else if (
+                                currentValueInRecord === null ||
+                                currentValueInRecord === undefined ||
+                                String(currentValueInRecord).trim() === ''
+                            ) {
+                                // Если значение NULL и не было изменено (oldValue === undefined),
+                                // и мы дошли до этого места, значит, или мы не в режиме "changes", или это актуальная запись.
                                 // В этом случае, если значение NULL, отображаем "-"
                                 displayValue = '-';
                             }
-
 
                             const row = document.createElement('tr');
                             row.innerHTML = `
@@ -2752,14 +2918,41 @@ document.addEventListener('DOMContentLoaded', function () {
                             tbody.appendChild(row);
                         });
 
+                        table.appendChild(tbody);
+                        recordContainer.appendChild(table);
+
+                        // --- Блок отдельной секции для additional_info (например, под таблицей) ---
+                        if (
+                            currentRecord.additional_info !== null &&
+                            currentRecord.additional_info !== undefined &&
+                            String(currentRecord.additional_info).trim() !== ''
+                        ) {
+                            const infoSection = document.createElement('div');
+                            infoSection.className = 'additional-info-section';
+                            const header = document.createElement('h4');
+                            header.className = 'table-section-header';
+                            header.textContent = 'Дополнительная информация';
+                            const infoTextDiv = document.createElement('div');
+                            // Сохраняем переносы строк
+                            const safeText = htmlspecialchars(currentRecord.additional_info);
+                            infoTextDiv.innerHTML = safeText.replace(/\r?\n/g, '<br>');
+                            infoSection.appendChild(header);
+                            infoSection.appendChild(infoTextDiv);
+                            recordContainer.appendChild(infoSection);
+                        }
+
                         // Добавляем запись в контейнер только если она актуальна ИЛИ (режим "полный" ИЛИ есть изменения)
-                        if (isActualRecord || viewMode === 'full' || hasChangesToShowForThisRecord) {
-                            table.appendChild(tbody);
-                            recordContainer.appendChild(table);
+                        if (
+                            isActualRecord ||
+                            viewMode === 'full' ||
+                            hasChangesToShowForThisRecord
+                        ) {
                             historyContentDiv.appendChild(recordContainer);
                         }
                     });
-                } else if (historyType === 'composition') {
+                }
+                // --- Логика отображения для ИСТОРИИ СОСТАВА (с дополнительной информацией ниже таблицы) ---
+                else if (historyType === 'composition') {
                     const fieldDisplayNames = {
                         board_name: 'Плата',
                         type: 'Тип',
@@ -2767,7 +2960,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         serial_number: 'Серийный номер'
                     };
 
-                    historyData.forEach(versionRecord => {
+                    historyData.forEach((versionRecord, idx) => {
                         const isCurrentVersion = versionRecord.is_current_version === true;
                         const versionContainer = document.createElement('div');
                         versionContainer.className = 'history-record-item';
@@ -2813,7 +3006,7 @@ document.addEventListener('DOMContentLoaded', function () {
                                 const headerCell = headerRow.insertCell();
                                 headerCell.colSpan = 4;
                                 headerCell.className = 'history-field-label';
-                                headerCell.textContent = 'Добавлено:'; // КОРРЕКТНО: Отображаем как "Добавлено"
+                                headerCell.textContent = 'Добавлено:'; // Отображаем как "Добавлено"
                                 headerCell.style.backgroundColor = 'var(--corporate-yellow-light)';
                                 headerCell.style.fontWeight = 'bold';
                                 headerCell.style.color = 'var(--primary-color)';
@@ -2837,14 +3030,14 @@ document.addEventListener('DOMContentLoaded', function () {
                                 const headerCell = headerRow.insertCell();
                                 headerCell.colSpan = 4;
                                 headerCell.className = 'history-field-label';
-                                headerCell.textContent = 'Удалено:'; // КОРРЕКТНО: Отображаем как "Удалено"
+                                headerCell.textContent = 'Удалено:'; // Отображаем как "Удалено"
                                 headerCell.style.backgroundColor = 'var(--corporate-orange-light)';
                                 headerCell.style.fontWeight = 'bold';
                                 headerCell.style.color = 'var(--primary-color)';
 
                                 diffs.added.forEach(board => {
                                     const row = tbody.insertRow();
-                                    row.className = 'removed'; // Стиль для удаленных
+                                    row.className = 'removed'; // Стиль для удалённых
                                     row.innerHTML = `
                                         <td>${htmlspecialchars(board.board_name || '-')}</td>
                                         <td>${htmlspecialchars(board.type || '-')}</td>
@@ -2854,14 +3047,14 @@ document.addEventListener('DOMContentLoaded', function () {
                                 });
                             }
 
-                            // Измененные платы
+                            // Изменённые платы
                             if (diffs.changed && diffs.changed.length > 0) {
                                 const headerRow = tbody.insertRow();
                                 const headerCell = headerRow.insertCell();
                                 headerCell.colSpan = 4;
                                 headerCell.className = 'history-field-label';
                                 headerCell.textContent = 'Изменено:';
-                                headerCell.style.backgroundColor = 'var(--corporate-yellow-light)'; // Светлый желтый фон для заголовка
+                                headerCell.style.backgroundColor = 'var(--corporate-yellow-light)'; // Светлый жёлтый фон для заголовка
                                 headerCell.style.fontWeight = 'bold';
                                 headerCell.style.color = 'var(--primary-color)';
 
@@ -2870,13 +3063,17 @@ document.addEventListener('DOMContentLoaded', function () {
                                     row.innerHTML = `<td>${htmlspecialchars(change.board_name || '-')}</td>`;
                                     const fields = ['type', 'version', 'serial_number'];
                                     fields.forEach(field => {
-                                        const currentVal = (change.current_values[field] !== null && change.current_values[field] !== undefined) ? htmlspecialchars(change.current_values[field]) : '-';
+                                        const currentVal = (change.current_values[field] !== null && change.current_values[field] !== undefined)
+                                            ? htmlspecialchars(change.current_values[field])
+                                            : '-';
                                         const prevVal = change.previous_values[field];
                                         let cellContent = currentVal;
                                         let cellClass = '';
                                         if (prevVal !== undefined) {
                                             cellClass = 'changed';
-                                            const formattedPrevVal = (prevVal === null || prevVal === undefined || String(prevVal).trim() === '') ? 'пусто' : htmlspecialchars(prevVal);
+                                            const formattedPrevVal = (prevVal === null || prevVal === undefined || String(prevVal).trim() === '')
+                                                ? 'пусто'
+                                                : htmlspecialchars(prevVal);
                                             cellContent += `<span class="history-old-value"> (${formattedPrevVal})</span>`;
                                         }
                                         const cell = document.createElement('td');
@@ -2891,6 +3088,27 @@ document.addEventListener('DOMContentLoaded', function () {
 
                         table.appendChild(tbody);
                         versionContainer.appendChild(table);
+
+                        // --- Блок отдельной секции для additional_info под таблицей ---
+                        if (
+                            versionRecord.additional_info !== null &&
+                            versionRecord.additional_info !== undefined &&
+                            String(versionRecord.additional_info).trim() !== ''
+                        ) {
+                            const infoSection = document.createElement('div');
+                            infoSection.className = 'additional-info-section';
+                            const header = document.createElement('h4');
+                            header.className = 'table-section-header';
+                            header.textContent = 'Дополнительная информация';
+                            const infoTextDiv = document.createElement('div');
+                            // Сохраняем переносы строк
+                            const safeText = htmlspecialchars(versionRecord.additional_info);
+                            infoTextDiv.innerHTML = safeText.replace(/\r?\n/g, '<br>');
+                            infoSection.appendChild(header);
+                            infoSection.appendChild(infoTextDiv);
+                            versionContainer.appendChild(infoSection);
+                        }
+
                         historyContentDiv.appendChild(versionContainer);
                     });
                 }
@@ -2908,6 +3126,17 @@ document.addEventListener('DOMContentLoaded', function () {
         // Загружаем историю при первом вызове функции
         loadHistory(initialHistoryType);
     }
+
+    // --- Утилита для безопасного вывода текста в HTML ---
+    function htmlspecialchars(text) {
+        return String(text)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+
 
 
 

@@ -2712,6 +2712,119 @@ button:disabled {
   background-color: transparent !important;
 }
 
+/* Стили для нового блока дополнительной информации */
+.additional-info-section {
+    background-color: var(--bg-container);
+    border-radius: var(--border-radius);
+    border: var(--border-width) solid var(--border-color);
+    padding: 1.5rem;
+    box-shadow: var(--shadow-sm);
+    margin-bottom: 2rem; /* Отступ до кнопки "Создать прибор" */
+    margin-top: 1.5rem; /* Отступ сверху от предыдущих блоков */
+    margin-bottom: 2rem; /* Отступ до кнопок действий */
+}
+
+.additional-info-section .table-section-header {
+    margin-top: 0;
+    margin-bottom: 1.25rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--border-color);
+    color: var(--primary-color);
+}
+
+.additional-info-section .form-group {
+    margin-bottom: 0; /* Убираем лишний отступ, так как textarea уже имеет padding */
+}
+
+.additional-info-section .param-label {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.additional-info-section .param-label i {
+    color: var(--primary-color);
+    margin-right: 0.5rem;
+    font-size: 1rem;
+}
+
+.additional-info-section .param-textarea {
+    width: 100%;
+    padding: 10px 12px;
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--text-primary);
+    background-color: var(--bg-input);
+    border: var(--border-width) solid var(--border-color-input);
+    border-radius: var(--border-radius);
+    resize: vertical;
+    min-height: 120px; /* Увеличиваем минимальную высоту для удобства ввода */
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.additional-info-section .param-textarea:focus {
+    border-color: var(--border-color-focus);
+    box-shadow: 0 0 0 3px rgba(44, 62, 80, 0.15);
+    outline: none;
+}
+
+.additional-info-section {
+    background-color: var(--bg-container);
+    border-radius: var(--border-radius);
+    border: var(--border-width) solid var(--border-color);
+    padding: 1.5rem;
+    box-shadow: var(--shadow-sm);
+    margin-top: 1.5rem; /* Отступ сверху от предыдущих блоков */
+    margin-bottom: 2rem; /* Отступ до кнопок действий */
+}
+
+.additional-info-section .table-section-header {
+    margin-top: 0;
+    margin-bottom: 1.25rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--border-color);
+    color: var(--primary-color);
+}
+
+.additional-info-section .form-group {
+    margin-bottom: 0; /* Убираем лишний отступ, так как textarea уже имеет padding */
+}
+
+.additional-info-section .param-label {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.additional-info-section .param-label i {
+    color: var(--primary-color);
+    margin-right: 0.5rem;
+    font-size: 1rem;
+}
+
+.additional-info-section .param-textarea {
+    width: 100%;
+    padding: 10px 12px;
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--text-primary);
+    background-color: var(--bg-input);
+    border: var(--border-width) solid var(--border-color-input);
+    border-radius: var(--border-radius);
+    resize: vertical;
+    min-height: 120px; /* Увеличиваем минимальную высоту для удобства ввода */
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.additional-info-section .param-textarea:focus {
+    border-color: var(--border-color-focus);
+    box-shadow: 0 0 0 3px rgba(44, 62, 80, 0.15);
+    outline: none;
+}
 #viewDeviceParams,
 #createDeviceForm,
 #searchDeviceForm {
