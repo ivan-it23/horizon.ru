@@ -1972,6 +1972,34 @@ document.addEventListener('DOMContentLoaded', function () {
             tableParams.appendChild(tbodyParams);
             paramsSection.appendChild(tableParams);
 
+            // --- Дополнительная информация (additional_info) ---
+            const additionalInfoSection = document.createElement('div');
+            additionalInfoSection.className = 'additional-info-section mt-4'; // Используем новый класс для стилей
+
+            const additionalInfoHeader = document.createElement('h4');
+            additionalInfoHeader.className = 'table-section-header';
+            additionalInfoHeader.textContent = 'Дополнительная информация';
+            additionalInfoSection.appendChild(additionalInfoHeader);
+
+            const additionalInfoFormGroup = document.createElement('div');
+            additionalInfoFormGroup.className = 'form-group';
+            additionalInfoSection.appendChild(additionalInfoFormGroup);
+
+            const additionalInfoLabel = document.createElement('label');
+            additionalInfoLabel.htmlFor = 'viewAdditionalInfo';
+            additionalInfoLabel.className = 'param-label';
+            additionalInfoLabel.innerHTML = '<i class="fas fa-info-circle"></i> Описание';
+            additionalInfoFormGroup.appendChild(additionalInfoLabel);
+
+            const additionalInfoTextarea = document.createElement('textarea');
+            additionalInfoTextarea.id = 'viewAdditionalInfo';
+            additionalInfoTextarea.className = 'param-textarea';
+            additionalInfoTextarea.name = 'additional_info';
+            additionalInfoTextarea.rows = '5';
+            additionalInfoTextarea.placeholder = 'Введите любую дополнительную информацию о приборе';
+            additionalInfoTextarea.value = device.additional_info || ''; // Заполняем значением из БД
+            additionalInfoFormGroup.appendChild(additionalInfoTextarea);
+
             const saveButton   = document.createElement('button');
             saveButton.type    = 'button';
             saveButton.textContent = 'Сохранить изменения';
@@ -2013,6 +2041,7 @@ document.addEventListener('DOMContentLoaded', function () {
             deviceDiv.appendChild(tabContainer);
             deviceDiv.appendChild(paramsSection);
             deviceDiv.appendChild(compositionSection);
+            deviceDiv.appendChild(additionalInfoSection); // Добавляем новый блок
             deviceDiv.appendChild(btnContainer);
 
             const targetDisplayDiv = document.getElementById('searchDeviceForm').classList.contains('active') ? searchResultDiv : deviceListDiv;
@@ -2477,20 +2506,18 @@ document.addEventListener('DOMContentLoaded', function () {
         const paramsContainer = document.getElementById('device_params_section');
         if (paramsContainer) {
             paramsContainer.querySelectorAll('input').forEach(input => { // Исключаем textarea, т.к. их нет в параметрах
-                // Проверяем, есть ли у поля имя и не является ли оно readOnly
-                 if (input.name && !input.readOnly) {
-                     const value = input.value.trim();
-                     if (value === '') {
-                         // Отправляем null для пустых строк
-                         updatedData[input.name] = null;
-                     } else if (input.type === 'date') {
-                         // Для полей типа 'date' отправляем значение как есть
-                         updatedData[input.name] = value;
-                     }
-                     else {
-                         // Для всех остальных текстовых полей (включая те, что были числовыми), отправляем как строку
-                         updatedData[input.name] = value;
-                     }
+                if (input.name && !input.readOnly) {
+                    const value = input.value.trim();
+                    if (value === '') {
+                        // Отправляем null для пустых строк
+                        updatedData[input.name] = null;
+                    } else if (input.type === 'date') {
+                        // Для полей типа 'date' отправляем значение как есть
+                        updatedData[input.name] = value;
+                    } else {
+                        // Для всех остальных текстовых полей отправляем как строку
+                        updatedData[input.name] = value;
+                    }
                 }
             });
         } else {
@@ -2500,25 +2527,32 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         updatedData['id'] = deviceId; // Добавляем ID прибора
 
+        // --- Сбор данных из секции ДОПОЛНИТЕЛЬНОЙ ИНФОРМАЦИИ ---
+        const additionalInfoTextarea = document.querySelector('textarea[name="additional_info"]');
+        if (additionalInfoTextarea) {
+            const infoValue = additionalInfoTextarea.value.trim();
+            // Если пустая строка, отправляем null, иначе — сам текст
+            updatedData['additional_info'] = infoValue === '' ? null : infoValue;
+        } else {
+            console.warn('Textarea additional_info не найдена. Поле additional_info не будет отправлено.');
+        }
+
         // --- Сбор данных из секции СОСТАВА ПРИБОРА (исключая помеченные к удалению) ---
         const compContainer = document.getElementById('device_composition_section');
         if (compContainer) {
             let composition = [];
-            // Собираем данные из обеих таблиц состава внутри секции
             compContainer.querySelectorAll('table tbody tr').forEach(tr => {
                 // Пропускаем строки, помеченные к удалению
                 if (tr.classList.contains('pending-deletion')) {
                     return;
                 }
-
                 const inputs = tr.querySelectorAll('input');
                 // Проверяем, что в строке есть все 4 инпута
                 if (inputs.length === 4) {
-                    const boardNameInput = inputs[0];
-                    const typeInput = inputs[1];
-                    const versionInput = inputs[2];
+                    const boardNameInput    = inputs[0];
+                    const typeInput         = inputs[1];
+                    const versionInput      = inputs[2];
                     const serialNumberInput = inputs[3];
-
                     // Добавляем запись, если хотя бы одно поле заполнено
                     if (
                         boardNameInput.value.trim() !== '' ||
@@ -2528,81 +2562,56 @@ document.addEventListener('DOMContentLoaded', function () {
                     ) {
                         composition.push({
                             board_name: boardNameInput.value.trim(),
-                            type: typeInput.value.trim(),
-                            version: versionInput.value.trim(),
+                            type:       typeInput.value.trim(),
+                            version:    versionInput.value.trim(),
                             serial_number: serialNumberInput.value.trim()
                         });
                     }
                 }
             });
-
-             // Добавляем состав, только если он не пустой
             if (composition.length > 0) {
-                 updatedData['composition'] = composition;
+                updatedData['composition'] = composition;
             }
-            // Если контейнер состава не был загружен или пуст, поле 'composition' не добавляется.
-
-            // --- Добавляем список плат для удаления ---
             updatedData['boardsToDelete'] = boardsToDelete;
-
         } else {
-             console.warn('Контейнер состава #device_composition_section не найден. Данные состава не будут отправлены.');
-             // В этом случае, отправляем только данные параметров и пустой список на удаление
-             updatedData['boardsToDelete'] = boardsToDelete;
+            console.warn('Контейнер состава #device_composition_section не найден. Данные состава не будут отправлены.');
+            updatedData['boardsToDelete'] = boardsToDelete;
         }
-
 
         console.log('Отправка данных на сервер:', updatedData);
 
         // --- Отправка данных на сервер ---
-        fetch('update_device.php', { // Убедитесь, что этот URL правильный
+        fetch('update_device.php', {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json' // Указываем, что отправляем JSON
+                'Content-Type': 'application/json'
             },
-            body: JSON.stringify(updatedData) // Преобразуем объект в JSON строку
+            body: JSON.stringify(updatedData)
         })
         .then(response => {
-             // Проверяем статус ответа
-             if (!response.ok) {
-                 // Если статус не OK, пытаемся прочитать текст ошибки
-                 return response.text().then(text => {
-                     throw new Error(`Ошибка сервера: ${response.status} ${response.statusText}. ${text || 'Нет дополнительной информации.'}`);
-                 });
-             }
-             // Если все OK, парсим JSON ответ
-             return response.json();
-         })
+            if (!response.ok) {
+                return response.text().then(text => {
+                    throw new Error(`Ошибка сервера: ${response.status} ${response.statusText}. ${text || 'Нет дополнительной информации.'}`);
+                });
+            }
+            return response.json();
+        })
         .then(jsonData => {
-            // Показываем сообщение из JSON ответа, если оно есть
             if (jsonData && jsonData.message) {
-                 alert(jsonData.message); // Показываем только сообщение
+                alert(jsonData.message);
             } else {
-                 // Фоллбэк, если структура ответа неожиданная
-                 alert('Операция завершена, но ответ сервера не содержит ожидаемого сообщения.');
-                 console.log('Неожиданный ответ сервера:', jsonData);
+                alert('Операция завершена, но ответ сервера не содержит ожидаемого сообщения.');
+                console.log('Неожиданный ответ сервера:', jsonData);
             }
-
-            // Опционально: обновить отображение истории после сохранения
-            const historyButton = document.querySelector(`.view-history-btn[data-device-id="${deviceId}"]`);
-            if (historyButton && deviceHistoryDiv && deviceHistoryDiv.style.display !== 'none') {
-                // Проверяем, какой тип истории был активен, и перезагружаем его
-                const activeHistoryTypeButton = deviceHistoryDiv.querySelector('.history-toggle-buttons .tab-button.active');
-                const historyType = activeHistoryTypeButton
-                    ? activeHistoryTypeButton.dataset.historyType
-                    : 'parameters';
-                // Перезагружаем историю с учетом активного типа
-                fetchDeviceHistory(deviceId, historyType);
-            }
-            // Обновляем данные в основной форме, чтобы отобразить актуальную дату изменения и создателя
+            // Обновляем данные в основном интерфейсе после сохранения
             showDeviceData(deviceId);
         })
         .catch(error => {
-            // Обрабатываем ошибки сети или ошибки, выброшенные из .then(response => ...)
             console.error('Ошибка при сохранении изменений:', error);
-            alert(`Произошла ошибка при сохранении: ${error.message}`); // Показываем ошибку пользователю
+            alert(`Произошла ошибка при сохранении: ${error.message}`);
         });
     }
+
 
 
 
@@ -2618,12 +2627,17 @@ document.addEventListener('DOMContentLoaded', function () {
             `.view-history-btn[data-device-id="${deviceId}"]`
         );
 
-        // Проверяем, если история для этого прибора и типа уже отображается, и кнопка активна, то скрываем ее
-        const isCurrentlyShowingThisHistory = deviceHistoryDiv.style.display !== 'none' &&
-                                              deviceHistoryDiv.dataset.currentHistoryDeviceId === deviceId.toString() &&
-                                              deviceHistoryDiv.dataset.currentHistoryType === initialHistoryType;
+        // Проверяем, если история для этого прибора и типа уже отображается, и кнопка активна, то скрываем её
+        const isCurrentlyShowingThisHistory =
+            deviceHistoryDiv.style.display !== 'none' &&
+            deviceHistoryDiv.dataset.currentHistoryDeviceId === deviceId.toString() &&
+            deviceHistoryDiv.dataset.currentHistoryType === initialHistoryType;
 
-        if (isCurrentlyShowingThisHistory && showHistoryBtn && showHistoryBtn.textContent === 'Скрыть историю изменений') {
+        if (
+            isCurrentlyShowingThisHistory &&
+            showHistoryBtn &&
+            showHistoryBtn.textContent === 'Скрыть историю изменений'
+        ) {
             deviceHistoryDiv.style.display = 'none';
             deviceHistoryDiv.innerHTML = '';
             if (showHistoryBtn) {
@@ -2637,27 +2651,25 @@ document.addEventListener('DOMContentLoaded', function () {
         deviceHistoryDiv.style.display = 'block';
         deviceHistoryDiv.dataset.currentHistoryDeviceId = deviceId;
         deviceHistoryDiv.dataset.currentHistoryType = initialHistoryType;
-
         if (showHistoryBtn) {
             showHistoryBtn.textContent = 'Скрыть историю изменений';
         }
-
         deviceHistoryDiv.innerHTML = ''; // Очищаем перед отрисовкой
 
         // Создаем кнопки для переключения типа истории (Параметры/Состав)
         const toggleDiv = document.createElement('div');
-        toggleDiv.className = 'mode-buttons history-toggle-buttons'; // Используем существующий класс для стилизации
+        toggleDiv.className = 'mode-buttons history-toggle-buttons';
         toggleDiv.style.marginBottom = '15px'; // Отступ снизу
 
         const btnParameters = document.createElement('button');
         btnParameters.textContent = 'Параметры прибора';
-        btnParameters.className = 'button button-secondary tab-button'; // Стилизация как у других кнопок-табов
-        btnParameters.dataset.historyType = 'parameters';
+        btnParameters.className = 'button button-secondary tab-button';
+        btnParameters.dataset.historyType = 'parameters'; // <-- добавлено
 
         const btnComposition = document.createElement('button');
         btnComposition.textContent = 'Состав прибора';
         btnComposition.className = 'button button-secondary tab-button';
-        btnComposition.dataset.historyType = 'composition';
+        btnComposition.dataset.historyType = 'composition'; // <-- добавлено
 
         // Устанавливаем активную кнопку в зависимости от initialHistoryType
         if (initialHistoryType === 'composition') {
@@ -2669,9 +2681,9 @@ document.addEventListener('DOMContentLoaded', function () {
         // Контейнер для чекбоксов (только для истории параметров)
         const checkboxesDiv = document.createElement('div');
         checkboxesDiv.id = 'historyParamsCheckboxes';
-        checkboxesDiv.className = 'history-options'; // Класс для возможных стилей
+        checkboxesDiv.className = 'history-options';
         checkboxesDiv.style.marginTop = '10px';
-        checkboxesDiv.style.display = (initialHistoryType === 'parameters') ? 'flex' : 'none'; // Показываем только для параметров
+        checkboxesDiv.style.display = initialHistoryType === 'parameters' ? 'flex' : 'none'; // Показываем только для параметров
         checkboxesDiv.style.gap = '20px'; // Расстояние между чекбоксами
         checkboxesDiv.style.flexWrap = 'wrap'; // Перенос на новую строку при необходимости
 
@@ -2705,7 +2717,7 @@ document.addEventListener('DOMContentLoaded', function () {
         // Контейнер для самого контента истории
         const historyContentDiv = document.createElement('div');
         historyContentDiv.id = 'historyActualContent';
-        historyContentDiv.className = 'history-content'; // Класс для возможных стилей
+        historyContentDiv.className = 'history-content';
 
         // Добавляем элементы управления в главный div истории
         toggleDiv.appendChild(btnParameters);
@@ -2722,10 +2734,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 this.classList.add('active');
                 const historyType = this.dataset.historyType;
                 deviceHistoryDiv.dataset.currentHistoryType = historyType; // Обновляем тип в dataset
-
-                // Показываем/скрываем чекбоксы в зависимости от типа истории
-                checkboxesDiv.style.display = (historyType === 'parameters') ? 'flex' : 'none';
-
+                // Показываем/скрывать чекбоксы в зависимости от типа истории
+                checkboxesDiv.style.display = historyType === 'parameters' ? 'flex' : 'none';
                 loadHistory(historyType); // Загружаем соответствующую историю
             });
         });
@@ -2744,7 +2754,9 @@ document.addEventListener('DOMContentLoaded', function () {
             historyContentDiv.innerHTML = '<p>Загрузка истории...</p>'; // Индикатор загрузки
 
             // Определяем режим просмотра (только для параметров)
-            const viewMode = historyType === 'parameters' ? (document.getElementById('historyChangesOnlyCheckbox').checked ? 'changes' : 'full') : 'full'; // Для состава всегда 'full'
+            const viewMode = historyType === 'parameters' ?
+                document.getElementById('historyChangesOnlyCheckbox').checked ? 'changes' : 'full' :
+                'full'; // Для состава всегда 'full'
 
             fetch('fetch_device_history.php', { // Убедитесь, что URL правильный
                 method: 'POST',
@@ -2752,13 +2764,13 @@ document.addEventListener('DOMContentLoaded', function () {
                 body: `device_id=${deviceId}&history_type=${historyType}`
             })
             .then(response => {
-                 if (!response.ok) {
-                     // Пытаемся прочитать текст ошибки, если он есть
-                     return response.text().then(text => {
-                         throw new Error(`HTTP error ${response.status}: ${text || response.statusText}`);
-                     });
-                 }
-                 return response.json();
+                if (!response.ok) {
+                    // Пытаемся прочитать текст ошибки, если он есть
+                    return response.text().then(text => {
+                        throw new Error(`HTTP error ${response.status}: ${text || response.statusText}`);
+                    });
+                }
+                return response.json();
             })
             .then(historyData => {
                 historyContentDiv.innerHTML = ''; // Очищаем индикатор загрузки
@@ -2778,8 +2790,9 @@ document.addEventListener('DOMContentLoaded', function () {
                     return;
                 }
 
-                // Логика отображения для ИСТОРИИ ПАРАМЕТРОВ
+                // --- Логика отображения для ИСТОРИИ ПАРАМЕТРОВ ---
                 if (historyType === 'parameters') {
+                    // Расширенный список полей, кроме additional_info (оно выведется ниже таблицы)
                     const fieldDisplayNames = {
                         // Основные идентификационные поля
                         device_type: 'Тип прибора',
@@ -2793,7 +2806,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         // Частотные характеристики
                         frequency1_khz: 'Рабочая частота 1, кГц',
                         frequency2_khz: 'Рабочая частота 2, кГц',
-                        // Базы приемников
+                        // Базы приёмников
                         receiver_base1_mm: 'База приёмника 1, мм',
                         receiver_base2_mm: 'База приёмника 2, мм',
                         receiver_base3_mm: 'База приёмника 3, мм',
@@ -2803,21 +2816,21 @@ document.addEventListener('DOMContentLoaded', function () {
                         transmitter_base3_mm: 'База передатчика 3, мм',
                         transmitter_base4_mm: 'База передатчика 4, мм',
                         transmitter_base5_mm: 'База передатчика 5, мм',
-                        // Дата создания записи (из device_identification или device_history)
+                        // Дата создания записи
                         record_date: 'Дата создания записи'
-                        // Поля 'creator_lastname' и 'changed_at' обрабатываются в заголовке записи
+                        // Поле additional_info будет ниже таблицы
                     };
 
                     historyData.forEach((currentRecord, i) => {
                         const isActualRecord = currentRecord.is_current === '1' || currentRecord.is_current === true;
                         const recordContainer = document.createElement('div');
-                        recordContainer.className = 'history-record-item'; // Класс для общего стиля элемента истории
+                        recordContainer.className = 'history-record-item';
                         if (isActualRecord) {
                             recordContainer.classList.add('is-current'); // Новый класс для текущей записи
                         }
 
-                        const recordHeader = document.createElement('div'); // Используем div вместо h5 для гибкости
-                        recordHeader.className = 'history-header'; // Класс для стилизации заголовка
+                        const recordHeader = document.createElement('div');
+                        recordHeader.className = 'history-header';
                         recordHeader.innerHTML = `
                             <p>Дата: <strong>${currentRecord.changed_at ? htmlspecialchars(currentRecord.changed_at) : 'Неизвестно'}</strong></p>
                             <p>Автор: <strong>${currentRecord.creator_lastname ? htmlspecialchars(currentRecord.creator_lastname) : 'Неизвестно'}</strong></p>
@@ -2825,8 +2838,9 @@ document.addEventListener('DOMContentLoaded', function () {
                         recordContainer.appendChild(recordHeader);
 
                         const table = document.createElement('table');
-                        table.className = 'data-table history-table'; // Используем существующие классы для таблиц
+                        table.className = 'data-table history-table';
                         const tbody = document.createElement('tbody');
+
                         let hasChangesToShowForThisRecord = false; // Флаг, что в этой записи есть что показать (для режима "только изменения")
 
                         // Итерация по ключам из fieldDisplayNames для сохранения порядка и фильтрации
@@ -2834,9 +2848,12 @@ document.addEventListener('DOMContentLoaded', function () {
                             const currentValueInRecord = currentRecord[fieldKey];
                             const oldValue = currentRecord.diff_details ? currentRecord.diff_details[fieldKey] : undefined;
 
-                            // Пропускаем поля, если они NULL и не являются измененными
-                            if ((currentValueInRecord === null || currentValueInRecord === undefined || String(currentValueInRecord).trim() === '') && oldValue === undefined) {
-                                return; // Пропускаем строку, если значение NULL и не было изменено
+                            // Пропускаем поля, если они NULL/undefined/пустая строка и не являются изменёнными
+                            if (
+                                (currentValueInRecord === null || currentValueInRecord === undefined || String(currentValueInRecord).trim() === '') &&
+                                oldValue === undefined
+                            ) {
+                                return; // Пропускаем строку
                             }
 
                             // Если режим "только изменения" и поле не изменилось, пропускаем
@@ -2844,26 +2861,32 @@ document.addEventListener('DOMContentLoaded', function () {
                                 return;
                             }
 
-                            let displayValue = (currentValueInRecord !== null && currentValueInRecord !== undefined) ? htmlspecialchars(currentValueInRecord) : '-';
+                            let displayValue = currentValueInRecord !== null && currentValueInRecord !== undefined ? htmlspecialchars(currentValueInRecord) : '-';
                             let rowClass = '';
                             let oldValueHtml = '';
 
                             if (oldValue !== undefined) {
-                                rowClass = 'changed';
-                                // Форматируем старое значение: если оно было NULL, показываем "пусто", иначе само значение
-                                const formattedOldValue = (oldValue === null || oldValue === undefined || String(oldValue).trim() === '') ? 'пусто' : htmlspecialchars(oldValue);
+                                rowClass = 'changed'; // Форматируем старое значение: если оно было NULL/undefined/пустая строка, показываем "пусто"
+                                const formattedOldValue = oldValue === null || oldValue === undefined || String(oldValue).trim() === '' ? 'пусто' : htmlspecialchars(oldValue);
                                 oldValueHtml = `<span class="history-old-value"> (${formattedOldValue})</span>`;
                                 hasChangesToShowForThisRecord = true;
-                            } else if (isActualRecord && (currentValueInRecord !== null && currentValueInRecord !== undefined && String(currentValueInRecord).trim() !== '')) {
+                            } else if (
+                                isActualRecord &&
+                                currentValueInRecord !== null &&
+                                currentValueInRecord !== undefined &&
+                                String(currentValueInRecord).trim() !== ''
+                            ) {
                                 // Для актуальной записи, если значение не NULL, оно всегда отображается
-                                // Не добавляем класс 'changed' для актуальной записи, если она не была изменена
-                            } else if (currentValueInRecord === null || currentValueInRecord === undefined || String(currentValueInRecord).trim() === '') {
-                                // Если значение NULL и не было изменено (т.е. oldValue === undefined),
-                                // и мы дошли до этого места, значит, мы не в режиме "changes" или это актуальная запись.
+                            } else if (
+                                currentValueInRecord === null ||
+                                currentValueInRecord === undefined ||
+                                String(currentValueInRecord).trim() === ''
+                            ) {
+                                // Если значение NULL и не было изменено (oldValue === undefined),
+                                // и мы дошли до этого места, значит, или мы не в режиме "changes", или это актуальная запись.
                                 // В этом случае, если значение NULL, отображаем "-"
                                 displayValue = '-';
                             }
-
 
                             const row = document.createElement('tr');
                             row.innerHTML = `
@@ -2873,14 +2896,81 @@ document.addEventListener('DOMContentLoaded', function () {
                             tbody.appendChild(row);
                         });
 
+                        table.appendChild(tbody);
+                        recordContainer.appendChild(table);
+
+                        // ----------------- БЛОК ДЛЯ additional_info -----------------
+                        const currentAdditionalInfo = currentRecord.additional_info;
+                        const oldAdditionalInfo = currentRecord.diff_details ? currentRecord.diff_details['additional_info'] : undefined;
+
+                        // Определяем, есть ли изменение по additional_info
+                        const infoChanged = oldAdditionalInfo !== undefined;
+
+                        // Показываем блок "Дополнительная информация", если:
+                        // 1) есть новое значение (не пустое), либо
+                        // 2) есть oldAdditionalInfo (значит изменилось), либо
+                        // 3) это актуальная запись (чтобы отобразить текущее состояние).
+                        if (
+                            (currentAdditionalInfo !== null && currentAdditionalInfo !== undefined && String(currentAdditionalInfo).trim() !== '') ||
+                            infoChanged ||
+                            isActualRecord
+                        ) {
+                            const infoSection = document.createElement('div');
+                            infoSection.className = 'history-additional-info-section';
+
+                            const header = document.createElement('h4');
+                            header.className = 'table-section-header';
+                            header.textContent = 'Дополнительная информация';
+                            infoSection.appendChild(header);
+
+                            // Если поле изменилось (oldAdditionalInfo определено)
+                            if (infoChanged) {
+                                // --- Отображаем две секции: "Новые сведения" и "Старые сведения" ---
+                                const newInfoContainer = document.createElement('div');
+                                newInfoContainer.className = 'additional-info-sub-section';
+                                newInfoContainer.innerHTML = `
+                                    <p class="additional-info-field-label">Новые сведения</p>
+                                    <div class="additional-info-value-box new-value-highlight">
+                                        ${currentAdditionalInfo !== null && currentAdditionalInfo !== undefined && String(currentAdditionalInfo).trim() !== '' ? htmlspecialchars(currentAdditionalInfo).replace(/\r?\n/g, '<br>') : '-'}
+                                    </div>
+                                `;
+                                infoSection.appendChild(newInfoContainer);
+
+                                const oldInfoContainer = document.createElement('div');
+                                oldInfoContainer.className = 'additional-info-sub-section';
+                                oldInfoContainer.innerHTML = `
+                                    <p class="additional-info-field-label">Старые сведения</p>
+                                    <div class="additional-info-value-box old-value-no-highlight">
+                                        ${oldAdditionalInfo !== null && oldAdditionalInfo !== undefined && String(oldAdditionalInfo).trim() !== '' ? htmlspecialchars(oldAdditionalInfo).replace(/\r?\n/g, '<br>') : 'пусто'}
+                                    </div>
+                                `;
+                                infoSection.appendChild(oldInfoContainer);
+                            }
+                            // Если поле не изменялось (oldAdditionalInfo undefined)
+                            else {
+                                // --- Отображаем только текущее значение без выделения и без заголовка "Новые сведения" ---
+                                const plainInfoContainer = document.createElement('div');
+                                plainInfoContainer.className = 'additional-info-sub-section';
+                                plainInfoContainer.innerHTML = `
+                                    <div class="additional-info-value-box">
+                                        ${currentAdditionalInfo !== null && currentAdditionalInfo !== undefined && String(currentAdditionalInfo).trim() !== '' ? htmlspecialchars(currentAdditionalInfo).replace(/\r?\n/g, '<br>') : '-'}
+                                    </div>
+                                `;
+                                infoSection.appendChild(plainInfoContainer);
+                            }
+
+                            recordContainer.appendChild(infoSection);
+                        }
+                        // ------------------------------------------------------------
+
                         // Добавляем запись в контейнер только если она актуальна ИЛИ (режим "полный" ИЛИ есть изменения)
                         if (isActualRecord || viewMode === 'full' || hasChangesToShowForThisRecord) {
-                            table.appendChild(tbody);
-                            recordContainer.appendChild(table);
                             historyContentDiv.appendChild(recordContainer);
                         }
                     });
-                } else if (historyType === 'composition') {
+                }
+                // --- Логика отображения для ИСТОРИИ СОСТАВА (с дополнительной информацией ниже таблицы) ---
+                else if (historyType === 'composition') {
                     const fieldDisplayNames = {
                         board_name: 'Плата',
                         type: 'Тип',
@@ -2888,7 +2978,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         serial_number: 'Серийный номер'
                     };
 
-                    historyData.forEach(versionRecord => {
+                    historyData.forEach((versionRecord, idx) => {
                         const isCurrentVersion = versionRecord.is_current_version === true;
                         const versionContainer = document.createElement('div');
                         versionContainer.className = 'history-record-item';
@@ -2934,14 +3024,13 @@ document.addEventListener('DOMContentLoaded', function () {
                                 const headerCell = headerRow.insertCell();
                                 headerCell.colSpan = 4;
                                 headerCell.className = 'history-field-label';
-                                headerCell.textContent = 'Добавлено:'; // КОРРЕКТНО: Отображаем как "Добавлено"
+                                headerCell.textContent = 'Добавлено:';
                                 headerCell.style.backgroundColor = 'var(--corporate-yellow-light)';
                                 headerCell.style.fontWeight = 'bold';
                                 headerCell.style.color = 'var(--primary-color)';
-
                                 diffs.removed.forEach(board => {
                                     const row = tbody.insertRow();
-                                    row.className = 'added'; // Стиль для добавленных
+                                    row.className = 'added';
                                     row.innerHTML = `
                                         <td>${htmlspecialchars(board.board_name || '-')}</td>
                                         <td>${htmlspecialchars(board.type || '-')}</td>
@@ -2958,14 +3047,13 @@ document.addEventListener('DOMContentLoaded', function () {
                                 const headerCell = headerRow.insertCell();
                                 headerCell.colSpan = 4;
                                 headerCell.className = 'history-field-label';
-                                headerCell.textContent = 'Удалено:'; // КОРРЕКТНО: Отображаем как "Удалено"
+                                headerCell.textContent = 'Удалено:';
                                 headerCell.style.backgroundColor = 'var(--corporate-orange-light)';
                                 headerCell.style.fontWeight = 'bold';
                                 headerCell.style.color = 'var(--primary-color)';
-
                                 diffs.added.forEach(board => {
                                     const row = tbody.insertRow();
-                                    row.className = 'removed'; // Стиль для удаленных
+                                    row.className = 'removed';
                                     row.innerHTML = `
                                         <td>${htmlspecialchars(board.board_name || '-')}</td>
                                         <td>${htmlspecialchars(board.type || '-')}</td>
@@ -2975,34 +3063,36 @@ document.addEventListener('DOMContentLoaded', function () {
                                 });
                             }
 
-                            // Измененные платы
+                            // Изменённые платы
                             if (diffs.changed && diffs.changed.length > 0) {
                                 const headerRow = tbody.insertRow();
                                 const headerCell = headerRow.insertCell();
                                 headerCell.colSpan = 4;
                                 headerCell.className = 'history-field-label';
                                 headerCell.textContent = 'Изменено:';
-                                headerCell.style.backgroundColor = 'var(--corporate-yellow-light)'; // Светлый желтый фон для заголовка
+                                headerCell.style.backgroundColor = 'var(--corporate-yellow-light)';
                                 headerCell.style.fontWeight = 'bold';
                                 headerCell.style.color = 'var(--primary-color)';
 
                                 diffs.changed.forEach(change => {
-                                    const row = tbody.insertRow();
-                                    row.innerHTML = `<td>${htmlspecialchars(change.board_name || '-')}</td>`;
-                                    const fields = ['type', 'version', 'serial_number'];
-                                    fields.forEach(field => {
-                                        const currentVal = (change.current_values[field] !== null && change.current_values[field] !== undefined) ? htmlspecialchars(change.current_values[field]) : '-';
-                                        const prevVal = change.previous_values[field];
-                                        let cellContent = currentVal;
-                                        let cellClass = '';
-                                        if (prevVal !== undefined) {
-                                            cellClass = 'changed';
-                                            const formattedPrevVal = (prevVal === null || prevVal === undefined || String(prevVal).trim() === '') ? 'пусто' : htmlspecialchars(prevVal);
-                                            cellContent += `<span class="history-old-value"> (${formattedPrevVal})</span>`;
-                                        }
+                                    const row = document.createElement('tr');
+                                    const boardNameCell = document.createElement('td');
+                                    boardNameCell.textContent = htmlspecialchars(change.board_name || '-');
+                                    row.appendChild(boardNameCell);
+
+                                    // Для остальных полей отображаем старое -> новое
+                                    ['type', 'version', 'serial_number'].forEach(field => {
                                         const cell = document.createElement('td');
-                                        cell.className = cellClass;
-                                        cell.innerHTML = cellContent;
+                                        let displayValue = htmlspecialchars(change.current_values[field] || '-');
+                                        const previousValue = change.previous_values[field];
+
+                                        if (previousValue !== undefined) {
+                                            const formattedOldValue = previousValue === null || previousValue === undefined || String(previousValue).trim() === '' ? 'пусто' : htmlspecialchars(previousValue);
+                                            cell.className = 'changed';
+                                            cell.innerHTML = `${displayValue}<span class="history-old-value"> (${formattedOldValue})</span>`;
+                                        } else {
+                                            cell.textContent = displayValue;
+                                        }
                                         row.appendChild(cell);
                                     });
                                     tbody.appendChild(row);
@@ -3012,24 +3102,93 @@ document.addEventListener('DOMContentLoaded', function () {
 
                         table.appendChild(tbody);
                         versionContainer.appendChild(table);
+
+                        // ----------------- БЛОК ДЛЯ additional_info (composition) -----------------
+                        const versionAdditionalInfo = versionRecord.additional_info;
+                        const oldVersionAdditionalInfo = versionRecord.diff_details ? versionRecord.diff_details.additional_info : undefined;
+                        const infoChangedVersion = oldVersionAdditionalInfo !== undefined;
+
+                        if (
+                            (versionAdditionalInfo !== null && versionAdditionalInfo !== undefined && String(versionAdditionalInfo).trim() !== '') ||
+                            infoChangedVersion ||
+                            isCurrentVersion
+                        ) {
+                            const infoSection = document.createElement('div');
+                            infoSection.className = 'history-additional-info-section';
+
+                            const header = document.createElement('h4');
+                            header.className = 'table-section-header';
+                            header.textContent = 'Дополнительная информация';
+                            infoSection.appendChild(header);
+
+                            // Если infoChangedVersion, то рисуем две секции ("Новые сведения" + "Старые сведения")
+                            if (infoChangedVersion) {
+                                const newInfoContainer = document.createElement('div');
+                                newInfoContainer.className = 'additional-info-sub-section';
+                                newInfoContainer.innerHTML = `
+                                    <p class="additional-info-field-label">Новые сведения</p>
+                                    <div class="additional-info-value-box new-value-highlight">
+                                        ${versionAdditionalInfo !== null && versionAdditionalInfo !== undefined && String(versionAdditionalInfo).trim() !== '' ? htmlspecialchars(versionAdditionalInfo).replace(/\r?\n/g, '<br>') : '-'}
+                                    </div>
+                                `;
+                                infoSection.appendChild(newInfoContainer);
+
+                                const oldInfoContainer = document.createElement('div');
+                                oldInfoContainer.className = 'additional-info-sub-section';
+                                oldInfoContainer.innerHTML = `
+                                    <p class="additional-info-field-label">Старые сведения</p>
+                                    <div class="additional-info-value-box old-value-no-highlight">
+                                        ${oldVersionAdditionalInfo !== null && oldVersionAdditionalInfo !== undefined && String(oldVersionAdditionalInfo).trim() !== '' ? htmlspecialchars(oldVersionAdditionalInfo).replace(/\r?\n/g, '<br>') : 'пусто'}
+                                    </div>
+                                `;
+                                infoSection.appendChild(oldInfoContainer);
+                            }
+                            else {
+                                // Рисуем только текущее значение без выделения
+                                const plainInfoContainer = document.createElement('div');
+                                plainInfoContainer.className = 'additional-info-sub-section';
+                                plainInfoContainer.innerHTML = `
+                                    <div class="additional-info-value-box">
+                                        ${versionAdditionalInfo !== null && versionAdditionalInfo !== undefined && String(versionAdditionalInfo).trim() !== '' ? htmlspecialchars(versionAdditionalInfo).replace(/\r?\n/g, '<br>') : '-'}
+                                    </div>
+                                `;
+                                infoSection.appendChild(plainInfoContainer);
+                            }
+
+                            versionContainer.appendChild(infoSection);
+                        }
+                        // ------------------------------------------------------------
+
                         historyContentDiv.appendChild(versionContainer);
                     });
                 }
             })
             .catch(error => {
-                console.error('Ошибка при загрузке истории прибора:', error);
-                const errorMsg = document.createElement('p');
-                errorMsg.className = 'error-message';
-                errorMsg.textContent = `Произошла ошибка при загрузке истории: ${error.message}`;
-                historyContentDiv.innerHTML = '';
-                historyContentDiv.appendChild(errorMsg);
+                console.error('Ошибка при загрузке истории:', error);
+                historyContentDiv.innerHTML = `<p class="error-message">
+                    Произошла ошибка при загрузке истории: ${error.message}
+                </p>`;
             });
         }
 
-        // Загружаем историю при первом вызове функции
+        // Загружаем историю по умолчанию при первом вызове
         loadHistory(initialHistoryType);
     }
 
+    // Вспомогательная функция для HTML-экранирования (для безопасности при вставке данных в HTML)
+    function htmlspecialchars(str) {
+        if (typeof str !== 'string') {
+            return str;
+        }
+        const map = {
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#039;'
+        };
+        return str.replace(/[&<>\"']/g, function(m) { return map[m]; });
+    }
 
 
 

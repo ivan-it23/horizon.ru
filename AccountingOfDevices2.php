@@ -2259,8 +2259,6 @@ document.addEventListener('DOMContentLoaded', function () {
         const caseNum = (formData.get('case_number') || '').trim();
         if (!serial || !caseNum) {
             // Заменяем alert на кастомное модальное окно или сообщение
-            // alert('Пожалуйста, заполните поля "Серийный номер" и "Номер корпуса"');
-            // Пример использования кастомного сообщения:
             displayMessage('Пожалуйста, заполните поля "Серийный номер" и "Номер корпуса"', 'error');
             return;
         }
@@ -2377,7 +2375,6 @@ document.addEventListener('DOMContentLoaded', function () {
             if (!response.ok) {
                 return response.text().then(text => {
                     // Заменяем alert на кастомное модальное окно или сообщение
-                    // alert('Ошибка при создании прибора: ' + text);
                     displayMessage('Ошибка при создании прибора: ' + text, 'error');
                     throw new Error(text);
                 });
@@ -2387,7 +2384,6 @@ document.addEventListener('DOMContentLoaded', function () {
         .then(data => {
             if (data.success) {
                 // Заменяем alert на кастомное модальное окно или сообщение
-                // alert('Прибор успешно создан!');
                 displayMessage('Прибор успешно создан!', 'success');
                 form.reset();
                 generateCompositionTableRows(); // Если нужно восстановить динамику таблиц
@@ -2395,28 +2391,30 @@ document.addEventListener('DOMContentLoaded', function () {
                 updateTransmitterRows(); // Обновляем строки передатчиков после сброса формы
             } else {
                 // Заменяем alert на кастомное модальное окно или сообщение
-                // alert('Ошибка: ' + (data.error || data.message));
                 displayMessage('Ошибка: ' + (data.error || data.message), 'error');
             }
         })
         .catch(err => {
             console.error('Ошибка при создании прибора:', err);
             // Заменяем alert на кастомное модальное окно или сообщение
-            // alert('Произошла ошибка: ' + err.message);
             displayMessage('Произошла ошибка: ' + err.message, 'error');
         });
     });
 
 
     // Вспомогательная функция для отображения сообщений (замена alert)
+    // Эта функция добавлена для демонстрации и должна быть помещена в общий скоуп вашего JS-кода
     function displayMessage(message, type) {
         const messageContainer = document.createElement('div');
-        messageContainer.className = `search-message ${type}`; // Используем существующие классы стилей
+        // Используем ваши существующие классы стилей для сообщений
+        messageContainer.className = `search-message ${type}`;
         messageContainer.textContent = message;
 
         // Находим место для вставки сообщения, например, перед кнопкой сохранения
+        // или в другом логичном месте на странице, чтобы оно было видно
         const saveButtonContainer = document.querySelector('#newDeviceForm .mt-4');
         if (saveButtonContainer) {
+            // Вставляем сообщение перед кнопкой сохранения
             saveButtonContainer.insertBefore(messageContainer, saveButtonContainer.firstChild);
         } else {
             // Если контейнер не найден, можно вывести в консоль или в другое место
@@ -2430,7 +2428,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
 
-    // Функция для генерации строк таблицы "Состав прибора" (основные платы)
+
     // Функция для генерации строк таблицы "Состав прибора" (основные платы)
     function generateCompositionTableRows() {
         const deviceType = deviceTypeSelectForCreate.value;
@@ -2498,7 +2496,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
     // --- Функция сохранения изменений прибора ---
-// --- Функция сохранения изменений прибора ---
     function saveDeviceChanges(deviceId, boardsToDelete) {
         const updatedData = {};
 
