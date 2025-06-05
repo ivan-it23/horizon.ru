@@ -2924,6 +2924,86 @@ button:disabled {
     color: #721c24; /* Темно-красный */
     border: 1px solid #f5c6cb;
 }
+
+/* Общие стили для иконочных кнопок */
+.button-icon {
+    padding: 8px 12px; /* Оптимальный padding для кнопки с иконкой */
+    font-size: 1rem;    /* Размер иконки Font Awesome по умолчанию */
+    line-height: 1.5;   /* Выравнивание иконки */
+    min-width: auto;    /* Позволяет кнопке быть по размеру иконки */
+    background-color: var(--bg-button-secondary-hover); /* Светлый фон, как у неактивных табов */
+    border-color: var(--border-color-input);
+    color: var(--text-secondary);
+}
+
+.button-icon:hover {
+    background-color: #dce0e4; /* Немного темнее при наведении */
+    border-color: #adb5bd;
+    color: var(--primary-color);
+}
+
+.button-icon i {
+    margin: 0; /* Убираем отступы, если только иконка */
+}
+
+/* Специфичные стили, если нужны, но общих должно хватить */
+.copy-data-icon {
+    /* Можно добавить специфичные стили, если .button-icon недостаточно */
+}
+
+.paste-data-icon {
+    /* Можно добавить специфичные стили, если .button-icon недостаточно */
+}
+
+/* Адаптация контейнера кнопок вкладок на форме создания, если иконка добавляется туда */
+#createDeviceForm .tab-buttons {
+    display: flex; /* Уже должно быть, но для уверенности */
+    align-items: center; /* Выравниваем кнопки и иконку по центру */
+    gap: 10px; /* Расстояние между элементами */
+}
+#deviceDetailsContainer .tab-buttons { /* Если контейнер в showDeviceData так называется */
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* Стили для readonly полей, чтобы они выглядели как неактивные */
+.input-field.readonly-field {
+    background-color: var(--disabled-bg, #e9ecef); /* Цвет фона для отключенных полей */
+    color: var(--text-secondary, #6c757d);          /* Цвет текста для отключенных полей */
+    cursor: default;                             /* Стандартный курсор */
+    opacity: 0.8;                                /* Немного прозрачности */
+}
+.input-field.readonly-field:focus {
+    box-shadow: none; /* Убираем тень фокуса для readonly полей */
+    border-color: var(--border-color-input, #ced4da); /* Стандартная граница */
+}
+
+/* Стили для сообщений */
+.message {
+    padding: 10px 15px;
+    margin-bottom: 15px;
+    border-radius: var(--border-radius);
+    font-weight: 500;
+    text-align: center;
+}
+.message.success {
+    background-color: rgba(25, 135, 84, 0.1);
+    border: 1px solid rgba(25, 135, 84, 0.2);
+    color: var(--success-color);
+}
+.message.error {
+    background-color: rgba(220, 53, 69, 0.1);
+    border: 1px solid rgba(220, 53, 69, 0.2);
+    color: var(--danger-color);
+}
+.message.warning {
+    background-color: rgba(255, 193, 7, 0.1);
+    border: 1px solid rgba(255, 193, 7, 0.2);
+    color: var(--warning-color);
+}
+
+
 #viewDeviceParams,
 #createDeviceForm,
 #searchDeviceForm {

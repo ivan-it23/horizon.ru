@@ -988,6 +988,7 @@ document.addEventListener('DOMContentLoaded', function () {
     let selectedDeviceType = null;
     let selectedRecipientId = null; // Переменная для хранения ID выбранного получателя
     let loadedTolerancesForTab3 = {}; // Кэш для загруженных допусков
+    let deviceDataClipboard = null;
 
     // --- Логика сохранения и загрузки выбранного прибора из localStorage ---
 
@@ -1603,6 +1604,14 @@ document.addEventListener('DOMContentLoaded', function () {
             compositionButton.textContent = 'Состав прибора';
             compositionButton.dataset.tab = 'device_composition_section';
 
+            // --- Новая кнопка/иконка Копировать ---
+            const copyDataButton = document.createElement('button');
+            copyDataButton.type = 'button';
+            copyDataButton.title = 'Копировать данные прибора';
+            copyDataButton.className = 'button button-icon copy-data-icon'; // Общий класс для иконочных кнопок
+            copyDataButton.innerHTML = '<i class="fas fa-copy"></i>'; // Иконка Font Awesome
+            copyDataButton.addEventListener('click', () => handleCopyDeviceData(deviceId));
+
             const exportButton = document.createElement('button');
             exportButton.type = 'button';
             exportButton.textContent = 'Скачать данные для прибора';
@@ -1625,6 +1634,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
             tabContainer.appendChild(paramsButton);
             tabContainer.appendChild(compositionButton);
+            tabContainer.appendChild(copyDataButton); // Добавляем кнопку копирования
 
             const paramsSection = document.createElement('div');
             paramsSection.id = 'device_params_section';
@@ -4791,6 +4801,295 @@ document.addEventListener('DOMContentLoaded', function () {
             "'": '&#039;'
         };
         return str.replace(/[&<>"']/g, function(m) { return map[m]; });
+    }
+
+
+
+    /**
+     * Обрабатывает копирование данных прибора в буфер.
+     * @param {string} deviceId - ID копируемого прибора.
+     */
+    async function handleCopyDeviceData(deviceId) {
+        if (!deviceId) {
+            displayMessage('Ошибка: ID прибора не определен для копирования.', 'error');
+            return;
+        }
+
+        const copiedParameters = {};
+        // Ищем секцию параметров ВНУТРИ блока отображения данных конкретного прибора (showDeviceData)
+        // Предполагается, что при отображении прибора (showDeviceData) секция параметров имеет id 'device_params_section'
+        // и она является частью div с классом 'device-details-container'
+        const deviceDetailsContainer = document.querySelector('.device-details-container #device_params_section');
+
+        if (deviceDetailsContainer) {
+            const paramInputs = deviceDetailsContainer.querySelectorAll('input[name]');
+            paramInputs.forEach(input => {
+                if (input.name !== 'id' &&
+                    input.name !== 'serial_number' &&
+                    input.name !== 'case_number' &&
+                    input.name !== 'record_date' &&
+                    input.name !== 'creator_lastname' &&
+                    input.name !== 'changed_at' &&
+                    input.name !== 'changer_lastname') {
+                    copiedParameters[input.name] = input.value;
+                }
+            });
+            const deviceTypeInput = deviceDetailsContainer.querySelector('input[name="device_type"]');
+            if (deviceTypeInput) copiedParameters.device_type = deviceTypeInput.value;
+
+            // Копируем nominal_diameter и transmitter_count если они есть как input в просмотре
+            const nominalDiameterInput = deviceDetailsContainer.querySelector('input[name="nominal_diameter"]');
+            if (nominalDiameterInput) copiedParameters.nominal_diameter = nominalDiameterInput.value;
+
+            const transmitterCountInput = deviceDetailsContainer.querySelector('input[name="transmitter_count"]');
+            if (transmitterCountInput) copiedParameters.transmitter_count = transmitterCountInput.value;
+
+
+            const additionalInfoTextarea = deviceDetailsContainer.querySelector('textarea[name="additional_info"]'); // ID был viewAdditionalInfo
+            if (additionalInfoTextarea) {
+                copiedParameters.additional_info = additionalInfoTextarea.value;
+            }
+        } else {
+            // Фоллбэк, если структура немного другая или ID не найден внутри details container
+            const globalParamsSection = document.getElementById('device_params_section');
+            if (globalParamsSection && globalParamsSection.closest('.device-details-container')) {
+                 const paramInputs = globalParamsSection.querySelectorAll('input[name]');
+                paramInputs.forEach(input => {
+                    if (input.name !== 'id' &&
+                        input.name !== 'serial_number' &&
+                        input.name !== 'case_number' &&
+                        input.name !== 'record_date' &&
+                        input.name !== 'creator_lastname' &&
+                        input.name !== 'changed_at' &&
+                        input.name !== 'changer_lastname') {
+                        copiedParameters[input.name] = input.value;
+                    }
+                });
+                const deviceTypeInput = globalParamsSection.querySelector('input[name="device_type"]');
+                if (deviceTypeInput) copiedParameters.device_type = deviceTypeInput.value;
+
+                const nominalDiameterInput = globalParamsSection.querySelector('input[name="nominal_diameter"]');
+                if (nominalDiameterInput) copiedParameters.nominal_diameter = nominalDiameterInput.value;
+
+                const transmitterCountInput = globalParamsSection.querySelector('input[name="transmitter_count"]');
+                if (transmitterCountInput) copiedParameters.transmitter_count = transmitterCountInput.value;
+
+                const additionalInfoTextarea = globalParamsSection.querySelector('textarea[name="additional_info"]');
+                 if (additionalInfoTextarea) {
+                    copiedParameters.additional_info = additionalInfoTextarea.value;
+                }
+            } else {
+                displayMessage('Ошибка: Не удалось найти секцию параметров для копирования.', 'error');
+                return;
+            }
+        }
+
+        try {
+            const response = await fetch('fetch_device_composition.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: 'device_id=' + encodeURIComponent(deviceId)
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`Ошибка загрузки состава: ${response.status} ${errorText}`);
+            }
+
+            const compositionData = await response.json();
+            if (compositionData.error) {
+                throw new Error(`Ошибка в данных состава: ${compositionData.error}`);
+            }
+
+            deviceDataClipboard = {
+                parameters: copiedParameters,
+                composition: compositionData || []
+            };
+
+            displayMessage('Данные прибора скопированы в буфер!', 'success');
+            console.log('Скопированные данные:', deviceDataClipboard);
+
+        } catch (error) {
+            console.error('Ошибка при копировании данных прибора:', error);
+            displayMessage(`Ошибка копирования: ${error.message}`, 'error');
+            deviceDataClipboard = null;
+        }
+    }
+
+    /**
+     * Обрабатывает вставку скопированных данных прибора в форму создания нового прибора.
+     */
+    function handlePasteDeviceData() {
+        if (!deviceDataClipboard) {
+            displayMessage('Нет данных для вставки. Сначала скопируйте данные прибора.', 'warning');
+            return;
+        }
+
+        const form = document.getElementById('newDeviceForm');
+        if (!form) {
+            displayMessage('Ошибка: Форма создания нового прибора не найдена.', 'error');
+            return;
+        }
+
+        const { parameters, composition } = deviceDataClipboard;
+
+        // 1. Установка основных селекторов, которые влияют на структуру формы
+        const deviceTypeSelect = form.querySelector('select[name="device_type"]');
+        const nominalDiameterSelect = form.querySelector('select[name="nominal_diameter"]');
+        const transmitterCountSelect = form.querySelector('select[name="transmitter_count"]');
+
+        let formStructureChanged = false;
+
+        if (deviceTypeSelect && parameters.device_type && deviceTypeSelect.value !== parameters.device_type) {
+            deviceTypeSelect.value = parameters.device_type;
+            deviceTypeSelect.dispatchEvent(new Event('change', { bubbles: true }));
+            formStructureChanged = true;
+        }
+        if (nominalDiameterSelect && parameters.nominal_diameter) {
+            nominalDiameterSelect.value = parameters.nominal_diameter;
+        }
+        if (transmitterCountSelect && parameters.transmitter_count && transmitterCountSelect.value !== parameters.transmitter_count) {
+            transmitterCountSelect.value = parameters.transmitter_count;
+            transmitterCountSelect.dispatchEvent(new Event('change', { bubbles: true }));
+            formStructureChanged = true;
+        }
+
+        // Функция для заполнения полей, которая будет вызвана сразу или после небольшой задержки
+        const fillFormFields = () => {
+            // 2. Заполнение остальных полей параметров
+            const paramsSectionTarget = form.querySelector('#device_parameters');
+            if (paramsSectionTarget) {
+                for (const key in parameters) {
+                    // Исключаем поля, которые не должны вставляться (серийный номер, номер корпуса)
+                    // или уже были установлены (тип, диаметр, кол-во передатчиков, если они вызвали 'change')
+                    if (key !== 'serial_number' && key !== 'case_number' &&
+                        key !== 'device_type' && key !== 'nominal_diameter' && key !== 'transmitter_count' &&
+                        key !== 'additional_info' // additional_info обрабатывается отдельно
+                       ) {
+                        const inputElement = paramsSectionTarget.querySelector(`input[name="${key}"]`);
+                        if (inputElement) {
+                            inputElement.value = parameters[key] || '';
+                        }
+                    }
+                }
+            }
+
+            // 3. Заполнение дополнительной информации
+            const additionalInfoTextareaTarget = form.querySelector('textarea[name="additional_info"]');
+            if (additionalInfoTextareaTarget && parameters.additional_info !== undefined) { // Проверяем на undefined
+                additionalInfoTextareaTarget.value = parameters.additional_info;
+            }
+
+            // 4. Заполнение состава прибора
+            // Основные платы
+            const mainBoardsTbody = form.querySelector('#device_composition table:nth-of-type(1) tbody');
+            if (mainBoardsTbody) {
+                composition.forEach(boardData => {
+                    const boardNameFromClipboard = boardData.board_name;
+                    const rows = mainBoardsTbody.querySelectorAll('tr');
+                    for (const row of rows) {
+                        const nameCell = row.querySelector('td:first-child');
+                        if (nameCell && nameCell.textContent.trim() === boardNameFromClipboard) {
+                            const typeInput = row.querySelector('input[name*="_type"]');
+                            const versionInput = row.querySelector('input[name*="_version"]');
+                            const serialInput = row.querySelector('input[name*="_serial"]');
+
+                            if (typeInput) typeInput.value = boardData.type || '';
+                            if (versionInput) versionInput.value = boardData.version || '';
+                            // Серийные номера плат копируем
+                            if (serialInput) serialInput.value = boardData.serial_number || '';
+                            break;
+                        }
+                    }
+                });
+            }
+
+            // Прочие платы
+            const otherBoardsTbody = form.querySelector('#device_composition table:nth-of-type(2) tbody');
+            const addOtherBoardButton = document.getElementById('addOtherBoardRow');
+            if (otherBoardsTbody && addOtherBoardButton) {
+                otherBoardsTbody.innerHTML = ''; // Очищаем существующие строки "прочих плат"
+                const mainBoardNamesPattern = /^(Контроллер|Инклинометр|Приёмник \d+|Передатчик \d+)$/;
+                const otherBoardsFromClipboard = composition.filter(board => !mainBoardNamesPattern.test(board.board_name));
+
+                otherBoardsFromClipboard.forEach(boardData => {
+                    addOtherBoardButton.click();
+                    const newRow = otherBoardsTbody.lastElementChild;
+                    if (newRow) {
+                        const nameInput = newRow.querySelector('input[name="other_board_name[]"]');
+                        const typeInput = newRow.querySelector('input[name="other_board_type[]"]');
+                        const versionInput = newRow.querySelector('input[name="other_board_version[]"]');
+                        const serialInput = newRow.querySelector('input[name="other_board_serial[]"]');
+
+                        if (nameInput) nameInput.value = boardData.board_name || '';
+                        if (typeInput) typeInput.value = boardData.type || '';
+                        if (versionInput) versionInput.value = boardData.version || '';
+                        // Серийные номера плат копируем
+                        if (serialInput) serialInput.value = boardData.serial_number || '';
+                    }
+                });
+                if (otherBoardsTbody.children.length === 0 && otherBoardsFromClipboard.length === 0) {
+                     addOtherBoardButton.click(); // Добавляем одну пустую строку, если прочих плат нет
+                }
+            }
+            displayMessage('Данные вставлены в форму. Проверьте и укажите серийный номер и номер корпуса.', 'success');
+        };
+
+        // Если структура формы изменилась из-за select'ов, даем время DOM обновиться
+        if (formStructureChanged) {
+            setTimeout(fillFormFields, 150); // Немного увеличил задержку для надежности
+        } else {
+            fillFormFields(); // Иначе заполняем сразу
+        }
+    }
+
+
+    /**
+     * Переключает видимость секций "Параметры прибора" и "Состав прибора"
+     * в форме создания нового прибора. НЕ вызывает функции перестроения таблиц.
+     * @param {string} sectionToShow - 'parameters' или 'composition'
+     */
+    function toggleCreateFormSections(sectionToShow) {
+        const form = document.getElementById('newDeviceForm');
+        const createParamsSection = form.querySelector('#device_parameters');
+        const createCompositionSection = form.querySelector('#device_composition');
+        const createParamsButton = form.querySelector('.tab-button[data-tab="device_parameters"]');
+        const createCompositionButton = form.querySelector('.tab-button[data-tab="device_composition"]');
+
+        if (createParamsSection && createCompositionSection && createParamsButton && createCompositionButton) {
+            if (sectionToShow === 'parameters') {
+                createParamsSection.style.display = 'block';
+                createCompositionSection.style.display = 'none';
+                createParamsButton.classList.add('active');
+                createCompositionButton.classList.remove('active');
+                // НЕ вызываем здесь updateReceiverRows() и updateTransmitterRows()
+            } else if (sectionToShow === 'composition') {
+                createParamsSection.style.display = 'none';
+                createCompositionSection.style.display = 'block';
+                createParamsButton.classList.remove('active');
+                createCompositionButton.classList.add('active');
+                // НЕ вызываем здесь generateCompositionTableRows()
+            }
+        } else {
+            console.error('Не найдены элементы для переключения секций в форме создания прибора (toggleCreateFormSections).');
+        }
+    }
+
+    // Добавление кнопки "Вставить данные" в ФОРМУ СОЗДАНИЯ
+    const createFormTabButtonsContainer = document.querySelector('#createDeviceForm .tab-buttons');
+    if (createFormTabButtonsContainer) {
+        const pasteDataButton = document.createElement('button');
+        pasteDataButton.type = 'button';
+        pasteDataButton.title = 'Вставить скопированные данные';
+        pasteDataButton.className = 'button button-icon paste-data-icon';
+        pasteDataButton.innerHTML = '<i class="fas fa-paste"></i>';
+        pasteDataButton.addEventListener('click', handlePasteDeviceData);
+
+        createFormTabButtonsContainer.appendChild(pasteDataButton);
+        createFormTabButtonsContainer.style.display = 'flex';
+        createFormTabButtonsContainer.style.gap = '10px';
+    } else {
+        console.warn('Контейнер кнопок вкладок для формы создания (#createDeviceForm .tab-buttons) не найден. Кнопка вставки не добавлена.');
     }
 
 });
