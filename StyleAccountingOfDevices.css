@@ -2825,6 +2825,83 @@ button:disabled {
     box-shadow: 0 0 0 3px rgba(44, 62, 80, 0.15);
     outline: none;
 }
+
+/* ==========================================================================
+   Стили для отображения поля additional_info в истории изменений
+   ========================================================================== */
+
+/* ==========================================================================
+   Стили для отображения поля additional_info в истории изменений
+   ========================================================================== */
+
+/* Контейнер для секции дополнительной информации в истории */
+.history-additional-info-section {
+    background-color: var(--bg-table-stripe); /* Легкий фон */
+    border-top: 1px solid var(--border-color); /* Разделитель сверху */
+    padding: 1rem 1.5rem; /* Внутренние отступы */
+    margin-top: 1rem; /* Отступ от предыдущего блока (таблицы параметров) */
+    border-radius: var(--border-radius); /* Скругление углов */
+    display: flex; /* Используем flexbox для расположения полей */
+    flex-direction: column; /* Элементы располагаются в колонку */
+    gap: 15px; /* Промежуток между подсекциями */
+}
+
+.history-additional-info-section .table-section-header {
+    margin-top: 0;
+    margin-bottom: 0; /* Убираем отступ, так как общий gap управляет им */
+    padding-bottom: 0;
+    border-bottom: none;
+    color: var(--primary-color);
+    font-size: 1.1rem; /* Чуть больший размер для основного заголовка секции */
+    font-weight: 700;
+    text-align: center; /* Центрируем заголовок */
+    padding-bottom: 10px; /* Отступ под заголовком */
+}
+
+/* Общий стиль для подсекций "Новые сведения" и "Старые сведения" */
+.additional-info-sub-section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px; /* Промежуток между меткой и полем значения */
+}
+
+/* Метка "Новые сведения" / "Старые сведения" */
+.additional-info-field-label {
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 0; /* Убираем стандартный отступ P */
+    font-size: 0.9rem; /* Меньший размер для метки */
+    text-transform: uppercase; /* Верхний регистр */
+}
+
+/* Контейнер для самого текста дополнительной информации (как нового, так и старого) */
+.additional-info-value-box {
+    font-size: 0.95rem;
+    line-height: 1.6;
+    color: var(--text-primary);
+    white-space: pre-wrap; /* Сохраняет пробелы и переносы строк */
+    word-break: break-word; /* Перенос слов, если очень длинные */
+    padding: 10px 12px; /* Внутренний отступ для содержимого */
+    background-color: var(--bg-input); /* Фон полей ввода (белый) */
+    border: var(--border-width) solid var(--border-color-input); /* Легкая рамка */
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-sm); /* Небольшая тень */
+    min-height: 50px; /* Минимальная высота для единообразия */
+    display: flex; /* Используем flex для выравнивания содержимого */
+    align-items: center; /* Выравнивание текста по центру по вертикали */
+}
+
+/* Стиль для поля с новым значением (светло-желтый фон) */
+.new-value-highlight {
+    background-color: var(--corporate-yellow-light); /* Светлый жёлтый фон */
+    border-color: var(--corporate-yellow-dark); /* Немного темнее рамка */
+}
+
+/* Стиль для поля со старым значением (без выделения) */
+.old-value-no-highlight {
+    /* Никаких дополнительных стилей, используются базовые additional-info-value-box */
+}
+
 #viewDeviceParams,
 #createDeviceForm,
 #searchDeviceForm {

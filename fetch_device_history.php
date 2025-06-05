@@ -308,12 +308,37 @@ if ($historyType === 'parameters') {
                     'creator_name'      => $board_record['creator_name'],
                     'records'           => [],
                     'is_current_version' => false,
-                    'additional_info'   => null // для исторических версий дополнительная информация не запрашивалась
+                    'additional_info'   => null // Инициализируем, будет заполнено ниже
                 ];
+
+                // --- УЧАСТОК, КУДА БЫЛИ ВНЕСЕНЫ ИЗМЕНЕНИЯ (извлечение additional_info для истории состава) ---
+                // Пытаемся найти additional_info из device_history, которое было активно
+                // в момент или непосредственно перед changed_at этой версии состава.
+                // Сортируем по changed_at DESC и берем первую запись.
+                $sql_get_additional_info = "
+                    SELECT additional_info
+                    FROM device_history
+                    WHERE device_id = ? AND changed_at <= ?
+                    ORDER BY changed_at DESC
+                    LIMIT 1
+                ";
+                $stmt_get_ai = $conn->prepare($sql_get_additional_info);
+                if ($stmt_get_ai) {
+                    $stmt_get_ai->bind_param("is", $deviceId, $board_record['changed_at']);
+                    if ($stmt_get_ai->execute()) {
+                        $res_get_ai = $stmt_get_ai->get_result();
+                        if ($row_get_ai = $res_get_ai->fetch_assoc()) {
+                            $grouped_by_version[$version_key]['additional_info'] = $row_get_ai['additional_info'];
+                        }
+                    }
+                    $stmt_get_ai->close();
+                }
+                // --- КОНЕЦ УЧАСТКА ИЗМЕНЕНИЙ ---
             }
             $grouped_by_version[$version_key]['records'][] = $board_record;
         }
         $historical_versions = array_values($grouped_by_version);
+
     }
     $stmt_history_comp->close();
 
@@ -321,14 +346,14 @@ if ($historyType === 'parameters') {
     $previous_composition_to_compare_with = $current_composition_version_data;
     foreach ($historical_versions as $idx => $historical_version) {
         $is_different_version = false;
-        $diff_boards = [
+        $diff_details = [ // Инициализируем diff_details
             'added'   => [],
             'removed' => [],
             'changed' => []
         ];
 
         $current_boards_map = [];
-        if ($previous_composition_to_compare_with) {
+        if ($previous_composition_to_compare_with && isset($previous_composition_to_compare_with['records'])) {
             foreach ($previous_composition_to_compare_with['records'] as $board) {
                 $current_boards_map[$board['board_name']] = $board;
             }
@@ -342,8 +367,8 @@ if ($historyType === 'parameters') {
         // Проверяем добавленные и изменённые платы
         foreach ($historical_boards_map as $board_name => $h_board) {
             if (!isset($current_boards_map[$board_name])) {
-                // Плата добавлена
-                $diff_boards['added'][] = $h_board;
+                // Плата добавлена (присутствует в старой версии, отсутствует в новой)
+                $diff_details['added'][] = $h_board;
                 $is_different_version   = true;
             } else {
                 // Плата есть в обеих версиях — сравниваем поля
@@ -354,12 +379,12 @@ if ($historyType === 'parameters') {
                     $h_val = isset($h_board[$field]) ? (string)$h_board[$field] : "";
                     $c_val = isset($c_board[$field]) ? (string)$c_board[$field] : "";
                     if ($h_val !== $c_val) {
-                        $board_diff[$field] = $c_val; // Сохраняем предыдущие значения
+                        $board_diff[$field] = $c_val; // Сохраняем предыдущее значение
                         $is_different_version = true;
                     }
                 }
                 if (!empty($board_diff)) {
-                    $diff_boards['changed'][] = [
+                    $diff_details['changed'][] = [
                         'board_name'      => $board_name,
                         'current_values'  => $h_board,
                         'previous_values' => $board_diff
@@ -371,21 +396,44 @@ if ($historyType === 'parameters') {
         // Проверяем удалённые платы
         foreach ($current_boards_map as $board_name => $c_board) {
             if (!isset($historical_boards_map[$board_name])) {
-                $diff_boards['removed'][] = $c_board;
+                // Плата удалена (присутствовала в новой версии, отсутствует в старой)
+                $diff_details['removed'][] = $c_board;
                 $is_different_version     = true;
             }
         }
 
+        // --- УЧАСТОК, КУДА БЫЛИ ВНЕСЕНЫ ИЗМЕНЕНИЯ (сравнение additional_info для истории состава) ---
+        $val_hist_ai = isset($historical_version['additional_info']) ? (string)$historical_version['additional_info'] : "";
+        $val_prev_ai = isset($previous_composition_to_compare_with['additional_info']) ? (string)$previous_composition_to_compare_with['additional_info'] : "";
+
+        if ($val_hist_ai !== $val_prev_ai) {
+            $is_different_version = true;
+            // Сохраняем предыдущее (более новое) значение additional_info как "старое" для текущей исторической записи
+            $diff_details['additional_info'] = $val_prev_ai;
+        }
+        // --- КОНЕЦ УЧАСТКА ИЗМЕНЕНИЙ ---
+
+        // Присваиваем diff_details только если есть хоть какие-то изменения
         if ($is_different_version) {
-            $historical_versions[$idx]['diff_details'] = $diff_boards;
+            $historical_versions[$idx]['diff_details'] = $diff_details;
+            $final_history_output[]                    = $historical_versions[$idx]; // Добавляем в общий выходной массив
+            // Обновляем предыдущую запись для следующего сравнения
+            $previous_composition_to_compare_with = $historical_versions[$idx];
+        } else {
+            // Если изменений нет, все равно обновляем "предыдущую" запись для сравнения с следующей исторической
             $previous_composition_to_compare_with = $historical_versions[$idx];
         }
     }
 
-    // Добавляем все версии (текущую + отфильтрованные исторические) в итоговый массив
-    $final_history_output = array_merge([$current_composition_version_data], array_filter($historical_versions, function($v) {
-        return isset($v['diff_details']);
-    }));
+    // Здесь уже $final_history_output сформирован в цикле foreach,
+    // он содержит текущую версию + отфильтрованные исторические.
+    // Просто сортируем его по changed_at в убывающем порядке, чтобы текущая была первой.
+    usort($final_history_output, function($a, $b) {
+        $timeA = strtotime($a['changed_at']);
+        $timeB = strtotime($b['changed_at']);
+        return $timeB - $timeA; // Сортировка по убыванию даты
+    });
+
 }
 
 $conn->close();
