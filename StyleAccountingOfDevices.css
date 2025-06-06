@@ -3003,6 +3003,51 @@ button:disabled {
     color: var(--warning-color);
 }
 
+/*
+ * Новые стили для вкладки "Сведения о ремонте"
+ */
+
+/* Стиль для ячейки с измененными данными в истории */
+.history-subtable td.changed-field {
+  background-color: var(--corporate-yellow-light, #fffbe5) !important;
+  font-weight: 600;
+  color: #856404;
+  position: relative;
+  border-left: 3px solid var(--corporate-orange, #fd7e14);
+}
+
+/* Псевдо-элемент для добавления иконки или маркера к измененному полю */
+.history-subtable td.changed-field::before {
+
+  position: absolute;
+  left: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--corporate-orange, #fd7e14);
+  font-size: 1.1em;
+  font-weight: bold;
+}
+
+/* Стиль для заголовка "Актуальные данные" */
+.history-current-header {
+  font-size: 1.2rem;
+  color: var(--primary-color);
+  margin-top: 0;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid var(--primary-color);
+}
+
+/* Стиль для заголовка "История изменений" */
+.history-log-header {
+  font-size: 1.2rem;
+  color: var(--secondary-color);
+  margin-top: 2rem;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
 
 #viewDeviceParams,
 #createDeviceForm,

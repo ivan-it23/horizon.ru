@@ -3207,6 +3207,11 @@ document.addEventListener('DOMContentLoaded', function () {
         const tabPane = document.getElementById(tabPaneId);
         if (!tabPane) return;
 
+        // Исключаем выполнение этой универсальной функции для вкладки 4
+        if (tabPaneId === 'tab-4') {
+            return;
+        }
+
         const tabIndex = tabPaneId.split('-')[1];
         const showCreateButton  = tabPane.querySelector(`#showCreateFormTab${tabIndex}`);
         const showHistoryButton = tabPane.querySelector(`#showHistoryTab${tabIndex}`);
@@ -3326,69 +3331,6 @@ document.addEventListener('DOMContentLoaded', function () {
                                  historyDiv.appendChild(historyItemDiv);
                              });
                          }
-                    }
-                     else if (tabPaneId === 'tab-4') {
-                        if (!Array.isArray(data) || data.length === 0) {
-                            historyDiv.innerHTML = '<p class="info-message">История ремонтов не найдена.</p>';
-                        } else {
-                            data.forEach(rec => {
-                                const historyItemDiv = document.createElement('div');
-                                historyItemDiv.className = 'history-item';
-
-                                const header = document.createElement('h4');
-                                header.className = 'history-header';
-                                header.textContent = `Запись от ${rec.created_at ? new Date(rec.created_at).toLocaleString('ru-RU') : 'Неизвестно'} (Создатель: ${rec.repair_creator || 'Неизвестно'})`;
-                                historyItemDiv.appendChild(header);
-
-                                const table = document.createElement('table');
-                                table.className = 'data-table history-subtable';
-                                const tbody = document.createElement('tbody');
-
-                                const fieldsToDisplay = [
-                                    { key: 'repair_type', label: 'Тип ремонта' },
-                                    { key: 'repair_reason', label: 'Причина поступления в ремонт', type: 'textarea' },
-                                    { key: 'failure_reason', label: 'Причина отказа', type: 'textarea' },
-                                    { key: 'admission_date', label: 'Дата поступления' },
-                                    { key: 'actions_description', label: 'Описание проведённых действий', type: 'textarea' },
-                                    { key: 'release_date', label: 'Дата выхода' }
-                                ];
-
-                                fieldsToDisplay.forEach(field => {
-                                    if (rec[field.key] !== undefined && rec[field.key] !== null && rec[field.key] !== '') {
-                                        const row = document.createElement('tr');
-                                        const th = document.createElement('td');
-                                        th.textContent = field.label;
-                                        const td = document.createElement('td');
-
-                                        if (field.type === 'textarea') {
-                                            const textAreaDisplay = document.createElement('div');
-                                            textAreaDisplay.className = 'history-textarea-display';
-                                            textAreaDisplay.textContent = rec[field.key];
-                                            td.appendChild(textAreaDisplay);
-                                        } else if (field.key === 'admission_date' || field.key === 'release_date') {
-                                            td.textContent = rec[field.key] ? new Date(rec[field.key]).toLocaleDateString('ru-RU') : '-';
-                                        } else {
-                                            td.textContent = rec[field.key];
-                                        }
-                                        row.appendChild(th);
-                                        row.appendChild(td);
-                                        tbody.appendChild(row);
-                                    }
-                                });
-
-                                if (tbody.rows.length > 0) {
-                                    table.appendChild(tbody);
-                                    historyItemDiv.appendChild(table);
-                                } else {
-                                    const noDetailsMsg = document.createElement('p');
-                                    noDetailsMsg.className = 'info-message';
-                                    noDetailsMsg.style.padding = '10px 20px';
-                                    noDetailsMsg.textContent = 'Нет подробных данных для этой записи ремонта.';
-                                    historyItemDiv.appendChild(noDetailsMsg);
-                                }
-                                historyDiv.appendChild(historyItemDiv);
-                            });
-                        }
                     }
                     else if (tabPaneId === 'tab-5') {
                         if (!Array.isArray(data) || data.length === 0) {
@@ -3567,7 +3509,6 @@ document.addEventListener('DOMContentLoaded', function () {
                              });
                          }
                     }
-                    // ... (остальная логика для других вкладок, если она есть)
                 })
                 .catch(err => {
                     console.error(`Error loading history for ${tabPaneId}:`, err);
@@ -3652,7 +3593,6 @@ document.addEventListener('DOMContentLoaded', function () {
     // Настраиваем обработчики для каждой вкладки (2-7)
     setupTabModeButtons('tab-2', 'newProductionDiscontinuation', 'productionHistory', 'fetch_production_discontinuation_history.php', 'create_production_discontinuation.php');
     setupTabModeButtons('tab-3', 'newTestingData', 'testingHistory', 'fetch_testing_data_history.php', 'save_testing_data.php');
-    setupTabModeButtons('tab-4', 'newRepairData', 'repairHistory', 'fetch_repair_data_history.php', 'create_repair_data.php');
     setupTabModeButtons('tab-5', 'newInspectionData', 'inspectionHistory', 'fetch_inspection_data_history.php', 'create_inspection_data.php');
     setupTabModeButtons('tab-6', 'newTerminationData', 'terminationHistory', 'fetch_termination_data_history.php', 'create_termination_data.php');
     setupTabModeButtons('tab-7', 'newAdditionalData', 'additionalHistory', 'fetch_additional_data_history.php', 'create_additional_data.php');
@@ -5080,6 +5020,233 @@ document.addEventListener('DOMContentLoaded', function () {
         createFormTabButtonsContainer.style.gap = '10px';
     } else {
         console.warn('Контейнер кнопок вкладок для формы создания (#createDeviceForm .tab-buttons) не найден. Кнопка вставки не добавлена.');
+    }
+
+    if (tab4Pane) {
+        const showCreateButton = document.getElementById('showCreateFormTab4');
+        const showHistoryButton = document.getElementById('showHistoryTab4');
+        const createForm = document.getElementById('newRepairData');
+        const historyDiv = document.getElementById('repairHistory');
+        const saveButton = document.getElementById('saveRepairDataButton');
+
+        // Поля формы для заполнения
+        const formFields = {
+            repair_type: createForm.querySelector('select[name="repair_type"]'),
+            repair_reason: createForm.querySelector('textarea[name="repair_reason"]'),
+            failure_reason: createForm.querySelector('textarea[name="failure_reason"]'),
+            admission_date: createForm.querySelector('input[name="admission_date"]'),
+            actions_description: createForm.querySelector('textarea[name="actions_description"]'),
+            release_date: createForm.querySelector('input[name="release_date"]'),
+            repair_creator: createForm.querySelector('input[name="repair_creator"]')
+        };
+
+        // Обработчик кнопки "Создать/Редактировать"
+        showCreateButton.addEventListener('click', () => {
+            historyDiv.style.display = 'none';
+            historyDiv.innerHTML = '';
+            createForm.reset(); // Сбрасываем форму перед заполнением
+
+            if (!selectedSerialNumber || !selectedCaseNumber) {
+                alert('Пожалуйста, выберите прибор на вкладке "Идентификационные данные".');
+                createForm.style.display = 'none';
+                return;
+            }
+
+            createForm.style.display = 'block';
+
+            // Загружаем последние данные в форму
+            fetch('fetch_latest_repair_data.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: `serial_number=${encodeURIComponent(selectedSerialNumber)}&case_number=${encodeURIComponent(selectedCaseNumber)}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data && Object.keys(data).length > 0 && !data.error) {
+                    formFields.repair_type.value = data.repair_type || '';
+                    formFields.repair_reason.value = data.repair_reason || '';
+                    formFields.failure_reason.value = data.failure_reason || '';
+                    formFields.admission_date.value = data.admission_date || '';
+                    formFields.actions_description.value = data.actions_description || '';
+                    formFields.release_date.value = data.release_date || '';
+                }
+                 // Устанавливаем текущего пользователя как создателя записи
+                formFields.repair_creator.value = '<?= isset($_SESSION['user']) ? htmlspecialchars($_SESSION['user']['lastname'] . " " . $_SESSION['user']['firstname'] . " " . $_SESSION['user']['middlename']) : '' ?>';
+            })
+            .catch(error => {
+                console.error('Ошибка при загрузке последних данных о ремонте:', error);
+                alert('Не удалось загрузить актуальные данные для редактирования.');
+            });
+        });
+
+        // Обработчик кнопки "Сохранить"
+        saveButton.addEventListener('click', () => {
+            if (!selectedSerialNumber || !selectedCaseNumber) {
+                alert('Ошибка: Не выбран прибор.');
+                return;
+            }
+
+            const formData = new FormData(createForm);
+            formData.append('serial_number', selectedSerialNumber);
+            formData.append('case_number', selectedCaseNumber);
+
+            fetch('save_repair_data.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message);
+                    createForm.style.display = 'none';
+                    showHistoryButton.click(); // Показываем обновленную историю
+                } else {
+                    alert('Ошибка при сохранении: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Ошибка при сохранении данных о ремонте:', error);
+                alert('Произошла критическая ошибка при сохранении.');
+            });
+        });
+
+        // Обработчик кнопки "История"
+        showHistoryButton.addEventListener('click', () => {
+            createForm.style.display = 'none';
+            historyDiv.style.display = 'block';
+            historyDiv.innerHTML = '<p>Загрузка истории...</p>';
+
+            if (!selectedSerialNumber || !selectedCaseNumber) {
+                historyDiv.innerHTML = '<p class="info-message">Выберите прибор для просмотра истории.</p>';
+                return;
+            }
+
+            fetch('fetch_repair_data_history.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: `serial_number=${encodeURIComponent(selectedSerialNumber)}&case_number=${encodeURIComponent(selectedCaseNumber)}`
+            })
+            .then(response => response.json())
+            .then(historyData => {
+                historyDiv.innerHTML = ''; // Очищаем
+                if (historyData.error) {
+                    historyDiv.innerHTML = `<p class="error-message">${historyData.error}</p>`;
+                    return;
+                }
+
+                if (!Array.isArray(historyData) || historyData.length === 0) {
+                    historyDiv.innerHTML = '<p class="info-message">История ремонтов не найдена.</p>';
+                    return;
+                }
+
+                // Отображаем актуальные данные (первая запись в истории)
+                const actualData = historyData[0];
+                const actualHeader = document.createElement('h3');
+                actualHeader.className = 'history-current-header';
+                actualHeader.textContent = 'Актуальные данные';
+                historyDiv.appendChild(actualHeader);
+                historyDiv.appendChild(createHistoryForm(actualData, null));
+
+                // Отображаем историю изменений
+                if (historyData.length > 1) {
+                    const historyHeader = document.createElement('h3');
+                    historyHeader.className = 'history-log-header';
+                    historyHeader.textContent = 'История изменений';
+                    historyDiv.appendChild(historyHeader);
+
+                    for (let i = 1; i < historyData.length; i++) {
+                        const oldRecord = historyData[i];
+                        const newRecord = historyData[i - 1]; // Предыдущая запись в массиве - более новая
+                        const differences = compareRecords(oldRecord, newRecord);
+                        historyDiv.appendChild(createHistoryForm(oldRecord, differences));
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Ошибка при загрузке истории ремонтов:', error);
+                historyDiv.innerHTML = `<p class="error-message">Не удалось загрузить историю ремонтов.</p>`;
+            });
+        });
+
+        /**
+         * Сравнивает две записи о ремонте и возвращает объект с различиями.
+         * @param {object} oldRecord - Старая запись.
+         * @param {object} newRecord - Новая запись.
+         * @returns {object} - Объект, где ключи - это имена измененных полей.
+         */
+        function compareRecords(oldRecord, newRecord) {
+            const differences = {};
+            const fieldsToCompare = ['repair_type', 'repair_reason', 'failure_reason', 'admission_date', 'release_date', 'actions_description'];
+
+            fieldsToCompare.forEach(field => {
+                // Приводим null и undefined к пустым строкам для корректного сравнения
+                const oldValue = oldRecord[field] || '';
+                const newValue = newRecord[field] || '';
+                if (oldValue !== newValue) {
+                    differences[field] = true;
+                }
+            });
+            return differences;
+        }
+
+        /**
+         * Создает HTML-элемент для одной записи истории.
+         * @param {object} record - Данные записи.
+         * @param {object|null} differences - Объект с различиями для подсветки.
+         * @returns {HTMLElement} - Готовый div-элемент для вставки на страницу.
+         */
+        function createHistoryForm(record, differences) {
+            const itemDiv = document.createElement('div');
+            itemDiv.className = 'history-item';
+
+            const header = document.createElement('h4');
+            header.className = 'history-header';
+            const recordDate = record.created_at ? new Date(record.created_at).toLocaleString('ru-RU') : 'Неизвестно';
+            header.textContent = `Запись от ${recordDate} (Автор: ${record.repair_creator || 'Неизвестно'})`;
+            itemDiv.appendChild(header);
+
+            const table = document.createElement('table');
+            table.className = 'data-table history-subtable';
+            const tbody = document.createElement('tbody');
+
+            const fieldsMeta = [
+                { key: 'repair_type', label: 'Тип ремонта', type: 'text' },
+                { key: 'repair_reason', label: 'Причина поступления в ремонт', type: 'textarea' },
+                { key: 'failure_reason', label: 'Причина отказа', type: 'textarea' },
+                { key: 'admission_date', label: 'Дата поступления', type: 'text' },
+                { key: 'actions_description', label: 'Описание проведённых действий', type: 'textarea' },
+                { key: 'release_date', label: 'Дата выхода', type: 'text' }
+            ];
+
+            fieldsMeta.forEach(field => {
+                const row = tbody.insertRow();
+                const labelCell = row.insertCell();
+                labelCell.textContent = field.label;
+
+                const valueCell = row.insertCell();
+                const value = record[field.key] || '-';
+
+                // Проверяем, является ли поле многострочным
+                if (field.type === 'textarea') {
+                    const textAreaDisplay = document.createElement('div');
+                    // Используем класс, который у вас уже есть и стилизован
+                    textAreaDisplay.className = 'history-textarea-display';
+                    textAreaDisplay.textContent = value;
+                    valueCell.appendChild(textAreaDisplay);
+                } else {
+                    valueCell.textContent = value;
+                }
+
+                // Подсвечиваем ячейку, если поле было изменено
+                if (differences && differences[field.key]) {
+                    valueCell.classList.add('changed-field');
+                }
+            });
+
+            table.appendChild(tbody);
+            itemDiv.appendChild(table);
+            return itemDiv;
+        }
     }
 
 });

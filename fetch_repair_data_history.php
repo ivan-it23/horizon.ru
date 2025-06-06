@@ -1,16 +1,15 @@
 <?php
 include 'db_connection.php';
 
-// Устанавливаем заголовок Content-Type, чтобы браузер ожидал JSON
+// Set the Content-Type header to indicate that the browser should expect JSON
 header('Content-Type: application/json');
 
-$response = array(); // Массив для формирования JSON ответа
+$response = array(); // Array to build the JSON response
 
-// Проверяем, были ли переданы серийный номер и номер корпуса
+// Check if serial_number and case_number were provided
 if (!isset($_POST['serial_number']) || !isset($_POST['case_number'])) {
     $response['error'] = "Отсутствуют серийный номер или номер корпуса.";
     echo json_encode($response);
-    // Убедитесь, что $conn существует перед закрытием
     if (isset($conn) && $conn instanceof mysqli) {
         $conn->close();
     }
@@ -20,11 +19,11 @@ if (!isset($_POST['serial_number']) || !isset($_POST['case_number'])) {
 $serial_number = mysqli_real_escape_string($conn, $_POST['serial_number']);
 $case_number = mysqli_real_escape_string($conn, $_POST['case_number']);
 
-// Используем подготовленные выражения для безопасного запроса
+// Use prepared statements for a secure query
 $sql = "SELECT * FROM repair_data
         WHERE serial_number = ?
         AND case_number = ?
-        ORDER BY created_at DESC"; // Сортируем по дате создания записи (новейшие первыми)
+        ORDER BY created_at DESC"; // Sort by creation date (newest first)
 
 $stmt = $conn->prepare($sql);
 
@@ -41,18 +40,16 @@ if ($stmt) {
         }
     }
 
-    // Возвращаем данные истории в виде массива
-    echo json_encode($history_data); // Возвращаем сам массив, а не объект с ключом 'history'
+    // Return the history data as an array
+    echo json_encode($history_data);
 
     $stmt->close();
-
 } else {
     $response['error'] = "Ошибка при подготовке запроса: " . $conn->error;
-    error_log("Ошибка при подготовке запроса для fetch_repair_data_history: " . $conn->error);
-    echo json_encode($response); // Возвращаем ошибку в JSON формате
+    error_log("Error preparing query for fetch_repair_data_history: " . $conn->error);
+    echo json_encode($response);
 }
 
-// Убедитесь, что $conn существует перед закрытием
 if (isset($conn) && $conn instanceof mysqli) {
     $conn->close();
 }
