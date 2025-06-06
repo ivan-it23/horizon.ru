@@ -2394,7 +2394,8 @@ document.addEventListener('DOMContentLoaded', function () {
         .then(data => {
             if (data.success) {
                 // Заменяем alert на кастомное модальное окно или сообщение
-                displayMessage('Прибор успешно создан!', 'success');
+                //displayMessage('Прибор успешно создан!', 'success');
+                alert('Прибор успешно создан!');
                 form.reset();
                 generateCompositionTableRows(); // Если нужно восстановить динамику таблиц
                 updateReceiverRows(); // Обновляем строки приемников после сброса формы
@@ -4811,14 +4812,17 @@ document.addEventListener('DOMContentLoaded', function () {
      */
     async function handleCopyDeviceData(deviceId) {
         if (!deviceId) {
-            displayMessage('Ошибка: ID прибора не определен для копирования.', 'error');
+            // Убедимся, что displayMessage определена перед вызовом
+            if (typeof displayMessage === 'function') {
+                displayMessage('Ошибка: ID прибора не определен для копирования.', 'error');
+            } else {
+                alert('Ошибка: ID прибора не определен для копирования.');
+            }
             return;
         }
 
         const copiedParameters = {};
         // Ищем секцию параметров ВНУТРИ блока отображения данных конкретного прибора (showDeviceData)
-        // Предполагается, что при отображении прибора (showDeviceData) секция параметров имеет id 'device_params_section'
-        // и она является частью div с классом 'device-details-container'
         const deviceDetailsContainer = document.querySelector('.device-details-container #device_params_section');
 
         if (deviceDetailsContainer) {
@@ -4837,7 +4841,6 @@ document.addEventListener('DOMContentLoaded', function () {
             const deviceTypeInput = deviceDetailsContainer.querySelector('input[name="device_type"]');
             if (deviceTypeInput) copiedParameters.device_type = deviceTypeInput.value;
 
-            // Копируем nominal_diameter и transmitter_count если они есть как input в просмотре
             const nominalDiameterInput = deviceDetailsContainer.querySelector('input[name="nominal_diameter"]');
             if (nominalDiameterInput) copiedParameters.nominal_diameter = nominalDiameterInput.value;
 
@@ -4845,43 +4848,17 @@ document.addEventListener('DOMContentLoaded', function () {
             if (transmitterCountInput) copiedParameters.transmitter_count = transmitterCountInput.value;
 
 
-            const additionalInfoTextarea = deviceDetailsContainer.querySelector('textarea[name="additional_info"]'); // ID был viewAdditionalInfo
+            const additionalInfoTextarea = deviceDetailsContainer.querySelector('textarea[name="additional_info"]');
             if (additionalInfoTextarea) {
                 copiedParameters.additional_info = additionalInfoTextarea.value;
             }
         } else {
-            // Фоллбэк, если структура немного другая или ID не найден внутри details container
-            const globalParamsSection = document.getElementById('device_params_section');
-            if (globalParamsSection && globalParamsSection.closest('.device-details-container')) {
-                 const paramInputs = globalParamsSection.querySelectorAll('input[name]');
-                paramInputs.forEach(input => {
-                    if (input.name !== 'id' &&
-                        input.name !== 'serial_number' &&
-                        input.name !== 'case_number' &&
-                        input.name !== 'record_date' &&
-                        input.name !== 'creator_lastname' &&
-                        input.name !== 'changed_at' &&
-                        input.name !== 'changer_lastname') {
-                        copiedParameters[input.name] = input.value;
-                    }
-                });
-                const deviceTypeInput = globalParamsSection.querySelector('input[name="device_type"]');
-                if (deviceTypeInput) copiedParameters.device_type = deviceTypeInput.value;
-
-                const nominalDiameterInput = globalParamsSection.querySelector('input[name="nominal_diameter"]');
-                if (nominalDiameterInput) copiedParameters.nominal_diameter = nominalDiameterInput.value;
-
-                const transmitterCountInput = globalParamsSection.querySelector('input[name="transmitter_count"]');
-                if (transmitterCountInput) copiedParameters.transmitter_count = transmitterCountInput.value;
-
-                const additionalInfoTextarea = globalParamsSection.querySelector('textarea[name="additional_info"]');
-                 if (additionalInfoTextarea) {
-                    copiedParameters.additional_info = additionalInfoTextarea.value;
-                }
-            } else {
+            if (typeof displayMessage === 'function') {
                 displayMessage('Ошибка: Не удалось найти секцию параметров для копирования.', 'error');
-                return;
+            } else {
+                alert('Ошибка: Не удалось найти секцию параметров для копирования.');
             }
+            return;
         }
 
         try {
@@ -4906,12 +4883,23 @@ document.addEventListener('DOMContentLoaded', function () {
                 composition: compositionData || []
             };
 
-            displayMessage('Данные прибора скопированы в буфер!', 'success');
+            // --- ДОБАВЛЕНО: Вывод сообщения об успехе ---
+            if (typeof displayMessage === 'function') {
+                //displayMessage('Данные прибора скопированы в буфер!', 'success');
+                alert('Данные прибора скопированы в буфер!');
+            } else {
+                alert('Данные прибора скопированы в буфер!');
+            }
             console.log('Скопированные данные:', deviceDataClipboard);
+            // ---------------------------------------------
 
         } catch (error) {
             console.error('Ошибка при копировании данных прибора:', error);
-            displayMessage(`Ошибка копирования: ${error.message}`, 'error');
+            if (typeof displayMessage === 'function') {
+                displayMessage(`Ошибка копирования: ${error.message}`, 'error');
+            } else {
+                alert(`Ошибка копирования: ${error.message}`);
+            }
             deviceDataClipboard = null;
         }
     }
@@ -4921,7 +4909,8 @@ document.addEventListener('DOMContentLoaded', function () {
      */
     function handlePasteDeviceData() {
         if (!deviceDataClipboard) {
-            displayMessage('Нет данных для вставки. Сначала скопируйте данные прибора.', 'warning');
+            //displayMessage('Нет данных для вставки. Сначала скопируйте данные прибора.', 'warning');
+            alert('Нет данных для вставки. Сначала скопируйте данные прибора.');
             return;
         }
 
@@ -5032,7 +5021,8 @@ document.addEventListener('DOMContentLoaded', function () {
                      addOtherBoardButton.click(); // Добавляем одну пустую строку, если прочих плат нет
                 }
             }
-            displayMessage('Данные вставлены в форму. Проверьте и укажите серийный номер и номер корпуса.', 'success');
+            //displayMessage('Данные вставлены в форму. Проверьте и укажите серийный номер и номер корпуса.', 'success');
+            alert('Данные вставлены в форму. Проверьте и укажите серийный номер и номер корпуса.');
         };
 
         // Если структура формы изменилась из-за select'ов, даем время DOM обновиться
