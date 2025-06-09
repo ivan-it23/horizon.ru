@@ -3048,6 +3048,167 @@ button:disabled {
   border-bottom: 1px solid var(--border-color);
 }
 
+/* ==========================================================================
+   Новые стили для вкладки "Сведения о ремонте" (Tab 4)
+   ========================================================================== */
+
+/* Контейнер для всей истории ремонтов */
+.repair-history-container {
+  margin-top: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* Отдельный элемент аккордеона (одна запись о ремонте) */
+.repair-accordion-item {
+  background-color: var(--bg-container);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  transition: box-shadow 0.2s ease;
+  box-shadow: var(--shadow-sm);
+}
+
+.repair-accordion-item:hover {
+  box-shadow: var(--shadow-md);
+}
+
+/* Заголовок аккордеона, который является кликабельным */
+.repair-accordion-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.25rem;
+  cursor: pointer;
+  border-radius: var(--border-radius);
+  transition: background-color 0.2s ease;
+}
+
+.repair-accordion-item.expanded .repair-accordion-header {
+    background-color: var(--bg-table-header);
+    border-bottom: 1px solid var(--border-color);
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
+/* Заголовок записи (Дата, Автор) */
+.accordion-title {
+  font-weight: 600;
+  color: var(--primary-color);
+  font-size: 1rem;
+}
+
+/* Краткая причина ремонта */
+.accordion-reason {
+  flex-grow: 1;
+  padding: 0 1.5rem;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.accordion-reason strong {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+
+/* Иконка-шеврон */
+.accordion-icon {
+  font-size: 1rem;
+  color: var(--secondary-color);
+  transition: transform 0.3s ease;
+}
+.repair-accordion-item.expanded .accordion-icon {
+  transform: rotate(180deg);
+}
+
+/* Тело аккордеона (скрытое по-умолчанию) */
+.repair-accordion-body {
+  display: none;
+  padding: 1.5rem;
+  border-top: 1px solid var(--border-color);
+}
+.repair-accordion-item.expanded .repair-accordion-body {
+  display: block;
+}
+
+/* Кнопки действий внутри аккордеона */
+.repair-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border-color);
+}
+
+/* Контейнер для отображения истории правок одной записи */
+.edit-history-details {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  background-color: #fcfcfd;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+}
+.edit-history-details h4 {
+    margin-top: 0;
+    color: var(--primary-color);
+}
+.history-sub-item {
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px dashed var(--border-color);
+}
+.history-sub-item:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+.history-sub-header {
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+    color: var(--secondary-color);
+}
+.history-subtable td.changed-field {
+    padding: 8px;
+}
+.history-subtable .old-value, .history-subtable .new-value {
+    display: block;
+    font-size: 0.85rem;
+}
+.history-subtable .old-value {
+    color: var(--danger-color);
+    text-decoration: line-through;
+}
+.history-subtable .new-value {
+    color: var(--success-color);
+    font-weight: 600;
+}
+
+/* Заголовок для формы нового ремонта */
+#newRepairDataForm .form-section-title {
+    font-size: 1.2rem;
+    color: var(--primary-color);
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+@media (max-width: 768px) {
+    .repair-accordion-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+    .accordion-reason {
+        padding: 0;
+        white-space: normal;
+    }
+}
+
 
 #viewDeviceParams,
 #createDeviceForm,

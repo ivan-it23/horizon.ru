@@ -574,6 +574,7 @@ if ($is_logged_in) {
             </div>
 
             <div class="tab-pane" id="tab-4">
+                <!-- Заголовок вкладки и информация о приборе -->
                 <div class="tab-header-container">
                     <h2 class="tab-title">Сведения о ремонте</h2>
                     <div class="device-info-box">
@@ -582,11 +583,13 @@ if ($is_logged_in) {
                         <div class="device-info-item"><span class="device-info-label"><i class="fas fa-cube"></i> Корпус №:</span><span id="caseNumberTab4" class="device-info-value">-</span></div>
                     </div>
                 </div>
-                <div class="mode-buttons">
-                    <button type="button" id="showCreateFormTab4" class="button button-secondary"><i class="fas fa-plus"></i> Создать</button>
-                    <button type="button" id="showHistoryTab4" class="button button-secondary"><i class="fas fa-history"></i> История</button>
-                    <i class="fas fa-envelope msgr-open-icon" title="Отправить сообщение"></i>
 
+                <!-- Кнопки для переключения между созданием и просмотром истории -->
+                <div class="mode-buttons">
+                    <button type="button" id="showCreateFormTab4" class="button button-secondary"><i class="fas fa-plus"></i> Создать новую запись о ремонте</button>
+                    <button type="button" id="showHistoryTab4" class="button button-secondary"><i class="fas fa-history"></i> История ремонтов</button>
+                    <i class="fas fa-envelope msgr-open-icon" title="Отправить сообщение"></i>
+                    <!-- Модальное окно для сообщений (логика остается прежней) -->
                     <div class="msgr-modal">
                         <div class="msgr-modal-content">
                             <span class="msgr-close">&times;</span>
@@ -608,36 +611,32 @@ if ($is_logged_in) {
                         </div>
                     </div>
                 </div>
-                <form id="newRepairData">
+
+                <!-- Форма для создания НОВОЙ записи о ремонте (изначально скрыта) -->
+                <form id="newRepairDataForm" style="display: none;">
+                    <h3 class="form-section-title">Новый ремонт</h3>
                     <table class="data-table">
-                        <thead><tr><th>Поле</th><th>Значение</th><th>Примечание</th></tr></thead>
                         <tbody>
-                            <tr><td>Создатель записи</td><td><input type="text" name="repair_creator" value="<?= isset($_SESSION['user']) ? htmlspecialchars($_SESSION['user']['lastname'] . " " . $_SESSION['user']['firstname'] . " " . $_SESSION['user']['middlename']) : '' ?>" readonly></td><td>Имя пользователя</td></tr>
+                            <tr><td>Причина поступления в ремонт</td><td><textarea name="repair_reason"></textarea></td></tr>
+                            <tr><td>Причина отказа</td><td><textarea name="failure_reason"></textarea></td></tr>
+                            <tr><td>Дата поступления</td><td><input type="date" name="admission_date"></td></tr>
+                            <tr><td>Описание проведённых действий</td><td><textarea name="actions_description"></textarea></td></tr>
+                            <tr><td>Дата выхода</td><td><input type="date" name="release_date"></td></tr>
                             <tr>
-                                <td>Тип ремонта</td>
-                                <td>
-                                    <select name="repair_type">
-                                        <option value="" disabled selected>Выберите тип</option>
-                                        <option value="мелкий">Мелкий</option>
-                                        <option value="средний">Средний</option>
-                                        <option value="капитальный">Капитальный</option>
-                                        <option value="реконструкция">Реконструкция</option>
-                                        <option value="техобслуживание">Техобслуживание</option>
-                                    </select>
-                                </td>
-                                <td>Указание типа ремонта</td>
+                                <td>Создатель записи</td>
+                                <td><input type="text" name="repair_creator" value="<?= isset($_SESSION['user']) ? htmlspecialchars($_SESSION['user']['lastname'] . " " . $_SESSION['user']['firstname'] . " " . $_SESSION['user']['middlename']) : '' ?>" readonly></td>
                             </tr>
-                            <tr><td>Причина поступления в ремонт</td><td><textarea name="repair_reason"></textarea></td><td>Указание неисправности</td></tr>
-                            <tr><td>Причина отказа</td><td><textarea name="failure_reason"></textarea></td><td>Указание причины отказа</td></tr>
-                            <tr><td>Дата поступления</td><td><input type="date" name="admission_date"></td><td>Дата приёма на ремонт</td></tr>
-                            <tr><td>Описание проведённых действий</td><td><textarea name="actions_description"></textarea></td><td>Описание всех действий</td></tr>
-                            <tr><td>Дата выхода</td><td><input type="date" name="release_date"></td><td>Дата завершения ремонта</td></tr>
                         </tbody>
                     </table>
-                    <div class="mt-3"><button type="button" id="saveRepairDataButton" class="button button-primary"><i class="fas fa-save"></i> Сохранить</button></div>
+                    <div class="mt-3">
+                        <button type="button" id="saveNewRepairButton" class="button button-primary"><i class="fas fa-save"></i> Сохранить новый ремонт</button>
+                    </div>
                 </form>
-                <div id="repairHistory"></div>
+
+                <!-- Контейнер для динамического отображения истории ремонтов (аккордеон) -->
+                <div id="repairHistory" class="repair-history-container" style="display: none;"></div>
             </div>
+
 
             <div class="tab-pane" id="tab-5">
                  <div class="tab-header-container">
@@ -5023,74 +5022,64 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     if (tab4Pane) {
+        // Получаем необходимые элементы DOM
         const showCreateButton = document.getElementById('showCreateFormTab4');
         const showHistoryButton = document.getElementById('showHistoryTab4');
-        const createForm = document.getElementById('newRepairData');
+        const createForm = document.getElementById('newRepairDataForm');
         const historyDiv = document.getElementById('repairHistory');
-        const saveButton = document.getElementById('saveRepairDataButton');
+        const saveNewRepairButton = document.getElementById('saveNewRepairButton');
 
-        // Поля формы для заполнения
-        const formFields = {
-            repair_type: createForm.querySelector('select[name="repair_type"]'),
-            repair_reason: createForm.querySelector('textarea[name="repair_reason"]'),
-            failure_reason: createForm.querySelector('textarea[name="failure_reason"]'),
-            admission_date: createForm.querySelector('input[name="admission_date"]'),
-            actions_description: createForm.querySelector('textarea[name="actions_description"]'),
-            release_date: createForm.querySelector('input[name="release_date"]'),
-            repair_creator: createForm.querySelector('input[name="repair_creator"]')
-        };
+        let isAdmin = false; // Переменная для хранения статуса администратора
 
-        // Обработчик кнопки "Создать/Редактировать"
+        // Функция для получения роли пользователя при загрузке вкладки
+        function checkUserRole() {
+            fetch('fetch_user_role.php')
+                .then(response => response.json())
+                .then(data => {
+                    isAdmin = data.is_admin;
+                })
+                .catch(error => console.error('Ошибка при получении роли пользователя:', error));
+        }
+
+        // Вызываем проверку роли при первой загрузке
+        checkUserRole();
+
+        // --- Обработчики кнопок "Создать" и "История" ---
+
         showCreateButton.addEventListener('click', () => {
-            historyDiv.style.display = 'none';
-            historyDiv.innerHTML = '';
-            createForm.reset(); // Сбрасываем форму перед заполнением
-
             if (!selectedSerialNumber || !selectedCaseNumber) {
                 alert('Пожалуйста, выберите прибор на вкладке "Идентификационные данные".');
-                createForm.style.display = 'none';
                 return;
             }
-
+            historyDiv.style.display = 'none';
+            historyDiv.innerHTML = '';
             createForm.style.display = 'block';
-
-            // Загружаем последние данные в форму
-            fetch('fetch_latest_repair_data.php', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: `serial_number=${encodeURIComponent(selectedSerialNumber)}&case_number=${encodeURIComponent(selectedCaseNumber)}`
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data && Object.keys(data).length > 0 && !data.error) {
-                    formFields.repair_type.value = data.repair_type || '';
-                    formFields.repair_reason.value = data.repair_reason || '';
-                    formFields.failure_reason.value = data.failure_reason || '';
-                    formFields.admission_date.value = data.admission_date || '';
-                    formFields.actions_description.value = data.actions_description || '';
-                    formFields.release_date.value = data.release_date || '';
-                }
-                 // Устанавливаем текущего пользователя как создателя записи
-                formFields.repair_creator.value = '<?= isset($_SESSION['user']) ? htmlspecialchars($_SESSION['user']['lastname'] . " " . $_SESSION['user']['firstname'] . " " . $_SESSION['user']['middlename']) : '' ?>';
-            })
-            .catch(error => {
-                console.error('Ошибка при загрузке последних данных о ремонте:', error);
-                alert('Не удалось загрузить актуальные данные для редактирования.');
-            });
+            createForm.reset();
+            // Устанавливаем текущего пользователя как создателя
+            const creatorInput = createForm.querySelector('input[name="repair_creator"]');
+            if (creatorInput) {
+                 creatorInput.value = '<?= isset($_SESSION['user']) ? htmlspecialchars($_SESSION['user']['lastname'] . " " . $_SESSION['user']['firstname'] . " " . $_SESSION['user']['middlename']) : "" ?>';
+            }
         });
 
-        // Обработчик кнопки "Сохранить"
-        saveButton.addEventListener('click', () => {
+        showHistoryButton.addEventListener('click', () => {
             if (!selectedSerialNumber || !selectedCaseNumber) {
-                alert('Ошибка: Не выбран прибор.');
+                alert('Пожалуйста, выберите прибор на вкладке "Идентификационные данные".');
                 return;
             }
+            createForm.style.display = 'none';
+            historyDiv.style.display = 'block';
+            loadAndDisplayRepairHistory();
+        });
 
+        // --- Логика сохранения новой записи о ремонте ---
+
+        saveNewRepairButton.addEventListener('click', () => {
             const formData = new FormData(createForm);
             formData.append('serial_number', selectedSerialNumber);
             formData.append('case_number', selectedCaseNumber);
 
-            fetch('save_repair_data.php', {
+            fetch('save_new_repair.php', {
                 method: 'POST',
                 body: formData
             })
@@ -5099,27 +5088,19 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (data.success) {
                     alert(data.message);
                     createForm.style.display = 'none';
-                    showHistoryButton.click(); // Показываем обновленную историю
+                    showHistoryButton.click(); // Обновляем и показываем историю
                 } else {
-                    alert('Ошибка при сохранении: ' + data.message);
+                    alert('Ошибка: ' + data.message);
                 }
             })
-            .catch(error => {
-                console.error('Ошибка при сохранении данных о ремонте:', error);
-                alert('Произошла критическая ошибка при сохранении.');
-            });
+            .catch(error => console.error('Ошибка при создании записи о ремонте:', error));
         });
 
-        // Обработчик кнопки "История"
-        showHistoryButton.addEventListener('click', () => {
-            createForm.style.display = 'none';
-            historyDiv.style.display = 'block';
-            historyDiv.innerHTML = '<p>Загрузка истории...</p>';
 
-            if (!selectedSerialNumber || !selectedCaseNumber) {
-                historyDiv.innerHTML = '<p class="info-message">Выберите прибор для просмотра истории.</p>';
-                return;
-            }
+        // --- Функции для отображения истории ---
+
+        function loadAndDisplayRepairHistory() {
+            historyDiv.innerHTML = '<p>Загрузка истории ремонтов...</p>';
 
             fetch('fetch_repair_data_history.php', {
                 method: 'POST',
@@ -5127,59 +5108,226 @@ document.addEventListener('DOMContentLoaded', function () {
                 body: `serial_number=${encodeURIComponent(selectedSerialNumber)}&case_number=${encodeURIComponent(selectedCaseNumber)}`
             })
             .then(response => response.json())
-            .then(historyData => {
-                historyDiv.innerHTML = ''; // Очищаем
-                if (historyData.error) {
-                    historyDiv.innerHTML = `<p class="error-message">${historyData.error}</p>`;
+            .then(data => {
+                historyDiv.innerHTML = ''; // Очистка
+                if (data.error) {
+                    historyDiv.innerHTML = `<p class="error-message">${data.error}</p>`;
+                    return;
+                }
+                if (data.length === 0) {
+                    historyDiv.innerHTML = '<p class="info-message">Для этого прибора еще не было ремонтов.</p>';
                     return;
                 }
 
-                if (!Array.isArray(historyData) || historyData.length === 0) {
-                    historyDiv.innerHTML = '<p class="info-message">История ремонтов не найдена.</p>';
-                    return;
-                }
-
-                // Отображаем актуальные данные (первая запись в истории)
-                const actualData = historyData[0];
-                const actualHeader = document.createElement('h3');
-                actualHeader.className = 'history-current-header';
-                actualHeader.textContent = 'Актуальные данные';
-                historyDiv.appendChild(actualHeader);
-                historyDiv.appendChild(createHistoryForm(actualData, null));
-
-                // Отображаем историю изменений
-                if (historyData.length > 1) {
-                    const historyHeader = document.createElement('h3');
-                    historyHeader.className = 'history-log-header';
-                    historyHeader.textContent = 'История изменений';
-                    historyDiv.appendChild(historyHeader);
-
-                    for (let i = 1; i < historyData.length; i++) {
-                        const oldRecord = historyData[i];
-                        const newRecord = historyData[i - 1]; // Предыдущая запись в массиве - более новая
-                        const differences = compareRecords(oldRecord, newRecord);
-                        historyDiv.appendChild(createHistoryForm(oldRecord, differences));
-                    }
-                }
+                data.forEach(record => {
+                    historyDiv.appendChild(createRepairAccordion(record));
+                });
             })
             .catch(error => {
-                console.error('Ошибка при загрузке истории ремонтов:', error);
-                historyDiv.innerHTML = `<p class="error-message">Не удалось загрузить историю ремонтов.</p>`;
+                console.error('Ошибка загрузки истории ремонтов:', error);
+                historyDiv.innerHTML = `<p class="error-message">Не удалось загрузить историю.</p>`;
             });
-        });
+        }
 
-        /**
-         * Сравнивает две записи о ремонте и возвращает объект с различиями.
-         * @param {object} oldRecord - Старая запись.
-         * @param {object} newRecord - Новая запись.
-         * @returns {object} - Объект, где ключи - это имена измененных полей.
-         */
-        function compareRecords(oldRecord, newRecord) {
+        function createRepairAccordion(record) {
+            const item = document.createElement('div');
+            item.className = 'repair-accordion-item';
+            item.dataset.recordId = record.id;
+
+            // --- Заголовок аккордеона ---
+            const header = document.createElement('div');
+            header.className = 'repair-accordion-header';
+            header.innerHTML = `
+                <span class="accordion-title">
+                    Запись от ${new Date(record.created_at).toLocaleDateString('ru-RU')}
+                    (Автор: ${record.repair_creator || 'не указан'})
+                </span>
+                <span class="accordion-reason">
+                    <strong>Причина:</strong> ${record.repair_reason ? record.repair_reason.substring(0, 100) + '...' : 'не указана'}
+                </span>
+                <i class="fas fa-chevron-down accordion-icon"></i>
+            `;
+            header.addEventListener('click', () => {
+                item.classList.toggle('expanded');
+            });
+            item.appendChild(header);
+
+            // --- Тело аккордеона (скрытое содержимое) ---
+            const body = document.createElement('div');
+            body.className = 'repair-accordion-body';
+            body.innerHTML = `
+                <form class="editable-repair-form">
+                    <table class="data-table">
+                        <tbody>
+                            <tr><td>Причина поступления в ремонт</td><td><textarea name="repair_reason">${record.repair_reason || ''}</textarea></td></tr>
+                            <tr><td>Причина отказа</td><td><textarea name="failure_reason">${record.failure_reason || ''}</textarea></td></tr>
+                            <tr><td>Дата поступления</td><td><input type="date" name="admission_date" value="${record.admission_date || ''}"></td></tr>
+                            <tr><td>Описание проведённых действий</td><td><textarea name="actions_description">${record.actions_description || ''}</textarea></td></tr>
+                            <tr><td>Дата выхода</td><td><input type="date" name="release_date" value="${record.release_date || ''}"></td></tr>
+                        </tbody>
+                    </table>
+                    <div class="repair-actions">
+                        <button type="button" class="button button-primary save-changes-btn"><i class="fas fa-save"></i> Сохранить изменения</button>
+                        <button type="button" class="button button-secondary view-edits-btn"><i class="fas fa-history"></i> История изменений</button>
+                        ${isAdmin ? `<button type="button" class="button button-danger delete-record-btn"><i class="fas fa-trash-alt"></i> Удалить запись</button>` : ''}
+                    </div>
+                </form>
+                <div class="edit-history-details" style="display: none;"></div>
+            `;
+            item.appendChild(body);
+
+            // --- Обработчики кнопок внутри аккордеона ---
+
+            // Сохранить изменения
+            body.querySelector('.save-changes-btn').addEventListener('click', (e) => {
+                const form = e.target.closest('form');
+                const formData = new FormData(form);
+                formData.append('id', record.id);
+
+                fetch('update_repair_record.php', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(res => res.json())
+                .then(data => {
+                    alert(data.message);
+                    if (data.success) {
+                        loadAndDisplayRepairHistory(); // Перезагружаем всю историю
+                    }
+                });
+            });
+
+            // Посмотреть историю изменений
+            body.querySelector('.view-edits-btn').addEventListener('click', (e) => {
+                const detailsDiv = body.querySelector('.edit-history-details');
+                const isVisible = detailsDiv.style.display !== 'none';
+                detailsDiv.style.display = isVisible ? 'none' : 'block';
+                detailsDiv.innerHTML = isVisible ? '' : '<p>Загрузка истории изменений...</p>';
+
+                if (!isVisible) {
+                    fetch(`fetch_repair_edit_history.php?id=${record.id}`)
+                    .then(res => res.json())
+                    .then(history => displayEditHistory(history, record, detailsDiv));
+                }
+            });
+
+            // Удалить запись (если кнопка есть)
+            const deleteBtn = body.querySelector('.delete-record-btn');
+            if (deleteBtn) {
+                deleteBtn.addEventListener('click', () => {
+                    if (confirm('Вы уверены, что хотите удалить эту запись о ремонте и всю её историю изменений? Это действие необратимо.')) {
+                        const formData = new FormData();
+                        formData.append('id', record.id);
+                        fetch('delete_repair_record.php', {
+                            method: 'POST',
+                            body: formData
+                        })
+                        .then(res => res.json())
+                        .then(data => {
+                            alert(data.message);
+                            if(data.success) {
+                                loadAndDisplayRepairHistory();
+                            }
+                        });
+                    }
+                });
+            }
+            return item;
+        }
+
+        function displayEditHistory(history, currentRecord, container) {
+            container.innerHTML = '<h4>История правок для этой записи</h4>';
+            if (history.length === 0) {
+                container.innerHTML += '<p class="info-message">Для этой записи еще не было изменений.</p>';
+                return;
+            }
+
+            let previousState = currentRecord;
+            history.forEach(historicVersion => {
+                const diffs = compareRecordsForHistory(historicVersion, previousState);
+
+                // Пропускаем ревизию, если в ней не было зафиксировано изменений полей
+                if (Object.keys(diffs).length === 0) {
+                    previousState = historicVersion;
+                    return;
+                }
+
+                const historyEntry = document.createElement('div');
+                historyEntry.className = 'history-sub-item';
+
+                const authorName = `${historicVersion.lastname || ''} ${historicVersion.firstname || ''} ${historicVersion.middlename || ''}`.trim() || 'Неизвестный пользователь';
+                historyEntry.innerHTML = `
+                    <div class="history-sub-header">
+                        Изменение от ${new Date(historicVersion.changed_at).toLocaleString('ru-RU')} (Автор: ${authorName})
+                    </div>
+                `;
+                const table = document.createElement('table');
+                table.className = 'data-table history-subtable';
+                const tbody = document.createElement('tbody');
+
+                const fields = [
+                    { key: 'repair_reason', label: 'Причина поступления в ремонт', type: 'textarea' },
+                    { key: 'failure_reason', label: 'Причина отказа', type: 'textarea' },
+                    { key: 'actions_description', label: 'Описание проведённых действий', type: 'textarea' },
+                    { key: 'admission_date', label: 'Дата поступления', type: 'date' },
+                    { key: 'release_date', label: 'Дата выхода', type: 'date' }
+                ];
+
+                fields.forEach(field => {
+                    const row = tbody.insertRow();
+                    const labelCell = row.insertCell();
+                    labelCell.textContent = field.label;
+
+                    const valueCell = row.insertCell();
+                    const oldValue = historicVersion[field.key] || '';
+                    const newValue = previousState[field.key] || '';
+
+                    if (diffs[field.key]) { // Если поле было изменено
+                        valueCell.classList.add('changed-field'); // Подсвечиваем ячейку
+
+                        if (field.type === 'textarea') {
+                            // Создаем специальную структуру для сравнения textarea
+                            valueCell.innerHTML = `
+                                <div class="history-textarea-comparison">
+                                    <span class="change-label">Новые сведения</span>
+                                    <textarea class="history-textarea" readonly>${newValue}</textarea>
+                                    <div class="old-textarea-wrapper">
+                                        <span class="change-label">Старые сведения</span>
+                                        <textarea class="history-textarea" readonly>${oldValue}</textarea>
+                                    </div>
+                                </div>
+                            `;
+                        } else { // Для дат и других простых полей
+                            valueCell.innerHTML = `
+                                <span class="date-change-old">${oldValue || 'Нет информации'}</span>
+                                <span class="date-change-note">(изменено на:</span>
+                                <span class="date-change-new">${newValue || 'Нет информации'}</span>
+                                <span class="date-change-note">)</span>
+                            `;
+                        }
+                    } else { // Если поле НЕ было изменено
+                        if (field.type === 'textarea') {
+                            // Просто отображаем текущее значение в textarea без подписей
+                            valueCell.innerHTML = `<textarea class="history-textarea" readonly>${newValue}</textarea>`;
+                        } else {
+                            valueCell.textContent = newValue || '-';
+                        }
+                    }
+                });
+
+                table.appendChild(tbody);
+                historyEntry.appendChild(table);
+                container.appendChild(historyEntry);
+
+                previousState = historicVersion;
+            });
+        }
+
+
+        function compareRecordsForHistory(oldRecord, newRecord) {
             const differences = {};
-            const fieldsToCompare = ['repair_type', 'repair_reason', 'failure_reason', 'admission_date', 'release_date', 'actions_description'];
-
-            fieldsToCompare.forEach(field => {
-                // Приводим null и undefined к пустым строкам для корректного сравнения
+            const fields = ['repair_reason', 'failure_reason', 'admission_date', 'release_date', 'actions_description'];
+            fields.forEach(field => {
                 const oldValue = oldRecord[field] || '';
                 const newValue = newRecord[field] || '';
                 if (oldValue !== newValue) {
@@ -5188,66 +5336,8 @@ document.addEventListener('DOMContentLoaded', function () {
             });
             return differences;
         }
-
-        /**
-         * Создает HTML-элемент для одной записи истории.
-         * @param {object} record - Данные записи.
-         * @param {object|null} differences - Объект с различиями для подсветки.
-         * @returns {HTMLElement} - Готовый div-элемент для вставки на страницу.
-         */
-        function createHistoryForm(record, differences) {
-            const itemDiv = document.createElement('div');
-            itemDiv.className = 'history-item';
-
-            const header = document.createElement('h4');
-            header.className = 'history-header';
-            const recordDate = record.created_at ? new Date(record.created_at).toLocaleString('ru-RU') : 'Неизвестно';
-            header.textContent = `Запись от ${recordDate} (Автор: ${record.repair_creator || 'Неизвестно'})`;
-            itemDiv.appendChild(header);
-
-            const table = document.createElement('table');
-            table.className = 'data-table history-subtable';
-            const tbody = document.createElement('tbody');
-
-            const fieldsMeta = [
-                { key: 'repair_type', label: 'Тип ремонта', type: 'text' },
-                { key: 'repair_reason', label: 'Причина поступления в ремонт', type: 'textarea' },
-                { key: 'failure_reason', label: 'Причина отказа', type: 'textarea' },
-                { key: 'admission_date', label: 'Дата поступления', type: 'text' },
-                { key: 'actions_description', label: 'Описание проведённых действий', type: 'textarea' },
-                { key: 'release_date', label: 'Дата выхода', type: 'text' }
-            ];
-
-            fieldsMeta.forEach(field => {
-                const row = tbody.insertRow();
-                const labelCell = row.insertCell();
-                labelCell.textContent = field.label;
-
-                const valueCell = row.insertCell();
-                const value = record[field.key] || '-';
-
-                // Проверяем, является ли поле многострочным
-                if (field.type === 'textarea') {
-                    const textAreaDisplay = document.createElement('div');
-                    // Используем класс, который у вас уже есть и стилизован
-                    textAreaDisplay.className = 'history-textarea-display';
-                    textAreaDisplay.textContent = value;
-                    valueCell.appendChild(textAreaDisplay);
-                } else {
-                    valueCell.textContent = value;
-                }
-
-                // Подсвечиваем ячейку, если поле было изменено
-                if (differences && differences[field.key]) {
-                    valueCell.classList.add('changed-field');
-                }
-            });
-
-            table.appendChild(tbody);
-            itemDiv.appendChild(table);
-            return itemDiv;
-        }
     }
+
 
 });
 

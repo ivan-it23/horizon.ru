@@ -11,6 +11,9 @@ if ($mysqli->connect_error) {
     die("Ошибка подключения к базе данных: " . $mysqli->connect_error);
 }
 
+// Устанавливаем кодировку соединения на UTF-8
+$mysqli->set_charset("utf8mb4");
+
 // Обработка добавления пользователя
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_user'])) {
     $username = $_POST['username'];
