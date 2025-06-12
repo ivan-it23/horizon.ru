@@ -743,8 +743,7 @@ button:disabled {
   list-style: none;
 }
 
-.parent-tab:hover .sub-tabs,
-.parent-tab.active .sub-tabs { /* Показываем при наведении или если родитель активен */
+.parent-tab:hover .sub-tabs { /* Показываем только при наведении */
   display: block;
 }
 
@@ -3208,6 +3207,45 @@ button:disabled {
         white-space: normal;
     }
 }
+
+/* ==========================================================================
+   СТИЛИ ДЛЯ СТРАНИЦЫ ПРОСМОТРА ФАЙЛОВ (view_files.php)
+   ========================================================================== */
+
+/* Контейнер для заголовка и кнопки "Назад" */
+.page-title-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem; /* Стандартный отступ */
+    flex-wrap: wrap;       /* Для адаптивности на мобильных устройствах */
+    gap: 1rem;             /* Пространство между заголовком и кнопкой */
+}
+
+/* Убираем нижний отступ у заголовка, когда он в контейнере */
+.page-title-container .file-header {
+    margin-bottom: 0;
+    flex-grow: 1; /* Заголовок занимает доступное пространство */
+}
+
+/* Стили для кнопки "Назад" */
+.back-button {
+    flex-shrink: 0; /* Запрещаем кнопке сжиматься */
+}
+
+@media (max-width: 576px) {
+    .page-title-container {
+        flex-direction: column; /* Элементы в столбец */
+        align-items: stretch;   /* Растягиваем по ширине */
+    }
+    .page-title-container .file-header {
+        text-align: center; /* Центрируем заголовок */
+    }
+    .back-button {
+        width: 100%; /* Кнопка на всю ширину */
+    }
+}
+
 
 
 #viewDeviceParams,

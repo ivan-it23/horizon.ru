@@ -2,13 +2,11 @@
 session_start();
 include 'db_connection.php';
 
-
 $is_logged_in = isset($_SESSION['user']);
 $user_info = $is_logged_in ? $_SESSION['user'] : null;
 
-
+// Инициализация счетчика непрочитанных сообщений
 $unread_count = 0;
-
 
 if (isset($_GET['field'])) {
     $field = $_GET['field'];
@@ -22,6 +20,9 @@ if (isset($_GET['field'])) {
         echo "Не указаны обязательные параметры прибора";
         exit;
     }
+
+    // URL для кнопки "Назад" в случае, если JavaScript отключен
+    $fallbackBackUrl = "AccountingOfDevices2.php";
 
     // Модифицированный SQL-запрос для сортировки по 'created_at' в указанном порядке
     $stmt = $conn->prepare("SELECT id, file_name, created_at FROM uploaded_files
@@ -40,51 +41,50 @@ if (isset($_GET['field'])) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Скачивание и удаление файлов</title> <!-- Скачивание и удаление файлов -->
+    <title>Просмотр загруженных файлов</title>
     <link rel="stylesheet" href="StyleAccountingOfDevices.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="icon" href="images/favicon1.png" type="image/png">
     <style>
-        /* Новые и улучшенные стили для кнопки удаления */
+        /* Стили для страницы просмотра файлов (view_files.php) */
         .delete-link {
             color: var(--danger-color);
             background-color: var(--bg-container);
             border-color: var(--danger-color);
-            margin-left: 10px; /* Отступ от кнопки скачивания */
-            padding: 10px 20px; /* Увеличенный padding для единообразия с download-link */
-            font-size: 0.95rem; /* Единый размер шрифта */
+            margin-left: 10px;
+            padding: 10px 20px;
+            font-size: 0.95rem;
             display: inline-flex;
             align-items: center;
-            gap: 8px; /* Единый gap для иконки и текста */
+            gap: 8px;
             text-decoration: none;
             border-radius: var(--border-radius);
             transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
             cursor: pointer;
-            box-shadow: var(--shadow-sm); /* Легкая тень */
+            box-shadow: var(--shadow-sm);
         }
 
         .delete-link:hover {
             background-color: var(--danger-color);
             color: var(--text-light);
-            border-color: #bb2d3b; /* Темнее красный */
-            box-shadow: var(--shadow-md); /* Увеличенная тень при наведении */
-            transform: translateY(-1px); /* Небольшой подъем */
+            border-color: #bb2d3b;
+            box-shadow: var(--shadow-md);
+            transform: translateY(-1px);
         }
 
-        /* Улучшенные стили для модального окна подтверждения */
         .modal-confirm {
             position: fixed;
             top: 0;
             left: 0;
-            z-index: 1060; /* Выше основного модального окна */
-            display: flex; /* Изначально flex, но скрыт через opacity/pointer-events */
+            z-index: 1060;
+            display: flex;
             width: 100%;
             height: 100%;
             overflow-x: hidden;
             overflow-y: auto;
             outline: 0;
-            background-color: rgba(0, 0, 0, 0.6); /* Темнее оверлей */
+            background-color: rgba(0, 0, 0, 0.6);
             align-items: center;
             justify-content: center;
             opacity: 0;
@@ -104,21 +104,21 @@ if (isset($_GET['field'])) {
             border-radius: var(--border-radius);
             box-shadow: var(--shadow-lg);
             width: 90%;
-            max-width: 450px; /* Немного шире для лучшего вида */
+            max-width: 450px;
             text-align: center;
-            transform: translateY(-20px); /* Начальное смещение */
+            transform: translateY(-20px);
             transition: transform 0.3s ease;
         }
 
         .modal-confirm.show .modal-confirm-content {
-            transform: translateY(0); /* Смещение при показе */
+            transform: translateY(0);
         }
 
         .modal-confirm-content h3 {
             margin-top: 0;
             margin-bottom: 1rem;
             color: var(--primary-color);
-            font-size: 1.3rem; /* Немного крупнее */
+            font-size: 1.3rem;
         }
 
         .modal-confirm-content p {
@@ -137,27 +137,30 @@ if (isset($_GET['field'])) {
             min-width: 120px;
         }
 
-        /* Улучшенные стили для списка файлов */
+        .main-container {
+            margin-top: 2rem; /* 32px */
+        }
+
         .file-list-container {
-            margin-top: 25px; /* Увеличенный отступ сверху */
-            padding: 20px; /* Увеличенный padding */
+            margin-top: 25px;
+            padding: 20px;
             background-color: var(--bg-container);
             border: 1px solid var(--border-color);
             border-radius: var(--border-radius);
-            box-shadow: var(--shadow-md); /* Более выраженная тень */
+            box-shadow: var(--shadow-md);
         }
 
         .file-item {
-            padding: 15px 15px; /* Увеличенный вертикальный и горизонтальный padding */
+            padding: 15px 15px;
             border-bottom: 1px solid var(--border-color);
             display: flex;
             justify-content: space-between;
-            align-items: center; /* Центрирование по вертикали */
-            gap: 15px; /* Пространство между блоками */
+            align-items: center;
+            gap: 15px;
             transition: background-color 0.2s ease, border-color 0.2s ease;
-            border-radius: var(--border-radius); /* Скругление углов */
-            margin: 0 -15px; /* Визуально расширяем элемент на всю ширину контейнера */
-            width: calc(100% + 30px); /* Компенсируем отрицательные margin */
+            border-radius: var(--border-radius);
+            margin: 0 -15px;
+            width: calc(100% + 30px);
         }
 
         .file-item:last-child {
@@ -165,7 +168,7 @@ if (isset($_GET['field'])) {
         }
 
         .file-item:hover {
-            background-color: var(--bg-table-stripe); /* Легкий фон при наведении */
+            background-color: var(--bg-table-stripe);
         }
 
         .file-info {
@@ -173,76 +176,52 @@ if (isset($_GET['field'])) {
             margin-right: auto;
             display: flex;
             flex-direction: column;
-            gap: 5px; /* Пространство между названием и датой */
+            gap: 5px;
         }
 
         .file-name {
-            font-size: 1.05rem; /* Немного крупнее */
-            color: var(--primary-color); /* Основной цвет для названия */
-            font-weight: 600; /* Полужирный */
-            word-break: break-word; /* Перенос слов */
+            font-size: 1.05rem;
+            color: var(--primary-color);
+            font-weight: 600;
+            word-break: break-word;
         }
 
         .file-date {
-            font-size: 0.88rem; /* Немного крупнее */
-            color: var(--text-secondary); /* Вторичный цвет для даты */
+            font-size: 0.88rem;
+            color: var(--text-secondary);
         }
 
-        /* Улучшенные стили для кнопки "Скачать" */
         .download-link {
-            padding: 10px 20px; /* Единый padding */
-            font-size: 0.95rem; /* Единый размер шрифта */
+            padding: 10px 20px;
+            font-size: 0.95rem;
             display: inline-flex;
             align-items: center;
-            gap: 8px; /* Пространство для иконки и текста */
+            gap: 8px;
             transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
-            box-shadow: var(--shadow-sm); /* Легкая тень */
+            box-shadow: var(--shadow-sm);
         }
 
         .download-link:hover {
-            box-shadow: var(--shadow-md); /* Увеличенная тень при наведении */
-            transform: translateY(-1px); /* Небольшой подъем */
+            box-shadow: var(--shadow-md);
+            transform: translateY(-1px);
         }
 
-        /* Стиль для сообщения, когда файлов нет */
         .file-item-empty {
             padding: 20px;
             text-align: center;
             color: var(--text-secondary);
             font-style: italic;
-            background-color: var(--bg-table-header); /* Фон, чтобы выделить сообщение */
+            background-color: var(--bg-table-header);
             border-radius: var(--border-radius);
-            margin: 10px 0; /* Отступ от краев контейнера */
+            margin: 10px 0;
         }
 
-        /* Адаптивность для мобильных устройств */
-        @media (max-width: 576px) {
-            .file-item {
-                flex-direction: column; /* Стек элементов по вертикали */
-                align-items: flex-start; /* Выравнивание по левому краю */
-                padding: 15px; /* Корректировка padding */
-                margin: 0; /* Убираем отрицательные margin */
-                width: 100%; /* Полная ширина */
-            }
-            .file-info {
-                margin-right: 0;
-                width: 100%;
-                text-align: left; /* Выравнивание текста влево */
-            }
-            .download-link, .delete-link {
-                width: 100%; /* Кнопки на всю ширину */
-                margin-left: 0;
-                justify-content: center; /* Центрируем содержимое кнопок */
-            }
-        }
-
-        /* Стили для элемента сортировки */
         .sort-control {
             display: flex;
             align-items: center;
             gap: 10px;
             margin-bottom: 20px;
-            justify-content: flex-end; /* Выравнивание по правому краю */
+            justify-content: flex-end;
         }
 
         .sort-control label {
@@ -266,6 +245,26 @@ if (isset($_GET['field'])) {
             border-color: var(--primary-color);
             box-shadow: 0 0 0 2px rgba(var(--primary-rgb), 0.2);
         }
+
+        @media (max-width: 576px) {
+            .file-item {
+                flex-direction: column;
+                align-items: flex-start;
+                padding: 15px;
+                margin: 0;
+                width: 100%;
+            }
+            .file-info {
+                margin-right: 0;
+                width: 100%;
+                text-align: left;
+            }
+            .download-link, .delete-link {
+                width: 100%;
+                margin-left: 0;
+                justify-content: center;
+            }
+        }
     </style>
 </head>
 <body>
@@ -274,15 +273,15 @@ if (isset($_GET['field'])) {
     <div class="header-container">
         <div class="header-left">
             <a href="index.php" class="logo-link">
-                <img src="images/favicon.png" alt="Логотип АМК Горизонт" class="logo-img" onerror="this.style.display='none'; this.alt='Ошибка загрузки логотипа';"> <!-- Логотип АМК Горизонт -->
+                <img src="images/favicon.png" alt="Логотип АМК Горизонт" class="logo-img" onerror="this.style.display='none'; this.alt='Ошибка загрузки логотипа';">
             </a>
         </div>
         <nav class="header-nav">
             <ul>
-                <li><a href="index.php" class="<?= basename($_SERVER['PHP_SELF']) == 'index.php' ? 'active' : '' ?>">Главная</a></li> <!-- Главная -->
-                <li><a href="AccountingOfDevices2.php" class="active" onclick="return checkAccess();">Учёт приборов</a></li> <!-- Учёт приборов -->
+                <li><a href="index.php" class="<?= basename($_SERVER['PHP_SELF']) == 'index.php' ? 'active' : '' ?>">Главная</a></li>
+                <li><a href="AccountingOfDevices2.php" class="active" onclick="return checkAccess();">Учёт приборов</a></li>
                 <?php if (isset($user_info['is_admin']) && $user_info['is_admin']): ?>
-                    <li><a href="admin_panel.php" onclick="return checkAccess();">Админ-панель</a></li> <!-- Админ-панель -->
+                    <li><a href="admin_panel.php" onclick="return checkAccess();">Админ-панель</a></li>
                 <?php endif; ?>
             </ul>
         </nav>
@@ -290,7 +289,7 @@ if (isset($_GET['field'])) {
             <?php if ($is_logged_in && $user_info): ?>
                 <div class="user-info">
                      <div class="user-link-container">
-                        <a href="profile.php" class="user-profile-link" title="Перейти в профиль"> <!-- Перейти в профиль -->
+                        <a href="profile.php" class="user-profile-link" title="Перейти в профиль">
                             <i class="fas fa-user-circle user-icon"></i>
                             <span class="user-name">
                                 <?= htmlspecialchars($user_info['lastname'] . " " .
@@ -299,77 +298,83 @@ if (isset($_GET['field'])) {
 
                             </span>
                         </a>
-                        <span id="unread-count-badge-index" class="unread-badge <?= $unread_count > 0 ? 'visible' : '' ?>" title="Непрочитанные сообщения"> <!-- Непрочитанные сообщения -->
+                        <span id="unread-count-badge-index" class="unread-badge <?= $unread_count > 0 ? 'visible' : '' ?>" title="Непрочитанные сообщения">
                             <?= $unread_count ?>
                         </span>
                     </div>
                     <form method="POST" action="logout.php" class="logout-form">
-                        <button type="submit" class="logout-link" title="Выйти из системы"> <!-- Выйти из системы -->
-                           <i class="fas fa-sign-out-alt"></i> <span class="logout-text">Выход</span> <!-- Выход -->
+                        <button type="submit" class="logout-link" title="Выйти из системы">
+                           <i class="fas fa-sign-out-alt"></i> <span class="logout-text">Выход</span>
                         </button>
                     </form>
                 </div>
             <?php else: ?>
                 <form class="auth-form" method="POST" action="login.php">
                     <div class="input-wrapper">
-                        <input type="text" name="username" placeholder="Логин" required aria-label="Логин"> <!-- Логин -->
+                        <input type="text" name="username" placeholder="Логин" required aria-label="Логин">
                     </div>
                     <div class="input-wrapper">
-                        <input type="password" name="password" placeholder="Пароль" required aria-label="Пароль"> <!-- Пароль -->
+                        <input type="password" name="password" placeholder="Пароль" required aria-label="Пароль">
                     </div>
-                    <button type="submit" class="login-button">Войти</button> <!-- Войти -->
+                    <button type="submit" class="login-button">Войти</button>
                 </form>
             <?php endif; ?>
         </div>
-         <button class="mobile-menu-toggle" aria-label="Открыть меню"> <!-- Открыть меню -->
+         <button class="mobile-menu-toggle" aria-label="Открыть меню">
             <i class="fas fa-bars"></i>
         </button>
     </div>
 </header>
 
-<main class="main-container"> <?php
+<main class="main-container">
+    <?php
     $fieldNames = [
-        'kis' => 'Файл КИС', // Файл КИС
-        'thermoprofile' => 'Файл термопрофиля', // Файл термопрофиля
-        'metrology' => 'Файл метрологии', // Файл метрологии
-        'calibration' => 'Файл калибровки' // Файл калибровки
+        'kis' => 'Файл КИС',
+        'thermoprofile' => 'Файл термопрофиля',
+        'metrology' => 'Файл метрологии',
+        'calibration' => 'Файл калибровки'
     ];
 
-    $fieldDisplayName = isset($fieldNames[$field]) ? $fieldNames[$field] : 'Неизвестное поле'; // Неизвестное поле
+    $fieldDisplayName = isset($fieldNames[$field]) ? $fieldNames[$field] : 'Неизвестное поле';
     ?>
 
-    <h2 class="file-header">Файлы для поля: <?= htmlspecialchars($fieldDisplayName) ?></h2> <!-- Файлы для поля: -->
+    <!-- ОБНОВЛЕННЫЙ БЛОК: Контейнер для заголовка и кнопки "Назад" -->
+    <div class="page-title-container">
+        <h2 class="file-header">Файлы для поля: <?= htmlspecialchars($fieldDisplayName) ?></h2>
+        <a href="<?= htmlspecialchars($fallbackBackUrl) ?>" onclick="event.preventDefault(); window.history.back();" class="button button-secondary back-button">
+            <i class="fas fa-arrow-left"></i> Назад к файлам
+        </a>
+    </div>
 
     <div class="device-info-box">
         <div class="device-info-item">
             <span class="device-info-label">
                 <i class="fas fa-microchip"></i>
-                Тип прибора: <!-- Тип прибора: -->
+                Тип прибора:
             </span>
             <span class="device-info-value"><?= htmlspecialchars($deviceType) ?></span>
         </div>
         <div class="device-info-item">
             <span class="device-info-label">
                 <i class="fas fa-barcode"></i>
-                Серийный номер: <!-- Серийный номер: -->
+                Серийный номер:
             </span>
             <span class="device-info-value"><?= htmlspecialchars($serialNumber) ?></span>
         </div>
         <div class="device-info-item">
             <span class="device-info-label">
                 <i class="fas fa-cube"></i>
-                Номер корпуса: <!-- Номер корпуса: -->
+                Номер корпуса:
             </span>
             <span class="device-info-value"><?= htmlspecialchars($caseNumber) ?></span>
         </div>
     </div>
 
-    <!-- Добавляем элемент управления сортировкой -->
     <div class="sort-control">
-        <label for="sortOrder">Сортировать по дате:</label> <!-- Сортировать по дате: -->
+        <label for="sortOrder">Сортировать по дате:</label>
         <select id="sortOrder">
-            <option value="DESC" <?= $sortOrder === 'DESC' ? 'selected' : '' ?>>Сначала новые</option> <!-- Сначала новые -->
-            <option value="ASC" <?= $sortOrder === 'ASC' ? 'selected' : '' ?>>Сначала старые</option> <!-- Сначала старые -->
+            <option value="DESC" <?= $sortOrder === 'DESC' ? 'selected' : '' ?>>Сначала новые</option>
+            <option value="ASC" <?= $sortOrder === 'ASC' ? 'selected' : '' ?>>Сначала старые</option>
         </select>
     </div>
 
@@ -388,16 +393,16 @@ if (isset($_GET['field'])) {
                             </div>
                         </div>
                         <a href="download_file.php?id=<?= $file['id'] ?>" class="download-link button button-secondary">
-                            <i class="fas fa-download"></i> Скачать <!-- Скачать -->
+                            <i class="fas fa-download"></i> Скачать
                         </a>
                         <button type="button" class="delete-link button button-danger" data-file-id="<?= $file['id'] ?>">
-                            <i class="fas fa-trash-alt"></i> Удалить <!-- Удалить -->
+                            <i class="fas fa-trash-alt"></i> Удалить
                         </button>
                     </li>
                 <?php endwhile; ?>
             <?php else: ?>
                 <li class="file-item-empty">
-                    <p>Файлы не найдены для указанных параметров.</p> <!-- Файлы не найдены для указанных параметров. -->
+                    <p>Файлы не найдены для указанных параметров.</p>
                 </li>
             <?php endif; ?>
         </ul>
@@ -410,20 +415,18 @@ if (isset($_GET['field'])) {
     </div>
 </footer>
 
-<!-- Модальное окно подтверждения удаления -->
 <div id="deleteConfirmModal" class="modal-confirm">
     <div class="modal-confirm-content" id="originalModalContent">
-        <h3>Подтвердите удаление</h3> <!-- Подтвердите удаление -->
-        <p>Вы уверены, что хотите удалить файл <strong id="fileNameToDelete"></strong>?</p> <!-- Вы уверены, что хотите удалить файл -->
+        <h3>Подтвердите удаление</h3>
+        <p>Вы уверены, что хотите удалить файл <strong id="fileNameToDelete"></strong>?</p>
         <div class="modal-confirm-buttons">
-            <button type="button" id="confirmDeleteBtn" class="button button-danger">Удалить</button> <!-- Удалить -->
-            <button type="button" id="cancelDeleteBtn" class="button button-secondary">Отмена</button> <!-- Отмена -->
+            <button type="button" id="confirmDeleteBtn" class="button button-danger">Удалить</button>
+            <button type="button" id="cancelDeleteBtn" class="button button-secondary">Отмена</button>
         </div>
     </div>
 </div>
 
 <script>
-    // Сохраняем исходное содержимое модального окна для последующего восстановления
     let originalModalBodyHTML = '';
 
     document.addEventListener('DOMContentLoaded', function() {
@@ -436,21 +439,18 @@ if (isset($_GET['field'])) {
             mobileMenuToggle.addEventListener('click', function() {
                 headerNav.classList.toggle('mobile-active');
                 headerRight.classList.toggle('mobile-active');
-                body.classList.toggle('menu-open'); // Блокировка прокрутки
+                body.classList.toggle('menu-open');
             });
         }
 
-        // Логика удаления файлов
         const deleteConfirmModal = document.getElementById('deleteConfirmModal');
         const modalConfirmContent = deleteConfirmModal.querySelector('.modal-confirm-content');
-        originalModalBodyHTML = modalConfirmContent.innerHTML; // Захватываем innerHTML содержимого
+        originalModalBodyHTML = modalConfirmContent.innerHTML;
 
         let fileIdToDelete = null;
         let fileItemToDelete = null;
 
-        // Функция для показа модального окна подтверждения
         function showConfirmModal(fileName, id, item) {
-            // Восстанавливаем исходное содержимое перед показом для нового подтверждения
             modalConfirmContent.innerHTML = originalModalBodyHTML;
             const fileNameToDeleteSpan = modalConfirmContent.querySelector('#fileNameToDelete');
             const confirmDeleteBtn = modalConfirmContent.querySelector('#confirmDeleteBtn');
@@ -465,18 +465,15 @@ if (isset($_GET['field'])) {
             cancelDeleteBtn.onclick = hideModal;
         }
 
-        // Функция для скрытия модального окна и сброса переменных
         function hideModal() {
             deleteConfirmModal.classList.remove('show');
             fileIdToDelete = null;
             fileItemToDelete = null;
-            // Восстанавливаем исходное содержимое после скрытия для подготовки к следующему использованию
             setTimeout(() => {
                 modalConfirmContent.innerHTML = originalModalBodyHTML;
-            }, 300); // Соответствует длительности CSS-перехода для плавной анимации
+            }, 300);
         }
 
-        // Обработка подтверждения удаления
         function handleConfirmDelete() {
             if (fileIdToDelete) {
                 fetch('delete_file.php', {
@@ -499,29 +496,27 @@ if (isset($_GET['field'])) {
                                 fileList.appendChild(emptyMessage);
                             }
                         }
-                        console.log('Файл успешно удален'); // Файл успешно удален
-                        hideModal(); // Скрываем модальное окно при успехе
+                        console.log('Файл успешно удален');
+                        hideModal();
                     } else {
-                        console.error('Ошибка при удалении файла:', data.message); // Ошибка при удалении файла
-                        // Отображаем ошибку непосредственно в содержимом модального окна
+                        console.error('Ошибка при удалении файла:', data.message);
                         modalConfirmContent.innerHTML = `
-                            <h3>Ошибка</h3> <!-- Ошибка -->
+                            <h3>Ошибка</h3>
                             <p>${data.message}</p>
                             <div class="modal-confirm-buttons">
-                                <button type="button" class="button button-secondary close-error-modal">Закрыть</button> <!-- Закрыть -->
+                                <button type="button" class="button button-secondary close-error-modal">Закрыть</button>
                             </div>
                         `;
-                        // Прикрепляем обработчик событий к новой кнопке закрытия для ошибки
                         modalConfirmContent.querySelector('.close-error-modal').onclick = hideModal;
                     }
                 })
                 .catch(error => {
-                    console.error('Ошибка сети или сервера:', error); // Ошибка сети или сервера
+                    console.error('Ошибка сети или сервера:', error);
                     modalConfirmContent.innerHTML = `
-                        <h3>Ошибка сети</h3> <!-- Ошибка сети -->
-                        <p>Произошла ошибка при отправке запроса на удаление.</p> <!-- Произошла ошибка при отправке запроса на удаление. -->
+                        <h3>Ошибка сети</h3>
+                        <p>Произошла ошибка при отправке запроса на удаление.</p>
                         <div class="modal-confirm-buttons">
-                            <button type="button" class="button button-secondary close-error-modal">Закрыть</button> <!-- Закрыть -->
+                            <button type="button" class="button button-secondary close-error-modal">Закрыть</button>
                         </div>
                     `;
                     modalConfirmContent.querySelector('.close-error-modal').onclick = hideModal;
@@ -529,7 +524,6 @@ if (isset($_GET['field'])) {
             }
         }
 
-        // Прикрепляем обработчик событий для открытия модального окна через делегирование
         document.getElementById('file-list').addEventListener('click', function(event) {
             const deleteButton = event.target.closest('.delete-link');
             if (deleteButton) {
@@ -540,24 +534,19 @@ if (isset($_GET['field'])) {
             }
         });
 
-        // Логика для сортировки файлов
         const sortOrderSelect = document.getElementById('sortOrder');
         if (sortOrderSelect) {
             sortOrderSelect.addEventListener('change', function() {
                 const selectedSortOrder = this.value;
-                // Получаем текущие параметры URL
                 const currentUrl = new URL(window.location.href);
-                // Устанавливаем или обновляем параметр 'sort_order'
                 currentUrl.searchParams.set('sort_order', selectedSortOrder);
-                // Перезагружаем страницу с новыми параметрами
                 window.location.href = currentUrl.toString();
             });
         }
     });
 
-    // Пример функции checkAccess, если она не определена
     function checkAccess() {
-        console.log("Проверка доступа..."); // Проверка доступа...
+        console.log("Проверка доступа...");
         return true;
     }
 </script>
@@ -567,6 +556,6 @@ if (isset($_GET['field'])) {
 
 <?php
 } else {
-    echo "Поле не указано."; // Поле не указано.
+    echo "Поле не указано.";
 }
 ?>

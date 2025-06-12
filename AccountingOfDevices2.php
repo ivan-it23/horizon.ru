@@ -1079,9 +1079,13 @@ document.addEventListener('DOMContentLoaded', function () {
     // --- Логика переключения вкладок ---
 
     function setupTabs() {
+        // Предполагается, что где-то ранее определены:
+        // const tabItems = document.querySelectorAll('.tab-item');
+        // const tabPanes = document.querySelectorAll('.tab-pane');
+
         tabItems.forEach(tabItem => {
             tabItem.addEventListener('click', e => {
-                // Если вкладка заблокирована — стопаем всё
+                // Если вкладка заблокирована — останавливаем
                 if (tabItem.classList.contains('disabled')) {
                     e.preventDefault();
                     e.stopPropagation();
@@ -1089,81 +1093,105 @@ document.addEventListener('DOMContentLoaded', function () {
                     return;
                 }
 
-                // Если это «родительская» вкладка — просто сворачиваем/разворачиваем подтаб
+                // Если это «родительская» вкладка — переключаем только подсветку active
                 if (tabItem.classList.contains('parent-tab')) {
+                    // Toggle класса active: для стилизации родительской вкладки,
+                    // но не держим sub-tabs открытыми через active (CSS hover их показывает/скрывает)
                     tabItem.classList.toggle('active');
-                    const subTabs = tabItem.querySelector('.sub-tabs');
-                    if (subTabs) {
-                        subTabs.style.display = tabItem.classList.contains('active') ? 'block' : 'none';
-                    }
                     return;
                 }
 
-                // Снимаем подсветку со всех таб‑кнопок, кроме parent
+                // Если это подвкладка или обычная вкладка:
+                // Сначала снимаем подсветку со всех таб-кнопок, кроме родительских
                 tabItems.forEach(item => {
                     if (!item.classList.contains('parent-tab')) {
                         item.classList.remove('active');
                     }
                 });
-                // Скрываем все таб‑панели
+                // Скрываем все таб-панели
                 tabPanes.forEach(pane => pane.style.display = 'none');
 
-                // Подсвечиваем текущую и показываем её панель
+                // Подсвечиваем текущую выбранную вкладку
                 tabItem.classList.add('active');
-                const targetPane = document.getElementById(`tab-${tabItem.dataset.tab}`);
+
+                // Подсветка родительской вкладки, если это подвкладка
+                const parentTab = tabItem.closest('.parent-tab');
+                if (parentTab) {
+                    parentTab.classList.add('active');
+                }
+
+                // Показываем соответствующую панель
+                const tabNum = tabItem.dataset.tab;
+                const targetPane = document.getElementById(`tab-${tabNum}`);
                 if (targetPane) {
                     targetPane.style.display = 'block';
 
-                    // Прячем внутри панели все формы и истории (кроме Tab 1 и Tab 8)
-                    // ИСПРАВЛЕНИЕ: Исключаем вкладку 8 из правила скрытия форм
-                    if (tabItem.dataset.tab !== '1' && tabItem.dataset.tab !== '8') {
+                    // Скрываем внутри панели все формы и истории (кроме Tab 1 и Tab 8)
+                    if (tabNum !== '1' && tabNum !== '8') {
                         targetPane.querySelectorAll('form, .history-section-container')
                                   .forEach(el => el.style.display = 'none');
                     }
+                    // Явно показываем формы/кнопки на вкладке 8 при её активации
+                    if (tabNum === '8') {
+                        const newFileDataForm = targetPane.querySelector('#newFileData');
+                        const viewFilesContainer = targetPane.querySelector('.mode-buttons.mt-4');
+                        if (newFileDataForm) {
+                            newFileDataForm.style.display = 'block';
+                        }
+                        if (viewFilesContainer) {
+                            viewFilesContainer.style.display = 'inline-flex';
+                        }
+                    }
 
-                    // ИСПРАВЛЕНИЕ: Явно показываем формы и кнопки на вкладке 8 при ее активации
-                    if (tabItem.dataset.tab === '8') {
-                         const newFileDataForm = targetPane.querySelector('#newFileData');
-                         const viewFilesContainer = targetPane.querySelector('.mode-buttons.mt-4'); // Контейнер кнопок просмотра
+                    // Обновляем шапку с данными прибора для вкладок 2–8
+                    if (tabNum !== '1' && typeof selectedDeviceId !== 'undefined' && selectedDeviceId) {
+                        const deviceTypeSpan = document.getElementById(`deviceTypeTab${tabNum}`);
+                        const serialSpan     = document.getElementById(`serialNumberTab${tabNum}`);
+                        const caseSpan       = document.getElementById(`caseNumberTab${tabNum}`);
+                        if (deviceTypeSpan) deviceTypeSpan.textContent  = selectedDeviceType || '-';
+                        if (serialSpan)     serialSpan.textContent      = selectedSerialNumber || '-';
+                        if (caseSpan)       caseSpan.textContent        = selectedCaseNumber   || '-';
+                    }
 
-                         if (newFileDataForm) {
-                             newFileDataForm.style.display = 'block'; // Или 'table', в зависимости от вашей верстки
-                         }
-                         if (viewFilesContainer) {
-                             viewFilesContainer.style.display = 'inline-flex'; // Или 'block', в зависимости от вашей верстки
-                         }
-                         // upload-message div остается скрытым по умолчанию и показывается JS после загрузки
+                    // Спецлогика для вкладки «8. Файлы» - заполнение скрытых полей
+                    if (tabNum === '8' && typeof selectedDeviceId !== 'undefined' && selectedDeviceId) {
+                        ['serialNumber', 'caseNumber', 'deviceType'].forEach(field => {
+                            const inputEl     = document.getElementById(field + 'Input');
+                            const inputViewEl = document.getElementById(field + 'InputView');
+                            let value = '';
+                            if (field === 'serialNumber') {
+                                value = selectedSerialNumber || '';
+                            } else if (field === 'caseNumber') {
+                                value = selectedCaseNumber || '';
+                            } else if (field === 'deviceType') {
+                                value = selectedDeviceType || '';
+                            }
+                            if (inputEl)     inputEl.value     = value;
+                            if (inputViewEl) inputViewEl.value = value;
+                        });
                     }
                 }
+            });
+        });
 
-                // Обновляем шапку с данными прибора для вкладок 2–8
-                const tabNum = tabItem.dataset.tab;
-                if (tabNum !== '1' && selectedDeviceId) {
-                    document.getElementById(`deviceTypeTab${tabNum}`).textContent  = selectedDeviceType || '-';
-                    document.getElementById(`serialNumberTab${tabNum}`).textContent = selectedSerialNumber || '-';
-                    document.getElementById(`caseNumberTab${tabNum}`).textContent   = selectedCaseNumber || '-';
-                }
-
-                // Спецлогика для вкладки «8. Файлы» - заполнение скрытых полей
-                if (tabNum === '8' && selectedDeviceId) {
-                    ['serialNumber', 'caseNumber', 'deviceType'].forEach(field => {
-                        const inputElement = document.getElementById(field + 'Input');
-                        const inputViewElement = document.getElementById(field + 'InputView');
-                        const value = (field === 'deviceType' ? selectedDeviceType : (field === 'serialNumber' ? selectedSerialNumber : selectedCaseNumber)) || '';
-
-                        if (inputElement) inputElement.value = value;
-                        if (inputViewElement) inputViewElement.value = value;
-                    });
+        // Обработчик клика вне области любой родительской вкладки: снимаем подсветку active.
+        // Подвкладки скрываются по CSS hover, так что не будет «залипания» меню.
+        document.addEventListener('click', function(event) {
+            document.querySelectorAll('.parent-tab').forEach(parent => {
+                if (!parent.contains(event.target) && parent.classList.contains('active')) {
+                    parent.classList.remove('active');
                 }
             });
         });
     }
 
-    // Инициализация вкладок
+    // Инициализация: вызываем setupTabs() после загрузки DOM
     setupTabs();
-
-    // Активируем первую вкладку по умолчанию при загрузке
-    document.querySelector('.tab-item[data-tab="1"]').click();
+    // Активируем первую вкладку по умолчанию при загрузке страницы
+    const firstTab = document.querySelector('.tab-item[data-tab="1"]');
+    if (firstTab) {
+        firstTab.click();
+    }
 
 
     // --- Логика выбора действия на вкладке 1 (Идентификационные данные) ---
@@ -1226,10 +1254,6 @@ document.addEventListener('DOMContentLoaded', function () {
             // Скрываем подвкладки у всех parent-tab
             document.querySelectorAll('.parent-tab').forEach(parentTab => {
                 parentTab.classList.remove('active');
-                const subTabs = parentTab.querySelector('.sub-tabs');
-                if (subTabs) {
-                    subTabs.style.display = 'none';
-                }
             });
         });
     });
@@ -1363,8 +1387,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 // Скрываем все sub-tabs
                 document.querySelectorAll('.parent-tab').forEach(parentTab => {
                     parentTab.classList.remove('active');
-                    const sub = parentTab.querySelector('.sub-tabs');
-                    if (sub) sub.style.display = 'none';
                 });
             }
         })
@@ -1382,8 +1404,6 @@ document.addEventListener('DOMContentLoaded', function () {
             });
             document.querySelectorAll('.parent-tab').forEach(parentTab => {
                 parentTab.classList.remove('active');
-                const sub = parentTab.querySelector('.sub-tabs');
-                if (sub) sub.style.display = 'none';
             });
         });
     });
@@ -1474,8 +1494,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 // Скрываем под­вкладки у parent‑tab
                 document.querySelectorAll('.parent-tab').forEach(parentTab => {
                     parentTab.classList.remove('active');
-                    const sub = parentTab.querySelector('.sub-tabs');
-                    if (sub) sub.style.display = 'none';
                 });
             }
         })
@@ -1496,8 +1514,6 @@ document.addEventListener('DOMContentLoaded', function () {
             // Скрываем подвкладки у parent‑tab
             document.querySelectorAll('.parent-tab').forEach(parentTab => {
                 parentTab.classList.remove('active');
-                const sub = parentTab.querySelector('.sub-tabs');
-                if (sub) sub.style.display = 'none';
             });
         });
     });
@@ -1551,8 +1567,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 });
                 document.querySelectorAll('.parent-tab').forEach(parentTab => {
                     parentTab.classList.remove('active');
-                    const sub = parentTab.querySelector('.sub-tabs');
-                    if (sub) sub.style.display = 'none';
                 });
                 return;
             }
@@ -2082,8 +2096,6 @@ document.addEventListener('DOMContentLoaded', function () {
             }
             document.querySelectorAll('.parent-tab').forEach(parentTab => {
                 parentTab.classList.remove('active');
-                const subTabs = parentTab.querySelector('.sub-tabs');
-                if (subTabs) subTabs.style.display = 'none';
             });
         });
     }
@@ -4398,15 +4410,28 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // --- Логика для вкладки 8 (Файлы) ---
 
-    // Добавляем обработчик отправки формы для загрузки файлов
-    if (newFileDataForm && uploadMessageDiv && viewFilesForm) {
+    // Проверяем, что все элементы найдены, прежде чем добавлять обработчик
+    if (newFileDataForm && uploadMessageDiv) {
         newFileDataForm.addEventListener('submit', function (event) {
             event.preventDefault(); // Предотвращаем стандартную отправку формы
 
-            // Получаем данные формы
-            const formData = new FormData(newFileDataForm);
+            // Определяем, какая кнопка "Загрузить" была нажата
+            const submitter = event.submitter;
+            if (!submitter) {
+                alert('Ошибка: не удалось определить, какая кнопка была нажата.');
+                return;
+            }
 
-            // Получаем серийный номер, номер корпуса и тип прибора из скрытых полей формы
+            const fieldType = submitter.value; // e.g., 'thermoprofile', 'metrology'
+            const fileInput = newFileDataForm.querySelector(`input[name="${fieldType}"]`);
+
+            // Проверяем, выбран ли файл
+            if (!fileInput || fileInput.files.length === 0) {
+                alert(`Пожалуйста, выберите файл для поля "${fieldType}".`);
+                return;
+            }
+
+            // Получаем данные о приборе
             const serialNumber = document.getElementById('serialNumberInput').value;
             const caseNumber   = document.getElementById('caseNumberInput').value;
             const deviceType   = document.getElementById('deviceTypeInput').value;
@@ -4417,19 +4442,13 @@ document.addEventListener('DOMContentLoaded', function () {
                  return;
             }
 
-            // Добавляем данные об устройстве в FormData
+            // Создаём новый объект FormData для отправки только нужных данных
+            const formData = new FormData();
             formData.append('serial_number', serialNumber);
             formData.append('case_number', caseNumber);
             formData.append('device_type', deviceType);
-
-            // Определяем, какое поле файла было отправлено (по имени кнопки submit)
-            const submitButtonName = event.submitter ? event.submitter.name : null;
-            if (submitButtonName && event.submitter.value) {
-                 formData.append('field', event.submitter.value);
-            } else {
-                 alert('Ошибка: Не удалось определить тип загружаемого файла.');
-                 return;
-            }
+            formData.append('field', fieldType);
+            formData.append(fieldType, fileInput.files[0]); // Добавляем только выбранный файл
 
             // Отправляем данные на сервер через AJAX
             fetch('upload_file.php', {
@@ -4442,7 +4461,7 @@ document.addEventListener('DOMContentLoaded', function () {
                          throw new Error(`HTTP error! Status: ${response.status}. ${text}`);
                      });
                  }
-                 return response.json(); // Ожидаем JSON ответ
+                 return response.json();
             })
             .then(data => {
                 // Удаляем предыдущие статусные классы
@@ -4454,24 +4473,19 @@ document.addEventListener('DOMContentLoaded', function () {
                     uploadMessageDiv.classList.add('success');
                     uploadMessageDiv.textContent = data.message;
 
-                    // Очищаем input[type="file"] после успешной загрузки
-                    const fileInput = newFileDataForm.querySelector(`input[name="${data.field}"]`);
-                    if (fileInput) {
-                         fileInput.value = ''; // Сбрасываем выбранный файл
-                    }
+                    // **ИСПРАВЛЕНИЕ: Полностью сбрасываем всю форму.**
+                    // Это очистит все поля input type="file" и предотвратит повторную отправку.
+                    newFileDataForm.reset();
 
-                    // Предлагаем посмотреть файл
+                    // Предлагаем посмотреть загруженный файл
                     if (confirm(data.message + '\nНажмите "ОК" для просмотра файла.')) {
                          const field = data.field;
-                         window.open(
-                             `view_files.php?serial_number=${encodeURIComponent(serialNumber)
-                             }&case_number=${encodeURIComponent(caseNumber)
-                             }&device_type=${encodeURIComponent(deviceType)
-                             }&field=${encodeURIComponent(field)}`,
-                             '_blank'
-                         );
+                         // Устанавливаем хэш перед переходом, чтобы вернуться на нужную вкладку
+                         if (history.replaceState) {
+                             history.replaceState(null, null, '#tab-8');
+                         }
+                         window.location.href = `view_files.php?serial_number=${encodeURIComponent(serialNumber)}&case_number=${encodeURIComponent(caseNumber)}&device_type=${encodeURIComponent(deviceType)}&field=${encodeURIComponent(field)}`;
                     }
-
                 } else {
                     uploadMessageDiv.classList.add('error');
                     uploadMessageDiv.textContent = data.message || 'Произошла ошибка при загрузке файла.';
@@ -4485,17 +4499,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 uploadMessageDiv.textContent = `Произошла ошибка при отправке запроса: ${error.message}`;
             });
         });
-
-
-        // Добавляем обработчик submit к форме просмотра файлов (просто для уверенности, что он есть)
-        // Этот код также предоставлен вами и не требует изменений.
-         viewFilesForm.addEventListener('submit', function (event) {
-             // Ничего не делаем, форма отправляется стандартным способом
-         });
-    } else {
-        console.warn("File upload elements not found.");
     }
-
 
     // --- Логика мессенджера ---
     // Функция для загрузки списка пользователей и отображения его в модальном окне
@@ -5337,6 +5341,68 @@ document.addEventListener('DOMContentLoaded', function () {
             return differences;
         }
     }
+
+    function openTabFromUrlHash() {
+        const hash = window.location.hash;
+
+        // Проверяем, что хэш имеет нужный нам формат, например, #tab-8
+        if (hash && hash.startsWith('#tab-')) {
+            // Извлекаем номер вкладки: '8' из '#tab-8'
+            const tabNumber = hash.substring(5);
+            const tabToClick = document.querySelector(`.tab-item[data-tab="${tabNumber}"]`);
+
+            if (tabToClick) {
+                // Вкладки могут быть неактивны до выбора прибора.
+                // Поэтому мы периодически проверяем, стала ли вкладка доступной.
+                const checkTabsEnabled = setInterval(() => {
+                    // Проверяем, что прибор выбран (из localStorage) и вкладка больше не заблокирована
+                    const isDeviceSelected = !!localStorage.getItem('selectedDevice');
+
+                    if (isDeviceSelected && !tabToClick.classList.contains('disabled')) {
+
+                        clearInterval(checkTabsEnabled); // Останавливаем проверку
+
+                        // Находим родительский контейнер вкладки (например, "Эксплуатация прибора")
+                        const parentTabContainer = tabToClick.closest('.parent-tab');
+
+                        // Если это под-вкладка, и ее родитель свернут, то разворачиваем его
+                        if (parentTabContainer && !parentTabContainer.classList.contains('active')) {
+                            parentTabContainer.click(); // Клик по родительской вкладке для ее раскрытия
+                        }
+
+                        // Небольшая задержка, чтобы интерфейс успел обновиться
+                        setTimeout(() => {
+                            // Кликаем по нужной нам вкладке (например, "Файлы")
+                            tabToClick.click();
+                        }, 100); // 100 миллисекунд
+                    }
+                }, 200); // Проверять каждые 200 миллисекунд
+            }
+        }
+    }
+
+    /**
+     * Эта функция добавляет обработчик на форму просмотра файлов на 8-й вкладке.
+     * Перед тем как форма отправится и вы перейдете на другую страницу,
+     * она добавит хэш #tab-8 к текущему URL в истории браузера.
+     */
+    function addHashToUrlOnFormSubmit() {
+        const viewFilesForm = document.getElementById('viewFilesForm');
+        if (viewFilesForm) {
+            viewFilesForm.addEventListener('submit', function() {
+                // Мы используем history.replaceState, чтобы изменить текущую запись в истории,
+                // не перезагружая страницу и не создавая новую запись.
+                // Это гарантирует, что при нажатии "Назад" вы вернетесь на URL с нужным хэшем.
+                if (history.replaceState) {
+                    history.replaceState(null, null, '#tab-8');
+                }
+            });
+        }
+    }
+
+    // Запускаем наши функции после полной загрузки страницы
+    openTabFromUrlHash();
+    addHashToUrlOnFormSubmit();
 
 
 });
