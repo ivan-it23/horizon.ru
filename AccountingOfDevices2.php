@@ -4405,55 +4405,44 @@ document.addEventListener('DOMContentLoaded', function () {
 
     }
 
-
-
-
     // --- Логика для вкладки 8 (Файлы) ---
 
-    // Проверяем, что все элементы найдены, прежде чем добавлять обработчик
     if (newFileDataForm && uploadMessageDiv) {
         newFileDataForm.addEventListener('submit', function (event) {
             event.preventDefault(); // Предотвращаем стандартную отправку формы
 
-            // Определяем, какая кнопка "Загрузить" была нажата
             const submitter = event.submitter;
             if (!submitter) {
                 alert('Ошибка: не удалось определить, какая кнопка была нажата.');
                 return;
             }
 
-            const fieldType = submitter.value; // e.g., 'thermoprofile', 'metrology'
+            const fieldType = submitter.value;
             const fileInput = newFileDataForm.querySelector(`input[name="${fieldType}"]`);
 
-            // Проверяем, выбран ли файл
             if (!fileInput || fileInput.files.length === 0) {
                 alert(`Пожалуйста, выберите файл для поля "${fieldType}".`);
                 return;
             }
 
-            // Получаем данные о приборе
-            const serialNumber = document.getElementById('serialNumberInput').value;
-            const caseNumber   = document.getElementById('caseNumberInput').value;
-            const deviceType   = document.getElementById('deviceTypeInput').value;
-
-            // Проверяем, выбран ли прибор
-            if (!selectedDeviceId || !serialNumber || !caseNumber || !deviceType) {
+            // `selectedDeviceId` должен быть доступен в этой области видимости
+            if (!selectedDeviceId) {
                  alert('Пожалуйста, выберите прибор на вкладке "Идентификационные данные" перед загрузкой файлов.');
                  return;
             }
 
-            // Создаём новый объект FormData для отправки только нужных данных
-            const formData = new FormData();
-            formData.append('serial_number', serialNumber);
-            formData.append('case_number', caseNumber);
-            formData.append('device_type', deviceType);
-            formData.append('field', fieldType);
-            formData.append(fieldType, fileInput.files[0]); // Добавляем только выбранный файл
+            const formData = new FormData(newFileDataForm);
+            // Добавляем только нужный файл и его тип, а не все данные формы
+            const singleFileFormData = new FormData();
+            singleFileFormData.append('serial_number', formData.get('serial_number'));
+            singleFileFormData.append('case_number', formData.get('case_number'));
+            singleFileFormData.append('device_type', formData.get('device_type'));
+            singleFileFormData.append('field', fieldType);
+            singleFileFormData.append(fieldType, fileInput.files[0]);
 
-            // Отправляем данные на сервер через AJAX
             fetch('upload_file.php', {
                 method: 'POST',
-                body: formData
+                body: singleFileFormData
             })
             .then(response => {
                  if (!response.ok) {
@@ -4464,30 +4453,26 @@ document.addEventListener('DOMContentLoaded', function () {
                  return response.json();
             })
             .then(data => {
-                // Удаляем предыдущие статусные классы
-                uploadMessageDiv.classList.remove('success', 'error');
-                // Показываем блок сообщений
-                uploadMessageDiv.style.display = 'block';
-
                 if (data.success) {
-                    uploadMessageDiv.classList.add('success');
-                    uploadMessageDiv.textContent = data.message;
-
-                    // **ИСПРАВЛЕНИЕ: Полностью сбрасываем всю форму.**
-                    // Это очистит все поля input type="file" и предотвратит повторную отправку.
+                    // Сбрасываем форму, чтобы очистить поле input type="file"
                     newFileDataForm.reset();
+                    // Если было сообщение об ошибке, скрываем его
+                    uploadMessageDiv.style.display = 'none';
+                    uploadMessageDiv.textContent = '';
+                    uploadMessageDiv.classList.remove('error', 'success');
 
-                    // Предлагаем посмотреть загруженный файл
+                    // Показываем confirm(), который и является сообщением об успехе
                     if (confirm(data.message + '\nНажмите "ОК" для просмотра файла.')) {
                          const field = data.field;
-                         // Устанавливаем хэш перед переходом, чтобы вернуться на нужную вкладку
-                         if (history.replaceState) {
-                             history.replaceState(null, null, '#tab-8');
-                         }
-                         window.location.href = `view_files.php?serial_number=${encodeURIComponent(serialNumber)}&case_number=${encodeURIComponent(caseNumber)}&device_type=${encodeURIComponent(deviceType)}&field=${encodeURIComponent(field)}`;
+                         // Запоминаем вкладку перед переходом
+                         rememberTab8();
+                         window.location.href = `view_files.php?serial_number=${encodeURIComponent(formData.get('serial_number'))}&case_number=${encodeURIComponent(formData.get('case_number'))}&device_type=${encodeURIComponent(formData.get('device_type'))}&field=${encodeURIComponent(field)}`;
                     }
                 } else {
+                    // Для ошибок оставляем логику с div-сообщением
+                    uploadMessageDiv.classList.remove('success');
                     uploadMessageDiv.classList.add('error');
+                    uploadMessageDiv.style.display = 'block';
                     uploadMessageDiv.textContent = data.message || 'Произошла ошибка при загрузке файла.';
                 }
             })
@@ -5342,67 +5327,67 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    function openTabFromUrlHash() {
-        const hash = window.location.hash;
-
-        // Проверяем, что хэш имеет нужный нам формат, например, #tab-8
-        if (hash && hash.startsWith('#tab-')) {
-            // Извлекаем номер вкладки: '8' из '#tab-8'
-            const tabNumber = hash.substring(5);
-            const tabToClick = document.querySelector(`.tab-item[data-tab="${tabNumber}"]`);
-
-            if (tabToClick) {
-                // Вкладки могут быть неактивны до выбора прибора.
-                // Поэтому мы периодически проверяем, стала ли вкладка доступной.
-                const checkTabsEnabled = setInterval(() => {
-                    // Проверяем, что прибор выбран (из localStorage) и вкладка больше не заблокирована
-                    const isDeviceSelected = !!localStorage.getItem('selectedDevice');
-
-                    if (isDeviceSelected && !tabToClick.classList.contains('disabled')) {
-
-                        clearInterval(checkTabsEnabled); // Останавливаем проверку
-
-                        // Находим родительский контейнер вкладки (например, "Эксплуатация прибора")
-                        const parentTabContainer = tabToClick.closest('.parent-tab');
-
-                        // Если это под-вкладка, и ее родитель свернут, то разворачиваем его
-                        if (parentTabContainer && !parentTabContainer.classList.contains('active')) {
-                            parentTabContainer.click(); // Клик по родительской вкладке для ее раскрытия
-                        }
-
-                        // Небольшая задержка, чтобы интерфейс успел обновиться
-                        setTimeout(() => {
-                            // Кликаем по нужной нам вкладке (например, "Файлы")
-                            tabToClick.click();
-                        }, 100); // 100 миллисекунд
-                    }
-                }, 200); // Проверять каждые 200 миллисекунд
-            }
+    /**
+     * Устанавливает флаг в sessionStorage, чтобы "запомнить",
+     * что при возвращении на эту страницу нужно открыть вкладку 8.
+     */
+    function rememberTab8() {
+        try {
+            sessionStorage.setItem('openTab8', 'true');
+        } catch (e) {
+            console.error('Не удалось использовать sessionStorage: ', e);
         }
     }
 
     /**
-     * Эта функция добавляет обработчик на форму просмотра файлов на 8-й вкладке.
-     * Перед тем как форма отправится и вы перейдете на другую страницу,
-     * она добавит хэш #tab-8 к текущему URL в истории браузера.
+     * Проверяет при загрузке страницы, установлен ли флаг для открытия вкладки 8.
+     * Если флаг есть, открывает вкладку и немедленно удаляет его,
+     * чтобы избежать повторного открытия при последующих обновлениях страницы.
      */
-    function addHashToUrlOnFormSubmit() {
-        const viewFilesForm = document.getElementById('viewFilesForm');
-        if (viewFilesForm) {
-            viewFilesForm.addEventListener('submit', function() {
-                // Мы используем history.replaceState, чтобы изменить текущую запись в истории,
-                // не перезагружая страницу и не создавая новую запись.
-                // Это гарантирует, что при нажатии "Назад" вы вернетесь на URL с нужным хэшем.
-                if (history.replaceState) {
-                    history.replaceState(null, null, '#tab-8');
+    function openTabFromSessionMemory() {
+        try {
+            if (sessionStorage.getItem('openTab8') === 'true') {
+                // Немедленно удаляем флаг, чтобы он сработал только один раз.
+                sessionStorage.removeItem('openTab8');
+
+                const tabToClick = document.querySelector('.tab-item[data-tab="8"]');
+
+                if (tabToClick) {
+                    // Используем интервал, чтобы дождаться, пока прибор будет загружен
+                    // и вкладки станут доступными (разблокированными).
+                    const checkTabsEnabled = setInterval(() => {
+                        // Условие остановки: прибор выбран и вкладка доступна
+                        const isDeviceSelected = !!localStorage.getItem('selectedDevice');
+                        if (isDeviceSelected && !tabToClick.classList.contains('disabled')) {
+                            clearInterval(checkTabsEnabled); // Останавливаем проверку
+
+                            // Кликаем по нужной вкладке (например, "Файлы")
+                            tabToClick.click();
+
+                        } else if (!isDeviceSelected) {
+                            // Если прибор так и не был выбран, останавливаем попытки,
+                            // чтобы не создавать бесконечный цикл.
+                            clearInterval(checkTabsEnabled);
+                        }
+                    }, 250); // Проверять каждые 250 мс
                 }
-            });
+            }
+        } catch (e) {
+            console.error('Не удалось использовать sessionStorage: ', e);
         }
     }
 
-    // Запускаем наши функции после полной загрузки страницы
-    openTabFromUrlHash();
-    addHashToUrlOnFormSubmit();
+    // --- ИНТЕГРАЦИЯ НОВОЙ ЛОГИКИ ---
+
+    // 1. При отправке формы просмотра файлов, запоминаем вкладку 8.
+    if (viewFilesForm) {
+        viewFilesForm.addEventListener('submit', rememberTab8);
+    }
+
+
+    // 3. При загрузке страницы, проверяем, нужно ли открыть вкладку 8.
+    // Эту функцию нужно вызвать один раз при загрузке DOM.
+    openTabFromSessionMemory();
 
 
 });
