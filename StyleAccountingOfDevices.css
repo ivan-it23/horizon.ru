@@ -3246,7 +3246,42 @@ button:disabled {
     }
 }
 
+/* Новые стили для иконки переименования */
+.rename-icon {
+    color: var(--secondary-color);
+    cursor: pointer;
+    font-size: 0.9em;
+    transition: color 0.2s ease;
+}
+.rename-icon:hover {
+    color: var(--accent-color);
+}
 
+/* Стили для модального окна переименования */
+.modal-rename-content input[type="text"] {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 15px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    font-size: 1rem;
+}
+.modal-rename-content input[type="text"]:focus {
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.15);
+    outline: none;
+}
+
+/* Обновление стиля .file-name для выравнивания текста и иконки */
+.file-name {
+    font-size: 1.05rem;
+    color: var(--primary-color);
+    font-weight: 600;
+    word-break: break-word;
+    display: flex; /* Для выравнивания текста и иконки переименования */
+    align-items: center;
+    gap: 8px; /* Отступ между названием и иконкой */
+}
 
 #viewDeviceParams,
 #createDeviceForm,

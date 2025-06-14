@@ -25,6 +25,7 @@ if (isset($_GET['field'])) {
     $fallbackBackUrl = "AccountingOfDevices2.php";
 
     // Модифицированный SQL-запрос для сортировки по 'created_at' в указанном порядке
+    // В запросе выбираем также created_at для уникальной идентификации файла при переименовании
     $stmt = $conn->prepare("SELECT id, file_name, created_at FROM uploaded_files
                            WHERE field_name = ?
                            AND serial_number = ?
@@ -184,6 +185,9 @@ if (isset($_GET['field'])) {
             color: var(--primary-color);
             font-weight: 600;
             word-break: break-word;
+            display: flex; /* Для выравнивания текста и иконки переименования */
+            align-items: center;
+            gap: 8px; /* Отступ между названием и иконкой */
         }
 
         .file-date {
@@ -244,6 +248,32 @@ if (isset($_GET['field'])) {
         .sort-control select:focus {
             border-color: var(--primary-color);
             box-shadow: 0 0 0 2px rgba(var(--primary-rgb), 0.2);
+        }
+
+        /* Новые стили для иконки переименования */
+        .rename-icon {
+            color: var(--secondary-color);
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: color 0.2s ease;
+        }
+        .rename-icon:hover {
+            color: var(--accent-color);
+        }
+
+        /* Стили для модального окна переименования */
+        .modal-rename-content input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            font-size: 1rem;
+        }
+        .modal-rename-content input[type="text"]:focus {
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.15);
+            outline: none;
         }
 
         @media (max-width: 576px) {
@@ -382,9 +412,18 @@ if (isset($_GET['field'])) {
         <ul class="file-list" id="file-list">
             <?php if ($result->num_rows > 0): ?>
                 <?php while ($file = $result->fetch_assoc()): ?>
-                    <li class="file-item" data-file-id="<?= $file['id'] ?>">
+                    <li class="file-item"
+                        data-file-id="<?= $file['id'] ?>"
+                        data-file-name="<?= htmlspecialchars($file['file_name']) ?>"
+                        data-file-created-at="<?= htmlspecialchars($file['created_at']) ?>">
                         <div class="file-info">
-                            <div class="file-name"><?= htmlspecialchars($file['file_name']) ?></div>
+                            <div class="file-name">
+                                <span class="file-name-text"><?= htmlspecialchars($file['file_name']) ?></span>
+                                <i class="fas fa-edit rename-icon" title="Переименовать файл"
+                                   data-file-id="<?= $file['id'] ?>"
+                                   data-file-name="<?= htmlspecialchars($file['file_name']) ?>"
+                                   data-file-created-at="<?= htmlspecialchars($file['created_at']) ?>"></i>
+                            </div>
                             <div class="file-date">
                                 <?php
                                 $created_at = new DateTime($file['created_at']);
@@ -426,8 +465,23 @@ if (isset($_GET['field'])) {
     </div>
 </div>
 
+<!-- Модальное окно для переименования файла -->
+<div id="renameModal" class="modal-confirm">
+    <div class="modal-confirm-content modal-rename-content">
+        <h3>Переименовать файл</h3>
+        <p>Введите новое имя для файла <strong id="originalFileName"></strong>:</p>
+        <input type="text" id="newFileNameInput" placeholder="Новое имя файла">
+        <div class="modal-confirm-buttons">
+            <button type="button" id="confirmRenameBtn" class="button button-primary">Сохранить</button>
+            <button type="button" id="cancelRenameBtn" class="button button-secondary">Отмена</button>
+        </div>
+    </div>
+</div>
+
+
 <script>
     let originalModalBodyHTML = '';
+    let originalRenameModalContentHTML = ''; // Сохраняем оригинальное содержимое модального окна переименования
 
     document.addEventListener('DOMContentLoaded', function() {
         const mobileMenuToggle = document.querySelector('.mobile-menu-toggle');
@@ -447,8 +501,25 @@ if (isset($_GET['field'])) {
         const modalConfirmContent = deleteConfirmModal.querySelector('.modal-confirm-content');
         originalModalBodyHTML = modalConfirmContent.innerHTML;
 
+        // Инициализация модального окна переименования
+        const renameModal = document.getElementById('renameModal');
+        const renameModalContent = renameModal.querySelector('.modal-confirm-content');
+        originalRenameModalContentHTML = renameModalContent.innerHTML;
+
         let fileIdToDelete = null;
         let fileItemToDelete = null;
+
+        // Переменные для переименования
+        let fileIdToRename = null;
+        let originalFileName = null;
+        let fileCreatedAt = null;
+        let fileItemToRename = null;
+
+        // Параметры прибора для запросов на переименование
+        const serialNumber = '<?= htmlspecialchars($serialNumber) ?>';
+        const caseNumber = '<?= htmlspecialchars($caseNumber) ?>';
+        const deviceType = '<?= htmlspecialchars($deviceType) ?>';
+
 
         function showConfirmModal(fileName, id, item) {
             modalConfirmContent.innerHTML = originalModalBodyHTML;
@@ -467,10 +538,17 @@ if (isset($_GET['field'])) {
 
         function hideModal() {
             deleteConfirmModal.classList.remove('show');
+            renameModal.classList.remove('show'); // Скрываем модальное окно переименования
             fileIdToDelete = null;
             fileItemToDelete = null;
+            fileIdToRename = null;
+            originalFileName = null;
+            fileCreatedAt = null;
+            fileItemToRename = null;
+
             setTimeout(() => {
                 modalConfirmContent.innerHTML = originalModalBodyHTML;
+                renameModalContent.innerHTML = originalRenameModalContentHTML; // Восстанавливаем оригинальное содержимое модального окна переименования
             }, 300);
         }
 
@@ -524,13 +602,99 @@ if (isset($_GET['field'])) {
             }
         }
 
+        // --- Логика переименования файлов ---
+        function showRenameModal(id, name, createdAt, item) {
+            renameModalContent.innerHTML = originalRenameModalContentHTML;
+            const originalFileNameSpan = renameModalContent.querySelector('#originalFileName');
+            const newFileNameInput = renameModalContent.querySelector('#newFileNameInput');
+            const confirmRenameBtn = renameModalContent.querySelector('#confirmRenameBtn');
+            const cancelRenameBtn = renameModalContent.querySelector('#cancelRenameBtn');
+
+            originalFileNameSpan.textContent = name;
+            newFileNameInput.value = name; // Предзаполняем текущим именем
+            fileIdToRename = id;
+            originalFileName = name;
+            fileCreatedAt = createdAt; // Сохраняем created_at
+            fileItemToRename = item;
+            renameModal.classList.add('show');
+
+            confirmRenameBtn.onclick = handleConfirmRename;
+            cancelRenameBtn.onclick = hideModal;
+
+            // Обработчик для нажатия Enter в поле ввода нового имени
+            newFileNameInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault(); // Предотвращаем отправку формы по умолчанию
+                    handleConfirmRename();
+                }
+            });
+        }
+
+        function handleConfirmRename() {
+            const newFileName = renameModalContent.querySelector('#newFileNameInput').value.trim();
+
+            if (!newFileName) {
+                showRenameError('Имя файла не может быть пустым.');
+                return;
+            }
+
+            // Отправляем запрос на переименование файла
+            fetch('rename_file.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `id=${fileIdToRename}&old_file_name=${encodeURIComponent(originalFileName)}&new_file_name=${encodeURIComponent(newFileName)}&created_at=${encodeURIComponent(fileCreatedAt)}&serial_number=${encodeURIComponent(serialNumber)}&case_number=${encodeURIComponent(caseNumber)}&device_type=${encodeURIComponent(deviceType)}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Обновляем название файла на странице
+                    if (fileItemToRename) {
+                        fileItemToRename.querySelector('.file-name-text').textContent = newFileName;
+                        // Также обновляем data-file-name атрибут, чтобы при повторном переименовании получить актуальное имя
+                        fileItemToRename.dataset.fileName = newFileName;
+                    }
+                    console.log('Файл успешно переименован');
+                    hideModal();
+                } else {
+                    console.error('Ошибка при переименовании файла:', data.message);
+                    showRenameError(data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Ошибка сети или сервера:', error);
+                showRenameError('Произошла ошибка при отправке запроса на переименование.');
+            });
+        }
+
+        function showRenameError(message) {
+            renameModalContent.innerHTML = `
+                <h3>Ошибка переименования</h3>
+                <p>${message}</p>
+                <div class="modal-confirm-buttons">
+                    <button type="button" class="button button-secondary close-error-modal">Закрыть</button>
+                </div>
+            `;
+            renameModalContent.querySelector('.close-error-modal').onclick = hideModal;
+        }
+
+        // Обработчик клика для кнопок удаления и переименования
         document.getElementById('file-list').addEventListener('click', function(event) {
             const deleteButton = event.target.closest('.delete-link');
+            const renameIcon = event.target.closest('.rename-icon');
+
             if (deleteButton) {
                 const id = deleteButton.dataset.fileId;
                 const item = deleteButton.closest('.file-item');
-                const fileName = item.querySelector('.file-name').textContent;
+                const fileName = item.querySelector('.file-name-text').textContent; // Используем file-name-text
                 showConfirmModal(fileName, id, item);
+            } else if (renameIcon) {
+                const id = renameIcon.dataset.fileId;
+                const name = renameIcon.dataset.fileName;
+                const createdAt = renameIcon.dataset.fileCreatedAt; // Получаем created_at
+                const item = renameIcon.closest('.file-item');
+                showRenameModal(id, name, createdAt, item);
             }
         });
 

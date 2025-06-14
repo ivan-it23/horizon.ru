@@ -5377,18 +5377,11 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    // --- ИНТЕГРАЦИЯ НОВОЙ ЛОГИКИ ---
-
-    // 1. При отправке формы просмотра файлов, запоминаем вкладку 8.
     if (viewFilesForm) {
         viewFilesForm.addEventListener('submit', rememberTab8);
     }
 
-
-    // 3. При загрузке страницы, проверяем, нужно ли открыть вкладку 8.
-    // Эту функцию нужно вызвать один раз при загрузке DOM.
     openTabFromSessionMemory();
-
 
 });
 

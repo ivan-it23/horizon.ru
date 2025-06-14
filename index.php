@@ -1,6 +1,5 @@
 <?php
 session_start();
-// Предполагается, что db_connection.php устанавливает соединение $conn
 include 'db_connection.php';
 
 $unread_count = 0; // Значение по умолчанию
@@ -47,23 +46,20 @@ if ($is_logged_in) {
     <link rel="icon" href="images/favicon1.png" type="image/png">
     <link rel="stylesheet" href="Page1.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    </head>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
 <body>
 
 <header class="site-header">
     <div class="header-container">
         <div class="header-left">
             <a href="index.php" class="logo-link">
-                <img src="images/favicon.png" alt="Логотип АМК Горизонт" class="logo-img" onerror="this.style.display='none'; this.alt='Ошибка загрузки логотипа';">
+                <img src="images/favicon.png" alt="Логотип АМК Горизонт" class="logo-img" onerror="this.src='https://placehold.co/150x40/f0f0f0/cccccc?text=Логотип'; this.alt='Ошибка загрузки логотипа';">
             </a>
         </div>
         <nav class="header-nav">
             <ul>
-                <li><a href="index.php" class="<?= basename($_SERVER['PHP_SELF']) == 'index.php' ? 'active' : '' ?>">Главная</a></li>
-                <li><a href="AccountingOfDevices2.php" onclick="return checkAccess();">Учёт приборов</a></li>
-                <?php if (isset($user_info['is_admin']) && $user_info['is_admin']): ?>
-                    <li><a href="admin_panel.php" onclick="return checkAccess();">Админ-панель</a></li>
-                <?php endif; ?>
+
             </ul>
         </nav>
         <div class="header-right">
@@ -76,7 +72,6 @@ if ($is_logged_in) {
                                 <?= htmlspecialchars($_SESSION['user']['lastname'] . " " .
                                     mb_substr($_SESSION['user']['firstname'], 0, 1) . "." .
                                     mb_substr($_SESSION['user']['middlename'], 0, 1) . ".") ?>
-
                             </span>
                         </a>
                         <span id="unread-count-badge-index" class="unread-badge <?= $unread_count > 0 ? 'visible' : '' ?>" title="Непрочитанные сообщения">
@@ -109,154 +104,142 @@ if ($is_logged_in) {
 
 <main class="main-content">
     <div class="main-container">
-        <h1>Учёт приборов индукционного каротажа АМК «Горизонт»</h1>
-        <p class="subtitle">Система учёта приборов и управления данными сотрудниками компании</p>
+        <div class="hero-section">
+            <div class="hero-content">
+                <h1>Система учёта приборов АМК «Горизонт»</h1>
+                <p class="subtitle">Выберите тип каротажа для управления данными</p>
+            </div>
+        </div>
 
-        <section class="carousel-section">
-            <div class="carousel-container">
-                <div class="carousel-slider">
-                    <img src="images/pict1.jpg" alt="Прибор индукционного каротажа 1" class="slider-image active" onerror="this.src='https://placehold.co/1200x400/cccccc/ffffff?text=Изображение+1'; this.alt='Ошибка загрузки изображения 1'">
-                    <img src="images/pict2.jpg" alt="Прибор индукционного каротажа 2" class="slider-image" onerror="this.src='https://placehold.co/1200x400/cccccc/ffffff?text=Изображение+2'; this.alt='Ошибка загрузки изображения 2'">
-                    <img src="images/pict3.jpg" alt="Прибор индукционного каротажа 3" class="slider-image" onerror="this.src='https://placehold.co/1200x400/cccccc/ffffff?text=Изображение+3'; this.alt='Ошибка загрузки изображения 3'">
-                </div>
-                <button class="slider-button prev-button" aria-label="Предыдущий слайд">❮</button>
-                <button class="slider-button next-button" aria-label="Следующий слайд">❯</button>
-                 <div class="slider-indicators">
-                    <span class="indicator active" data-slide-index="0"></span>
-                    <span class="indicator" data-slide-index="1"></span>
-                    <span class="indicator" data-slide-index="2"></span>
-                </div>
+        <section class="device-type-selection">
+            <h2>Доступные методы каротажа</h2>
+            <div class="device-type-grid">
+                <button class="device-type-button" data-type="induction">
+                    <i class="fas fa-microchip device-icon"></i>
+                    <span>Индукционный каротаж</span>
+                    <p class="button-description">Доступная система учёта.</p>
+                </button>
+                <button class="device-type-button disabled" data-type="acoustic" title="В разработке">
+                    <i class="fas fa-wave-square device-icon"></i>
+                    <span>Акустический каротаж</span>
+                    <p class="button-description">Система не доступна.</p>
+                    <span class="status-badge">В разработке</span>
+                </button>
+                <button class="device-type-button disabled" data-type="lateral" title="В разработке">
+                    <i class="fas fa-charging-station device-icon"></i>
+                    <span>Боковой электрический каротаж</span>
+                    <p class="button-description">Система не доступна.</p>
+                    <span class="status-badge">В разработке</span>
+                </button>
+                <button class="device-type-button disabled" data-type="radiation" title="В разработке">
+                    <i class="fas fa-radiation device-icon"></i>
+                    <span>Радиационные методы</span>
+                    <p class="button-description">Система не доступна.</p>
+                    <span class="status-badge">В разработке</span>
+                </button>
+                <button class="device-type-button disabled" data-type="profilers" title="В разработке">
+                    <i class="fas fa-chart-line device-icon"></i>
+                    <span>Профилемеры</span>
+                    <p class="button-description">Система не доступна.</p>
+                    <span class="status-badge">В разработке</span>
+                </button>
             </div>
         </section>
-
-        <p class="contact-info">
-            Для создания учётной записи писать на почту:
-            <a href="mailto:amkg@amk-gorizont.ru?subject=Запрос%20на%20создание%20учётной%20записи" class="contact-link">amkg@amk-gorizont.ru</a>
-        </p>
     </div>
 </main>
 
 <footer class="site-footer">
     <div class="footer-container">
         <p>&copy; 2024 ООО НПФ "АМК ГОРИЗОНТ" | Контактный телефон: <a href="tel:+73476730510">+7-(34767) 3-05-10</a></p>
-        </div>
+    </div>
 </footer>
 
+<!-- Модальное окно -->
+<div id="infoModal" class="modal">
+    <div class="modal-content">
+        <span class="close-button">&times;</span>
+        <div class="modal-icon"><i class="fas fa-info-circle"></i></div>
+        <p id="modalMessage"></p>
+        <button class="modal-ok-button">ОК</button>
+    </div>
+</div>
+
 <script>
-    // Функция проверки доступа (остается без изменений)
+    // Получаем элементы модального окна в глобальной области видимости
+    const infoModal = document.getElementById('infoModal');
+    const closeModalButton = document.querySelector('.modal .close-button');
+    const modalOkButton = document.querySelector('.modal-ok-button');
+    const modalMessage = document.getElementById('modalMessage');
+
+    // Функции показа и скрытия модального окна в глобальной области видимости
+    function showModal(message) {
+        modalMessage.textContent = message;
+        infoModal.style.display = 'flex'; // Используем flex для центрирования
+        document.body.classList.add('modal-open'); // Блокировка прокрутки фона
+    }
+
+    function hideModal() {
+        infoModal.style.display = 'none';
+        document.body.classList.remove('modal-open'); // Разблокировка прокрутки фона
+    }
+
+    // Функция проверки доступа
     function checkAccess() {
         const isLoggedIn = <?php echo json_encode($is_logged_in); ?>;
         if (!isLoggedIn) {
-            alert('Для доступа к этому разделу необходимо авторизоваться.');
-            // Можно перенаправить на главную или показать форму входа
-            // window.location.href = 'index.php';
+            // Если пользователь не авторизован, показываем модальное окно
+            showModal('Для доступа к этому разделу необходимо авторизоваться.');
             return false;
         }
         return true;
     }
 
-    // Логика карусели (адаптирована под новые селекторы индикаторов)
+    // Логика для мобильного меню и обработчики модального окна
     document.addEventListener('DOMContentLoaded', () => {
-        const images = document.querySelectorAll('.slider-image');
-        const prevButton = document.querySelector('.prev-button');
-        const nextButton = document.querySelector('.next-button');
-        const indicators = document.querySelectorAll('.slider-indicators .indicator');
-        let currentIndex = 0;
-        let intervalId = null; // Для управления автопрокруткой
-
-        function showImage(index) {
-            // Скрываем все изображения и убираем активный класс
-            images.forEach((img, i) => {
-                img.classList.remove('active');
-                img.style.display = 'none'; // Используем display none/block
-                indicators[i].classList.remove('active');
-            });
-
-            // Показываем нужное изображение и делаем активным
-            images[index].classList.add('active');
-            images[index].style.display = 'block';
-            indicators[index].classList.add('active');
-            currentIndex = index; // Обновляем текущий индекс
-        }
-
-        function nextImage() {
-            let newIndex = (currentIndex + 1) % images.length;
-            showImage(newIndex);
-        }
-
-        function prevImage() {
-            let newIndex = (currentIndex - 1 + images.length) % images.length;
-            showImage(newIndex);
-        }
-
-        function startAutoScroll() {
-             // Очищаем предыдущий интервал, если он был
-            if (intervalId) clearInterval(intervalId);
-            // Запускаем новый интервал
-            intervalId = setInterval(nextImage, 5000); // 5 секунд
-        }
-
-        function stopAutoScroll() {
-            clearInterval(intervalId);
-            intervalId = null;
-        }
-
-        // Обработчики кнопок
-        nextButton.addEventListener('click', () => {
-            nextImage();
-            stopAutoScroll(); // Останавливаем автопрокрутку при ручном переключении
-            startAutoScroll(); // и перезапускаем
-        });
-
-        prevButton.addEventListener('click', () => {
-            prevImage();
-            stopAutoScroll();
-            startAutoScroll();
-        });
-
-        // Обработчики индикаторов
-        indicators.forEach(indicator => {
-            indicator.addEventListener('click', (e) => {
-                const index = parseInt(e.target.getAttribute('data-slide-index'), 10);
-                showImage(index);
-                stopAutoScroll();
-                startAutoScroll();
-            });
-        });
-
-        // Обработчики для остановки/возобновления автопрокрутки при наведении на карусель
-        const carouselContainer = document.querySelector('.carousel-container');
-        carouselContainer.addEventListener('mouseenter', stopAutoScroll);
-        carouselContainer.addEventListener('mouseleave', startAutoScroll);
-
-
-        // Показываем первое изображение при загрузке
-        if (images.length > 0) {
-            showImage(0);
-            startAutoScroll(); // Запускаем автопрокрутку
-        } else {
-            // Скрываем кнопки и индикаторы, если нет изображений
-             prevButton.style.display = 'none';
-             nextButton.style.display = 'none';
-             document.querySelector('.slider-indicators').style.display = 'none';
-        }
-
-        // Логика для мобильного меню (простое переключение класса)
-        // Требует доработки CSS для показа/скрытия меню
         const mobileToggle = document.querySelector('.mobile-menu-toggle');
         const headerNav = document.querySelector('.header-nav');
-        const headerRight = document.querySelector('.header-right'); // Добавлено для скрытия/показа
+        const headerRight = document.querySelector('.header-right');
 
         if (mobileToggle && headerNav && headerRight) {
             mobileToggle.addEventListener('click', () => {
                 headerNav.classList.toggle('mobile-active');
-                headerRight.classList.toggle('mobile-active'); // Переключаем класс и для правой части
-                 // Добавляем/удаляем класс на body для блокировки прокрутки фона
+                headerRight.classList.toggle('mobile-active');
                 document.body.classList.toggle('menu-open');
             });
         }
+
+        const deviceTypeButtons = document.querySelectorAll('.device-type-button');
+
+        // Закрытие модального окна по кнопке "x"
+        closeModalButton.addEventListener('click', hideModal);
+
+        // Закрытие модального окна по кнопке "ОК"
+        modalOkButton.addEventListener('click', hideModal);
+
+        // Закрытие модального окна по клику вне его контента
+        window.addEventListener('click', (event) => {
+            if (event.target === infoModal) {
+                hideModal();
+            }
+        });
+
+        // Обработчики для кнопок типов приборов
+        deviceTypeButtons.forEach(button => {
+            button.addEventListener('click', (event) => {
+                // Проверяем доступ перед дальнейшими действиями
+                if (!checkAccess()) {
+                    return; // Если доступа нет, модальное окно уже показано функцией checkAccess
+                }
+
+                const deviceType = event.currentTarget.getAttribute('data-type');
+                if (deviceType === 'induction') {
+                    // Перенаправление на страницу учёта индукционного каротажа
+                    window.location.href = 'AccountingOfDevices2.php';
+                } else {
+                    // Показ модального окна для других типов
+                    showModal('Учёт приборов для данного типа находится в разработке. На данный момент доступен только учёт приборов индукционного каротажа!');
+                }
+            });
+        });
     });
 </script>
-
-</body>
-</html>
