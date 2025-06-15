@@ -206,7 +206,8 @@ img {
     gap: 8px;
     padding: 8px 12px;
     border-radius: 8px;
-    transition: color 0.2s ease, background-color 0.2s ease;
+    transition: color 0.2s ease, background-color 0.2s ease, transform 0.1s ease;
+    white-space: nowrap;
 }
 
 .logout-link:hover {
@@ -317,7 +318,7 @@ img {
     overflow: hidden; /* Скрыть возможные выходы изображений */
 }
 
-/* Добавление фоновых элементов (опционально, можно изменить на паттерн или градиент) */
+/* Возвращен оригинальный фон без усиленного паттерна */
 .main-content::before {
     content: '';
     position: absolute;
@@ -326,8 +327,13 @@ img {
     width: 100%;
     height: 100%;
     background: linear-gradient(to bottom, #F4F7FC 0%, #E9EFF7 100%);
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="4" height="4"><rect width="4" height="4" fill="%23f4f7fc"/><rect x="0" y="0" width="1" height="1" fill="%23e9eff7"/><rect x="2" y="2" width="1" height="1" fill="%23e9eff7"/></svg>');
+    background-repeat: repeat;
+    background-size: 8px 8px; /* Мелкий паттерн */
     z-index: -1;
+    opacity: 0.8; /* Очень легкая непрозрачность для паттерна */
 }
+
 
 .main-container {
     text-align: center;
@@ -346,65 +352,61 @@ img {
     flex-direction: column;
     align-items: center;
     position: relative;
-    overflow: hidden; /* Для gallery-img */
+    overflow: hidden;
 }
+
+/* Удален оверлей для hero-секции, который был связан с изображениями */
+.hero-section::before {
+    content: none;
+}
+
 
 .hero-content {
     max-width: 900px;
     margin: 0 auto;
-    z-index: 1; /* Чтобы текст был над изображениями */
+    z-index: 1;
+    position: relative;
 }
 
+/* Возвращен оригинальный размер заголовка */
 .main-container h1 {
-    font-size: 3.2rem; /* Значительно увеличенный размер для заголовка */
+    font-size: 2.8rem;
     font-weight: 700;
-    color: #252F40; /* Очень темно-серый */
-    margin-bottom: 20px;
-    line-height: 1.2;
+    color: #252F40;
+    margin-bottom: 15px;
+    line-height: 1.3;
 }
 
+/* Возвращен оригинальный размер подзаголовка */
 .subtitle {
-    font-size: 1.5rem; /* Увеличенный подзаголовок */
-    color: #6B778D; /* Мягкий серый */
-    margin-bottom: 40px;
+    font-size: 1.25rem;
+    color: #6B778D;
+    margin-bottom: 30px;
     max-width: 900px;
     margin-left: auto;
     margin-right: auto;
     font-weight: 400;
+    line-height: 1.5;
 }
 
-.image-gallery {
-    position: relative;
-    width: 100%;
-    max-width: 800px; /* Максимальная ширина галереи */
-    height: 400px; /* Фиксированная высота галереи */
-    margin: 40px auto 50px;
-    border-radius: 15px;
-    overflow: hidden;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+/* Удалены стили для hero-slogan и hero-icon-wrapper */
+.hero-slogan,
+.hero-icon-wrapper {
+    display: none;
 }
 
+/* Удалены стили для image-gallery и gallery-img */
+.image-gallery,
 .gallery-img {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: cover; /* Изображение будет покрывать контейнер */
-    opacity: 0;
-    transition: opacity 1s ease-in-out; /* Плавный переход */
-}
-
-.gallery-img.active {
-    opacity: 1;
+    display: none;
 }
 
 .section-description {
-    font-size: 1.1rem;
+    font-size: 1rem;
     color: #5C6A80;
-    line-height: 1.8;
+    line-height: 1.7;
     max-width: 800px;
-    margin: 30px auto 0;
+    margin: 25px auto 0;
 }
 
 
@@ -415,10 +417,10 @@ img {
 }
 
 .device-type-selection h2 {
-    font-size: 2.5rem;
+    font-size: 2.3rem; /* Немного уменьшен */
     font-weight: 700;
     color: #252F40;
-    margin-bottom: 50px; /* Отступ до грида кнопок */
+    margin-bottom: 45px; /* Отступ до грида кнопок */
 }
 
 .device-type-grid {
@@ -456,17 +458,24 @@ img {
 .device-type-button:hover:not(.disabled) {
     background-color: #E6F0FF;
     border-color: #2D7EFF;
-    box-shadow: 0 12px 25px rgba(45, 126, 255, 0.25);
-    transform: translateY(-7px);
+    box-shadow: 0 12px 25px rgba(45, 126, 255, 0.25); /* Возвращена оригинальная тень */
+    transform: translateY(-7px); /* Возвращен оригинальный подъем */
 }
 
 .device-type-button:active:not(.disabled) {
     transform: translateY(0);
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08); /* Возвращен оригинальный эффект нажатия */
+}
+
+/* Стиль для активной кнопки */
+.device-type-button.active {
+    border: 2px solid #2D7EFF; /* Более выраженная синяя рамка */
+    box-shadow: 0 18px 45px rgba(45, 126, 255, 0.3); /* Возвращена оригинальная тень */
+    transform: translateY(-5px); /* Небольшой подъем */
 }
 
 .device-type-button.disabled {
-    opacity: 0.7; /* Сделать неактивные кнопки более тусклыми */
+    opacity: 0.6; /* Сделать неактивные кнопки более тусклыми */
     cursor: not-allowed;
     background-color: #F8F9FA;
     border-color: #E9ECEF;
@@ -483,32 +492,50 @@ img {
     font-size: 4.5rem; /* Увеличенный размер иконки */
     color: #2D7EFF;
     margin-bottom: 15px;
-    transition: color 0.3s ease;
+    transition: color 0.3s ease; /* Удален transform для анимации */
 }
 
 .device-type-button:hover:not(.disabled) .device-icon {
     color: #1A6BE6;
+    transform: none; /* Удалено увеличение иконки при наведении */
 }
 
 .button-description {
-    font-size: 0.95rem;
+    font-size: 0.9rem; /* Немного уменьшен */
     color: #6B778D;
-    margin-top: 10px;
+    margin-top: 8px; /* Немного уменьшен отступ */
     line-height: 1.4;
+    min-height: 36px; /* Чтобы все описания имели одинаковую высоту */
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .status-badge {
     position: absolute;
     top: 15px;
     right: 15px;
-    background-color: #FFC107; /* Желтый цвет для "В разработке" */
-    color: #333C4E;
+    background-color: #d8e2ef; /* Возвращен оригинальный цвет бэйджа */
+    color: #5c6a80; /* Возвращен оригинальный цвет текста */
     padding: 5px 12px;
     border-radius: 8px;
     font-size: 0.85rem;
     font-weight: 600;
     text-transform: uppercase;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    transform: none; /* Удален поворот */
+    transition: transform 0.3s ease;
+}
+
+.device-type-button.disabled:hover .status-badge {
+    transform: none; /* Удален поворот при наведении */
+}
+
+.status-badge .status-icon {
+    font-size: 0.75rem; /* Размер иконки в бейдже */
 }
 
 /* --- Footer --- */
@@ -536,20 +563,32 @@ img {
 
 /* --- Модальное окно --- */
 .modal {
-    display: none;
+    display: flex; /* Всегда flex, чтобы использовать is-visible для opacity/transform */
     position: fixed;
     z-index: 1001;
     left: 0;
     top: 0;
     width: 100%;
     height: 100%;
-    overflow: auto;
+    overflow: hidden; /* Чтобы избежать прокрутки содержимого модального окна */
     background-color: rgba(0, 0, 0, 0.6); /* Более темный фон */
     align-items: center;
     justify-content: center;
     padding: 20px;
     box-sizing: border-box;
     backdrop-filter: blur(5px); /* Эффект размытия фона */
+
+    /* Начальные состояния для анимации */
+    opacity: 0;
+    pointer-events: none; /* Не реагирует на события, когда скрыто */
+    transition: opacity 0.3s ease-out, visibility 0.3s ease-out;
+    visibility: hidden;
+}
+
+.modal.is-visible {
+    opacity: 1;
+    pointer-events: auto; /* Реагирует на события, когда видимо */
+    visibility: visible;
 }
 
 .modal-content {
@@ -565,6 +604,14 @@ img {
     display: flex;
     flex-direction: column;
     gap: 25px; /* Увеличен отступ между элементами */
+
+    /* Начальные состояния для анимации контента */
+    transform: scale(0.9);
+    transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1.2), opacity 0.3s ease-out;
+}
+
+.modal.is-visible .modal-content {
+    transform: scale(1); /* Возвращаем к нормальному размеру при показе */
 }
 
 .close-button {
@@ -587,7 +634,7 @@ img {
 
 .modal-icon {
     font-size: 3.5rem; /* Увеличен размер иконки */
-    color: #2D7EFF; /* Синий цвет иконки */
+    color: #2D7EFF; /* Синий цвет иконки по умолчанию, будет меняться JS */
     margin-bottom: 10px;
 }
 
@@ -600,6 +647,8 @@ img {
 
 .modal-ok-button {
     background-color: #2D7EFF;
+    /* Возвращен оригинальный цвет без градиента */
+    background-image: none;
     color: white;
     padding: 15px 30px; /* Увеличены отступы кнопки */
     border: none;
@@ -610,11 +659,14 @@ img {
     transition: background-color 0.2s ease, transform 0.1s ease;
     align-self: center;
     min-width: 150px;
+    box-shadow: none; /* Удалена тень, связанная с градиентом */
 }
 
 .modal-ok-button:hover {
     background-color: #1A6BE6;
+    background-image: none; /* Удален градиент при наведении */
     transform: translateY(-1px);
+    box-shadow: none; /* Удалена тень при наведении */
 }
 .modal-ok-button:active {
     transform: translateY(0);
@@ -644,12 +696,18 @@ img {
         padding: 0 24px;
     }
 
+    /* Возвращены оригинальные размеры заголовка и подзаголовка */
     .main-container h1 {
-        font-size: 2.8rem;
+        font-size: 2.5rem;
     }
 
     .subtitle {
-        font-size: 1.4rem;
+        font-size: 1.15rem;
+    }
+
+    /* Удалены стили для hero-slogan в адаптации */
+    .hero-slogan {
+        font-size: 1.4rem; /* Это правило будет неактивно из-за display: none */
     }
 
     .device-type-grid {
@@ -665,8 +723,9 @@ img {
         font-size: 4rem;
     }
 
+    /* Удалены стили для image-gallery в адаптации */
     .image-gallery {
-        height: 350px;
+        height: 350px; /* Это правило будет неактивно из-за display: none */
     }
 }
 
@@ -788,8 +847,12 @@ img {
         margin-bottom: 40px;
     }
 
+    /* Возвращены оригинальные размеры заголовка и подзаголовка в адаптации */
     .main-container h1 {
-        font-size: 2rem; /* Уменьшен размер заголовка на мобильных */
+        font-size: 2rem;
+    }
+    .hero-slogan {
+        font-size: 1.2rem; /* Это правило будет неактивно из-за display: none */
     }
 
     .subtitle {
@@ -797,8 +860,9 @@ img {
         margin-bottom: 30px;
     }
 
+    /* Удалены стили для image-gallery в адаптации */
     .image-gallery {
-        height: 250px; /* Меньшая высота галереи */
+        height: 250px; /* Это правило будет неактивно из-за display: none */
         margin: 30px auto 40px;
     }
 
@@ -850,16 +914,21 @@ img {
         padding: 0 16px; /* Еще меньше боковые отступы */
     }
 
+    /* Возвращены оригинальные размеры заголовка и подзаголовка в адаптации */
     .main-container h1 {
         font-size: 1.7rem;
+    }
+    .hero-slogan {
+        font-size: 1.1rem; /* Это правило будет неактивно из-за display: none */
     }
 
     .subtitle {
         font-size: 0.95rem;
     }
 
+    /* Удалены стили для image-gallery в адаптации */
     .image-gallery {
-        height: 200px;
+        height: 200px; /* Это правило будет неактивно из-за display: none */
     }
 
     .device-type-button {

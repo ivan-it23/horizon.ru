@@ -1,6 +1,6 @@
 <?php
 session_start();
-include 'db_connection.php';
+include 'db_connection.php'; // Убедитесь, что db_connection.php содержит корректные данные для подключения к БД
 
 $unread_count = 0; // Значение по умолчанию
 $is_logged_in = isset($_SESSION['user']['id']);
@@ -42,7 +42,7 @@ if ($is_logged_in) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Учёт приборов АМК «Горизонт»</title>
+    <title>Система учёта приборов АМК «Горизонт»</title>
     <link rel="icon" href="images/favicon1.png" type="image/png">
     <link rel="stylesheet" href="Page1.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
@@ -59,7 +59,7 @@ if ($is_logged_in) {
         </div>
         <nav class="header-nav">
             <ul>
-
+                <!-- Здесь могут быть пункты навигации, если они нужны для внутренней системы -->
             </ul>
         </nav>
         <div class="header-right">
@@ -107,41 +107,38 @@ if ($is_logged_in) {
         <div class="hero-section">
             <div class="hero-content">
                 <h1>Система учёта приборов АМК «Горизонт»</h1>
-                <p class="subtitle">Выберите тип каротажа для управления данными</p>
+                <p class="subtitle">Единая платформа для централизованного управления данными геофизических приборов компании.</p>
+                <!-- Удалены hero-slogan и hero-icon-wrapper, которые были связаны с изображениями и доп. контентом -->
             </div>
+            <!-- Удалена секция для галереи изображений -->
         </div>
 
         <section class="device-type-selection">
-            <h2>Доступные методы каротажа</h2>
+            <h2>Выберите тип каротажа для управления данными</h2>
             <div class="device-type-grid">
-                <button class="device-type-button" data-type="induction">
+                <button class="device-type-button active" data-type="induction">
                     <i class="fas fa-microchip device-icon"></i>
                     <span>Индукционный каротаж</span>
-                    <p class="button-description">Доступная система учёта.</p>
                 </button>
                 <button class="device-type-button disabled" data-type="acoustic" title="В разработке">
                     <i class="fas fa-wave-square device-icon"></i>
                     <span>Акустический каротаж</span>
-                    <p class="button-description">Система не доступна.</p>
-                    <span class="status-badge">В разработке</span>
+                    <span class="status-badge">В разработке <i class="fas fa-wrench status-icon"></i></span>
                 </button>
                 <button class="device-type-button disabled" data-type="lateral" title="В разработке">
-                    <i class="fas fa-charging-station device-icon"></i>
+                    <i class="fas fa-bolt device-icon"></i>
                     <span>Боковой электрический каротаж</span>
-                    <p class="button-description">Система не доступна.</p>
-                    <span class="status-badge">В разработке</span>
+                    <span class="status-badge">В разработке <i class="fas fa-wrench status-icon"></i></span>
                 </button>
                 <button class="device-type-button disabled" data-type="radiation" title="В разработке">
                     <i class="fas fa-radiation device-icon"></i>
                     <span>Радиационные методы</span>
-                    <p class="button-description">Система не доступна.</p>
-                    <span class="status-badge">В разработке</span>
+                    <span class="status-badge">В разработке <i class="fas fa-wrench status-icon"></i></span>
                 </button>
                 <button class="device-type-button disabled" data-type="profilers" title="В разработке">
                     <i class="fas fa-chart-line device-icon"></i>
                     <span>Профилемеры</span>
-                    <p class="button-description">Система не доступна.</p>
-                    <span class="status-badge">В разработке</span>
+                    <span class="status-badge">В разработке <i class="fas fa-wrench status-icon"></i></span>
                 </button>
             </div>
         </section>
@@ -170,16 +167,35 @@ if ($is_logged_in) {
     const closeModalButton = document.querySelector('.modal .close-button');
     const modalOkButton = document.querySelector('.modal-ok-button');
     const modalMessage = document.getElementById('modalMessage');
+    const modalIconDiv = document.querySelector('.modal-icon');
 
     // Функции показа и скрытия модального окна в глобальной области видимости
     function showModal(message) {
         modalMessage.textContent = message;
-        infoModal.style.display = 'flex'; // Используем flex для центрирования
+
+        // Динамическое изменение иконки модального окна
+        modalIconDiv.innerHTML = ''; // Очищаем старую иконку
+        let iconClass = '';
+        if (message.includes('авторизоваться')) {
+            iconClass = 'fas fa-lock'; // Иконка замка для авторизации
+            modalIconDiv.style.color = '#E64C4C'; // Красный для ошибки/предупреждения
+        } else if (message.includes('в разработке')) {
+            iconClass = 'fas fa-tools'; // Иконка инструментов для "в разработке"
+            modalIconDiv.style.color = '#2D7EFF'; // Синий для информации
+        } else {
+            iconClass = 'fas fa-info-circle'; // По умолчанию информационная иконка
+            modalIconDiv.style.color = '#2D7EFF';
+        }
+        const iconElement = document.createElement('i');
+        iconElement.className = iconClass;
+        modalIconDiv.appendChild(iconElement);
+
+        infoModal.classList.add('is-visible'); // Добавляем класс для анимации
         document.body.classList.add('modal-open'); // Блокировка прокрутки фона
     }
 
     function hideModal() {
-        infoModal.style.display = 'none';
+        infoModal.classList.remove('is-visible'); // Удаляем класс для анимации
         document.body.classList.remove('modal-open'); // Разблокировка прокрутки фона
     }
 
@@ -241,5 +257,7 @@ if ($is_logged_in) {
                 }
             });
         });
+
+        // Удалена логика для галереи изображений
     });
 </script>

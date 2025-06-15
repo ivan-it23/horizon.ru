@@ -116,20 +116,22 @@ if ($is_logged_in) {
             <ul class="tab-list">
                 <li class="tab-item active" data-tab="1">Идентификационные данные</li>
                 <li class="tab-item parent-tab" data-tab="production">
-                    Производство прибора <i class="fas fa-chevron-down sub-tab-icon"></i> <ul class="sub-tabs">
+                    Производство прибора <i class="fas fa-chevron-down sub-tab-icon"></i>
+                    <ul class="sub-tabs">
                         <li class="tab-item" data-tab="2">Сведения о выходе из производства</li>
                         <li class="tab-item" data-tab="3">Сведения об испытаниях</li>
                     </ul>
                 </li>
                 <li class="tab-item parent-tab" data-tab="exploitation">
-                    Эксплуатация прибора <i class="fas fa-chevron-down sub-tab-icon"></i> <ul class="sub-tabs">
+                    Эксплуатация прибора <i class="fas fa-chevron-down sub-tab-icon"></i>
+                    <ul class="sub-tabs">
                         <li class="tab-item" data-tab="4">Сведения о ремонте</li>
                         <li class="tab-item" data-tab="5">Сведения о неразрушающем контроле</li>
                         <li class="tab-item" data-tab="6">Сведения о прекращении эксплуатации</li>
                         <li class="tab-item" data-tab="7">Дополнительные сведения</li>
-                        <li class="tab-item" data-tab="8">Файлы</li>
                     </ul>
                 </li>
+                <li class="tab-item" data-tab="8">Файлы</li>
             </ul>
         </section>
 
@@ -978,6 +980,17 @@ document.addEventListener('DOMContentLoaded', function () {
     const msgrSendBtn = msgrModal ? msgrModal.querySelector('.msgr-send-btn') : null;
     // Находим элемент для отображения имени получателя в модальном окне
     const msgrRecipientName = msgrModal ? msgrModal.querySelector('.msgr-recipient-name') : null;
+
+
+
+
+    // Константа для ключа в localStorage, чтобы избежать опечаток
+    const DEVICE_SEARCH_PARAMS_KEY = 'deviceSearchParams';
+
+    // Получаем элементы управления из DOM
+    const viewDeviceType = document.getElementById('viewDeviceType');
+    const viewNominalDiameter = document.getElementById('viewNominalDiameter');
+    const viewTransmitterCount = document.getElementById('viewTransmitterCount');
 
 
     // Переменные для хранения данных о выбранном приборе
@@ -5382,6 +5395,74 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     openTabFromSessionMemory();
+
+
+
+    /**
+     * Функция для сохранения текущих выбранных параметров в localStorage.
+     */
+    function saveDeviceSearchParams() {
+        // Создаем объект с текущими значениями полей
+        const paramsToSave = {
+            deviceType: viewDeviceType.value,
+            nominalDiameter: viewNominalDiameter.value,
+            transmitterCount: viewTransmitterCount.value
+        };
+        // Сохраняем объект в localStorage в виде JSON-строки
+        localStorage.setItem(DEVICE_SEARCH_PARAMS_KEY, JSON.stringify(paramsToSave));
+    }
+
+    /**
+     * Функция для загрузки и установки сохраненных параметров при загрузке страницы.
+     */
+    function loadAndApplyDeviceSearchParams() {
+        // Получаем сохраненные параметры из localStorage
+        const savedParamsJSON = localStorage.getItem(DEVICE_SEARCH_PARAMS_KEY);
+
+        // Если в хранилище есть сохраненные данные
+        if (savedParamsJSON) {
+            try {
+                const savedParams = JSON.parse(savedParamsJSON);
+
+                // Устанавливаем сохраненные значения для select-элементов
+                if (viewDeviceType && savedParams.deviceType) {
+                    viewDeviceType.value = savedParams.deviceType;
+                }
+                if (viewNominalDiameter && savedParams.nominalDiameter) {
+                    viewNominalDiameter.value = savedParams.nominalDiameter;
+                }
+                if (viewTransmitterCount && savedParams.transmitterCount) {
+                    viewTransmitterCount.value = savedParams.transmitterCount;
+                }
+
+                // ВАЖНО: После восстановления значений необходимо обновить
+                // список приборов. Если у вас есть кнопка для поиска,
+                // вы можете программно инициировать клик по ней.
+                // Например: document.getElementById('ID_КНОПКИ_ПОИСКА').click();
+                //
+                // Если фильтрация происходит автоматически, можно
+                // сгенерировать событие изменения:
+                // viewDeviceType.dispatchEvent(new Event('change'));
+
+            } catch (e) {
+                console.error('Ошибка при разборе сохраненных параметров поиска: ', e);
+                // В случае ошибки удаляем некорректные данные из хранилища
+                localStorage.removeItem(DEVICE_SEARCH_PARAMS_KEY);
+            }
+        }
+    }
+
+    // Убедимся, что все элементы выбора существуют на странице
+    if (viewDeviceType && viewNominalDiameter && viewTransmitterCount) {
+        // Вызываем функцию загрузки параметров при первоначальной загрузке страницы
+        loadAndApplyDeviceSearchParams();
+
+        // Добавляем обработчики событий 'change' на каждый select.
+        // При каждом изменении выбора пользователем параметры будут автоматически сохраняться.
+        viewDeviceType.addEventListener('change', saveDeviceSearchParams);
+        viewNominalDiameter.addEventListener('change', saveDeviceSearchParams);
+        viewTransmitterCount.addEventListener('change', saveDeviceSearchParams);
+    }
 
 });
 
