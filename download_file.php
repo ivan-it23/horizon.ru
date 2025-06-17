@@ -1,27 +1,34 @@
 <?php
+session_start();
 include 'db_connection.php';
 
+if (!isset($_SESSION['user'])) {
+    die("Доступ запрещен. Пожалуйста, авторизуйтесь.");
+}
+
 if (isset($_GET['id'])) {
-    $fileId = $_GET['id'];
+    $fileId = filter_var($_GET['id'], FILTER_SANITIZE_NUMBER_INT);
 
     $stmt = $conn->prepare("SELECT file_name, file_data FROM uploaded_files WHERE id = ?");
     $stmt->bind_param("i", $fileId);
     $stmt->execute();
-    $stmt->bind_result($fileName, $fileData);
-    $stmt->fetch();
+    $stmt->store_result();
 
-    if ($fileData) {
-        // Установка заголовков для скачивания файла
-        header('Content-Description: File Transfer');
-        header('Content-Type: application/octet-stream');
-        header('Content-Disposition: attachment; filename="' . $fileName . '"');
-        header('Content-Length: ' . strlen($fileData));
+    if ($stmt->num_rows > 0) {
+        $stmt->bind_result($fileName, $fileData);
+        $stmt->fetch();
+
+        header("Content-Type: application/octet-stream");
+        header("Content-Disposition: attachment; filename=\"" . basename($fileName) . "\"");
+        header("Content-Length: " . strlen($fileData));
+
         echo $fileData;
+        exit;
     } else {
-        echo "Файл не найден.";
+        die("Файл не найден.");
     }
-    exit;
+    $stmt->close();
 } else {
-    echo "Идентификатор файла не указан.";
+    die("Неверный запрос.");
 }
 ?>

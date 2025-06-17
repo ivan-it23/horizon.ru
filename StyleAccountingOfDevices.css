@@ -1,7 +1,6 @@
 /* ==========================================================================
    StyleAccountingOfDevices.css
    Стили для корпоративного веб-приложения учёта приборов.
-   Включает стили для header/footer (из Page1.css) и новые стили компонентов.
    ========================================================================== */
 
 /* ==========================================================================
@@ -3207,80 +3206,329 @@ button:disabled {
         white-space: normal;
     }
 }
-
 /* ==========================================================================
-   СТИЛИ ДЛЯ СТРАНИЦЫ ПРОСМОТРА ФАЙЛОВ (view_files.php)
+   СТИЛИ ДЛЯ ВКЛАДКИ 8 "ФАЙЛЫ"
    ========================================================================== */
 
-/* Контейнер для заголовка и кнопки "Назад" */
-.page-title-container {
+/* Контейнер для вкладок типов файлов */
+.file-type-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    border-bottom: 2px solid var(--border-color);
+    padding-bottom: 10px;
+    margin-bottom: 1.5rem;
+}
+
+.file-type-tabs .button {
+    border-radius: var(--border-radius) var(--border-radius) 0 0;
+    border-bottom: none;
+    background-color: var(--bg-table-header);
+    color: var(--text-secondary);
+    font-weight: 600;
+}
+
+.file-type-tabs .button:hover {
+    background-color: #e9ecef;
+}
+
+.file-type-tabs .button.active {
+    background-color: var(--bg-container);
+    color: var(--primary-color);
+    border-color: var(--border-color);
+    border-bottom: 2px solid var(--bg-container);
+    margin-bottom: -2px;
+}
+
+/* Область отображения файлов */
+#file-display-area {
+    background-color: var(--bg-container);
+    padding: 1.5rem;
+    border: 1px solid var(--border-color);
+    border-top: none;
+    border-radius: 0 0 var(--border-radius) var(--border-radius);
+}
+
+.info-message, .error-message {
+    text-align: center;
+    padding: 1rem;
+    border-radius: var(--border-radius);
+    font-weight: 500;
+}
+.info-message {
+    background-color: #eef2f7;
+    color: var(--secondary-color);
+}
+.error-message {
+    background-color: #f8d7da;
+    color: var(--danger-color);
+}
+
+/* Контролы (заголовок и сортировка) */
+.file-area-controls {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 1.5rem; /* Стандартный отступ */
-    flex-wrap: wrap;       /* Для адаптивности на мобильных устройствах */
-    gap: 1rem;             /* Пространство между заголовком и кнопкой */
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+.file-area-controls h4 {
+    margin: 0;
+    color: var(--primary-color);
+}
+.file-action-buttons {
+    display: flex;
+    gap: 10px;
+}
+.button-small {
+    padding: 6px 12px;
+    font-size: 13px;
 }
 
-/* Убираем нижний отступ у заголовка, когда он в контейнере */
-.page-title-container .file-header {
-    margin-bottom: 0;
-    flex-grow: 1; /* Заголовок занимает доступное пространство */
+/* Список файлов */
+.file-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
 }
-
-/* Стили для кнопки "Назад" */
-.back-button {
-    flex-shrink: 0; /* Запрещаем кнопке сжиматься */
+.file-item {
+    display: flex;
+    align-items: center;
+    padding: 1rem 0;
+    border-bottom: 1px solid var(--border-color);
+    gap: 1rem;
 }
-
-@media (max-width: 576px) {
-    .page-title-container {
-        flex-direction: column; /* Элементы в столбец */
-        align-items: stretch;   /* Растягиваем по ширине */
-    }
-    .page-title-container .file-header {
-        text-align: center; /* Центрируем заголовок */
-    }
-    .back-button {
-        width: 100%; /* Кнопка на всю ширину */
-    }
+.file-item:last-child {
+    border-bottom: none;
 }
-
-/* Новые стили для иконки переименования */
+.file-info {
+    flex-grow: 1;
+}
+.file-name {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    word-break: break-all;
+}
+.file-date {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin-top: 4px;
+}
+.file-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+}
 .rename-icon {
     color: var(--secondary-color);
     cursor: pointer;
-    font-size: 0.9em;
+    font-size: 1em;
+    padding: 5px;
     transition: color 0.2s ease;
 }
 .rename-icon:hover {
     color: var(--accent-color);
 }
 
-/* Стили для модального окна переименования */
-.modal-rename-content input[type="text"] {
-    width: 100%;
-    padding: 10px;
-    margin-bottom: 15px;
+/* Форма загрузки */
+.upload-form-container {
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border-color);
+}
+.upload-title {
+    margin-top: 0;
+    margin-bottom: 1rem;
+    font-size: 1.1rem;
+    color: var(--primary-color);
+}
+#dynamicUploadForm {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+#dynamicUploadForm .file-input {
+    flex-grow: 1;
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius);
-    font-size: 1rem;
+    padding: 5px;
 }
-.modal-rename-content input[type="text"]:focus {
-    border-color: var(--accent-color);
-    box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.15);
-    outline: none;
+#dynamicUploadForm .file-input::file-selector-button {
+    padding: 8px 12px;
+    border-radius: var(--border-radius);
+    border: none;
+    background-color: var(--bg-table-header);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+#dynamicUploadForm .file-input::file-selector-button:hover {
+    background-color: #e9ecef;
 }
 
-/* Обновление стиля .file-name для выравнивания текста и иконки */
-.file-name {
-    font-size: 1.05rem;
+.upload-message.success-message {
+    color: var(--success-color);
+    font-weight: 500;
+}
+
+/* Общий контейнер для file-display-area */
+.file-display-wrapper {
+    /* Добавляем лёгкий фон, чтобы выделить секцию */
+    background-color: var(--bg-container);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    padding: 1.5rem;
+}
+
+/* Контейнер формы загрузки: уже существующий класс улучшен */
+.upload-form-container {
+    background-color: #fff; /* Чуть светлее, чтобы форма выделялась */
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    padding: 1rem 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+/* Заголовок формы загрузки */
+.upload-form-container .upload-title {
+    font-size: 1.2rem;
+    margin-bottom: 0.75rem;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 0.5rem;
     color: var(--primary-color);
-    font-weight: 600;
-    word-break: break-word;
-    display: flex; /* Для выравнивания текста и иконки переименования */
+}
+
+/* Сообщение загрузки */
+.upload-message {
+    margin-top: 0.75rem;
+    font-size: 0.95rem;
+}
+
+/* Если успешное сообщение */
+.upload-message.success-message {
+    color: var(--success-color);
+}
+
+/* Error сообщение */
+.upload-message.error-message {
+    color: var(--danger-color);
+}
+
+/* Список файлов: обёртка находится в JS, но стили для элементов */
+.file-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+/* Каждый файл в карточке */
+.file-item {
+    display: flex;
     align-items: center;
-    gap: 8px; /* Отступ между названием и иконкой */
+    justify-content: space-between;
+    background-color: #fff;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    padding: 0.75rem 1rem;
+    margin-bottom: 0.75rem;
+    transition: background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.file-item:hover {
+    background-color: #f8f9fa;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+/* Информация о файле */
+.file-info {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    word-break: break-all;
+}
+
+.file-name {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.file-date {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+/* Контейнер для заголовка списка и кнопок сортировки */
+.file-area-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.file-area-controls h4 {
+    margin: 0;
+    font-size: 1.1rem;
+    color: var(--primary-color);
+}
+
+.file-action-buttons button {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+/* Кнопки сортировки */
+.button-small {
+    padding: 6px 12px;
+    font-size: 13px;
+}
+
+/* Если нет файлов */
+.info-message, .error-message {
+    text-align: center;
+    padding: 0.75rem;
+    border-radius: var(--border-radius);
+    font-weight: 500;
+}
+
+/* Модальное окно: можно добавить небольшой отступ */
+#renameFileModal .modal-dialog {
+    max-width: 400px;
+}
+
+#renameFileModal .modal-content {
+    border-radius: var(--border-radius);
+}
+
+/* При активной вкладке типа файла: подчёркивание */
+.file-type-tabs .button.active {
+    /* Оставляем существующие, но добавим лёгкий теневой эффект */
+    box-shadow: 0 -2px 0 0 var(--primary-color) inset;
+}
+
+/* Увеличим область клика по вкладкам */
+.file-type-tabs .button {
+    padding: 0.5rem 1rem;
+}
+
+/* Отступ между блоком вкладок и содержимым */
+.file-type-tabs + .file-display-wrapper {
+    margin-top: 1rem;
 }
 
 #viewDeviceParams,

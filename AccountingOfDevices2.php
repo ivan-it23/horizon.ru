@@ -788,74 +788,70 @@ if ($is_logged_in) {
             </div>
 
             <div class="tab-pane" id="tab-8">
+                <!-- Заголовок и информация о приборе (остается без изменений) -->
                 <div class="tab-header-container">
-                    <h2 class="tab-title">Файлы калибровки, КИС, термопрофиля, метрологии</h2>
+                    <h2 class="tab-title">Файлы</h2>
                     <div class="device-info-box">
-                        <div class="device-info-item"><span class="device-info-label"><i class="fas fa-microchip"></i> Тип:</span><span id="deviceTypeTab8" class="device-info-value">-</span></div>
-                        <div class="device-info-item"><span class="device-info-label"><i class="fas fa-barcode"></i> Серийный №:</span><span id="serialNumberTab8" class="device-info-value">-</span></div>
-                        <div class="device-info-item"><span class="device-info-label"><i class="fas fa-cube"></i> Корпус №:</span><span id="caseNumberTab8" class="device-info-value">-</span></div>
+                        <div class="device-info-item">
+                            <span class="device-info-label"><i class="fas fa-microchip"></i> Тип:</span>
+                            <span id="deviceTypeTab8" class="device-info-value">-</span>
+                        </div>
+                        <div class="device-info-item">
+                            <span class="device-info-label"><i class="fas fa-barcode"></i> Серийный №:</span>
+                            <span id="serialNumberTab8" class="device-info-value">-</span>
+                        </div>
+                        <div class="device-info-item">
+                            <span class="device-info-label"><i class="fas fa-cube"></i> Корпус №:</span>
+                            <span id="caseNumberTab8" class="device-info-value">-</span>
+                        </div>
                     </div>
                 </div>
-                <form action="upload_file.php" method="POST" enctype="multipart/form-data" id="newFileData">
-                    <table class="data-table">
-                        <thead><tr><th>Тип файла</th><th>Выбор файла</th><th>Действие</th></tr></thead>
-                        <tbody>
-                            <tr>
-                                <td>Файл термопрофиля (.bin, .txt)</td>
-                                <td><input type="file" name="thermoprofile" accept=".bin,.txt"></td>
-                                <td><button type="submit" name="field" value="thermoprofile" class="button button-secondary"><i class="fas fa-upload"></i> Загрузить</button></td>
-                            </tr>
-                            <tr>
-                                <td>Файл метрологии (.bin, .txt)</td>
-                                <td><input type="file" name="metrology" accept=".bin,.txt"></td>
-                                <td><button type="submit" name="field" value="metrology" class="button button-secondary"><i class="fas fa-upload"></i> Загрузить</button></td>
-                            </tr>
-                            <tr>
-                                <td>Файл калибровки (.bin, .txt)</td>
-                                <td><input type="file" name="calibration" accept=".bin,.txt"></td>
-                                <td><button type="submit" name="field" value="calibration" class="button button-secondary"><i class="fas fa-upload"></i> Загрузить</button></td>
-                            </tr>
-                             <tr>
-                                <td>Файл КИС (.bin, .txt)</td>
-                                <td><input type="file" name="kis" accept=".bin,.txt"></td>
-                                <td><button type="submit" name="field" value="kis" class="button button-secondary"><i class="fas fa-upload"></i> Загрузить</button></td>
-                            </tr>
-                            <tr style="display: none;"><td>Серийный номер</td><td><input type="text" name="serial_number" id="serialNumberInput"></td><td></td></tr>
-                            <tr style="display: none;"><td>Номер корпуса</td><td><input type="text" name="case_number" id="caseNumberInput"></td><td></td></tr>
-                            <tr style="display: none;"><td>Тип прибора</td><td><input type="text" name="device_type" id="deviceTypeInput"></td><td></td></tr>
-                        </tbody>
-                    </table>
-                </form>
-                <div id="upload-message" class="upload-message mt-3"></div>
-                <div class="mode-buttons mt-4">
-                    <form action="view_files.php" method="GET" id="viewFilesForm" style="display: inline-flex; gap: 0.5em; flex-wrap: wrap;">
-                        <input type="hidden" name="serial_number" id="serialNumberInputView">
-                        <input type="hidden" name="case_number" id="caseNumberInputView">
-                        <input type="hidden" name="device_type" id="deviceTypeInputView">
-                        <button type="submit" name="field" value="thermoprofile" class="button button-secondary"><i class="fas fa-eye"></i> Термопрофиль</button>
-                        <button type="submit" name="field" value="metrology" class="button button-secondary"><i class="fas fa-eye"></i> Метрология</button>
-                        <button type="submit" name="field" value="calibration" class="button button-secondary"><i class="fas fa-eye"></i> Калибровка</button>
-                        <button type="submit" name="field" value="kis" class="button button-secondary"><i class="fas fa-eye"></i> КИС</button>
-                    </form>
-                    <i class="fas fa-envelope msgr-open-icon" title="Отправить сообщение"></i>
 
-                    <div class="msgr-modal">
-                        <div class="msgr-modal-content">
-                            <span class="msgr-close">&times;</span>
+                <!-- Вкладки для выбора типа файла -->
+                <div class="file-type-tabs">
+                    <button type="button" class="button button-secondary" data-field="thermoprofile">
+                        <i class="fas fa-temperature-high"></i> Термопрофиль
+                    </button>
+                    <button type="button" class="button button-secondary" data-field="metrology">
+                        <i class="fas fa-ruler-combined"></i> Метрология
+                    </button>
+                    <button type="button" class="button button-secondary" data-field="calibration">
+                        <i class="fas fa-tools"></i> Калибровка
+                    </button>
+                    <button type="button" class="button button-secondary" data-field="kis">
+                        <i class="fas fa-wave-square"></i> КИС
+                    </button>
+                </div>
 
-                            <h3 class="msgr-modal-title">Выберите получателя сообщения</h3>
+                <!-- Основной контейнер: динамическое содержимое (список файлов, форма загрузки и т.д.) -->
+                <div id="file-display-area" class="mt-4 file-display-wrapper">
+                    <p class="info-message">Выберите тип файла для просмотра и управления.</p>
+                </div>
 
-                            <div class="msgr-modal-body-content">
-                                <div class="msgr-user-list-section">
-                                    <ul class="msgr-user-list">
-                                        <li>Загрузка пользователей...</li> </ul>
-                                </div>
-
-                                <div class="msgr-message-form-section" style="display: none;">
-                                    <h4>Сообщение для: <span class="msgr-recipient-name"></span></h4>
-                                    <textarea class="msgr-text" rows="5" placeholder="Текст сообщения"></textarea>
-                                    <button class="button button-primary msgr-send-btn">Отправить</button>
-                                </div>
+                <div id="renameFileModal" class="modal">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Переименовать файл</h5>
+                                <button type="button" class="modal-close-button" id="renameModalCloseButton" aria-label="Close">&times;</button>
+                            </div>
+                            <div class="modal-body">
+                                <form id="renameFileForm">
+                                    <input type="hidden" id="renameFileId" name="id">
+                                    <input type="hidden" id="renameOldFileName" name="old_file_name">
+                                    <input type="hidden" id="renameFileCreatedAt" name="created_at">
+                                    <input type="hidden" id="renameSerialNumber" name="serial_number">
+                                    <input type="hidden" id="renameCaseNumber" name="case_number">
+                                    <input type="hidden" id="renameDeviceType" name="device_type">
+                                    <div class="form-group">
+                                        <label for="newFileName">Новое имя файла:</label>
+                                        <input type="text" id="newFileName" name="new_file_name" class="input-field" required>
+                                    </div>
+                                </form>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" id="cancelRenameBtn" class="button button-secondary">Отмена</button>
+                                <button type="button" id="saveRenameBtn" class="button button-primary">Сохранить</button>
                             </div>
                         </div>
                     </div>
@@ -1092,13 +1088,8 @@ document.addEventListener('DOMContentLoaded', function () {
     // --- Логика переключения вкладок ---
 
     function setupTabs() {
-        // Предполагается, что где-то ранее определены:
-        // const tabItems = document.querySelectorAll('.tab-item');
-        // const tabPanes = document.querySelectorAll('.tab-pane');
-
         tabItems.forEach(tabItem => {
             tabItem.addEventListener('click', e => {
-                // Если вкладка заблокирована — останавливаем
                 if (tabItem.classList.contains('disabled')) {
                     e.preventDefault();
                     e.stopPropagation();
@@ -1106,89 +1097,47 @@ document.addEventListener('DOMContentLoaded', function () {
                     return;
                 }
 
-                // Если это «родительская» вкладка — переключаем только подсветку active
                 if (tabItem.classList.contains('parent-tab')) {
-                    // Toggle класса active: для стилизации родительской вкладки,
-                    // но не держим sub-tabs открытыми через active (CSS hover их показывает/скрывает)
                     tabItem.classList.toggle('active');
                     return;
                 }
 
-                // Если это подвкладка или обычная вкладка:
-                // Сначала снимаем подсветку со всех таб-кнопок, кроме родительских
                 tabItems.forEach(item => {
                     if (!item.classList.contains('parent-tab')) {
                         item.classList.remove('active');
                     }
                 });
-                // Скрываем все таб-панели
                 tabPanes.forEach(pane => pane.style.display = 'none');
 
-                // Подсвечиваем текущую выбранную вкладку
                 tabItem.classList.add('active');
 
-                // Подсветка родительской вкладки, если это подвкладка
                 const parentTab = tabItem.closest('.parent-tab');
                 if (parentTab) {
                     parentTab.classList.add('active');
                 }
 
-                // Показываем соответствующую панель
                 const tabNum = tabItem.dataset.tab;
                 const targetPane = document.getElementById(`tab-${tabNum}`);
                 if (targetPane) {
                     targetPane.style.display = 'block';
 
-                    // Скрываем внутри панели все формы и истории (кроме Tab 1 и Tab 8)
                     if (tabNum !== '1' && tabNum !== '8') {
-                        targetPane.querySelectorAll('form, .history-section-container')
+                        targetPane.querySelectorAll('form, .history-section-container, .repair-history-container')
                                   .forEach(el => el.style.display = 'none');
                     }
-                    // Явно показываем формы/кнопки на вкладке 8 при её активации
-                    if (tabNum === '8') {
-                        const newFileDataForm = targetPane.querySelector('#newFileData');
-                        const viewFilesContainer = targetPane.querySelector('.mode-buttons.mt-4');
-                        if (newFileDataForm) {
-                            newFileDataForm.style.display = 'block';
-                        }
-                        if (viewFilesContainer) {
-                            viewFilesContainer.style.display = 'inline-flex';
-                        }
-                    }
 
-                    // Обновляем шапку с данными прибора для вкладок 2–8
-                    if (tabNum !== '1' && typeof selectedDeviceId !== 'undefined' && selectedDeviceId) {
+                    if (tabNum !== '1' && selectedDeviceId) {
                         const deviceTypeSpan = document.getElementById(`deviceTypeTab${tabNum}`);
-                        const serialSpan     = document.getElementById(`serialNumberTab${tabNum}`);
-                        const caseSpan       = document.getElementById(`caseNumberTab${tabNum}`);
-                        if (deviceTypeSpan) deviceTypeSpan.textContent  = selectedDeviceType || '-';
-                        if (serialSpan)     serialSpan.textContent      = selectedSerialNumber || '-';
-                        if (caseSpan)       caseSpan.textContent        = selectedCaseNumber   || '-';
-                    }
-
-                    // Спецлогика для вкладки «8. Файлы» - заполнение скрытых полей
-                    if (tabNum === '8' && typeof selectedDeviceId !== 'undefined' && selectedDeviceId) {
-                        ['serialNumber', 'caseNumber', 'deviceType'].forEach(field => {
-                            const inputEl     = document.getElementById(field + 'Input');
-                            const inputViewEl = document.getElementById(field + 'InputView');
-                            let value = '';
-                            if (field === 'serialNumber') {
-                                value = selectedSerialNumber || '';
-                            } else if (field === 'caseNumber') {
-                                value = selectedCaseNumber || '';
-                            } else if (field === 'deviceType') {
-                                value = selectedDeviceType || '';
-                            }
-                            if (inputEl)     inputEl.value     = value;
-                            if (inputViewEl) inputViewEl.value = value;
-                        });
+                        const serialSpan = document.getElementById(`serialNumberTab${tabNum}`);
+                        const caseSpan = document.getElementById(`caseNumberTab${tabNum}`);
+                        if (deviceTypeSpan) deviceTypeSpan.textContent = selectedDeviceType || '-';
+                        if (serialSpan) serialSpan.textContent = selectedSerialNumber || '-';
+                        if (caseSpan) caseSpan.textContent = selectedCaseNumber || '-';
                     }
                 }
             });
         });
 
-        // Обработчик клика вне области любой родительской вкладки: снимаем подсветку active.
-        // Подвкладки скрываются по CSS hover, так что не будет «залипания» меню.
         document.addEventListener('click', function(event) {
             document.querySelectorAll('.parent-tab').forEach(parent => {
                 if (!parent.contains(event.target) && parent.classList.contains('active')) {
@@ -1198,79 +1147,74 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // Инициализация: вызываем setupTabs() после загрузки DOM
+    // Вызов функции для инициализации вкладок
     setupTabs();
-    // Активируем первую вкладку по умолчанию при загрузке страницы
     const firstTab = document.querySelector('.tab-item[data-tab="1"]');
     if (firstTab) {
         firstTab.click();
     }
-
 
     // --- Логика выбора действия на вкладке 1 (Идентификационные данные) ---
 
     actionCards.forEach(card => {
         card.addEventListener('click', function() {
             const action = this.dataset.action;
-            actionSelect.value = action; // Обновляем скрытый select
+            actionSelect.value = action;
 
-            // Удаляем класс 'selected' у всех карточек и добавляем текущей
             actionCards.forEach(c => c.classList.remove('selected'));
             this.classList.add('selected');
 
-            // Скрываем все формы и очищаем историю/данные прибора
-            viewDeviceParams.style.display   = 'none';
-            createDeviceForm.style.display   = 'none';
-            searchDeviceForm.style.display   = 'none';
-            deviceHistoryDiv.innerHTML       = '';
+            viewDeviceParams.style.display = 'none';
+            createDeviceForm.style.display = 'none';
+            searchDeviceForm.style.display = 'none';
+            deviceHistoryDiv.innerHTML = '';
+
+            // --- ИЗМЕНЕНИЕ 2: Сброс состояния вкладки 8 при смене действия ---
+            const tab8Pane = document.getElementById('tab-8');
+            if (tab8Pane) {
+                tab8Pane.querySelectorAll('.file-type-tabs .button.active').forEach(btn => btn.classList.remove('active'));
+                const fileDisplayArea = tab8Pane.querySelector('#file-display-area');
+                if (fileDisplayArea) {
+                    fileDisplayArea.innerHTML = '<p class="info-message">Выберите тип файла для просмотра и управления.</p>';
+                }
+            }
+            // --- Конец изменения 2 ---
 
             if (action === 'view') {
-                // Показываем блок просмотра
                 viewDeviceParams.style.display = 'block';
-                // Если прибор уже выбран, показываем его данные
                 if (selectedDeviceId) {
                     showDeviceData(selectedDeviceId);
                 } else {
                     deviceListDiv.innerHTML = '';
                 }
-
             } else if (action === 'create') {
-                // Показываем форму создания
                 createDeviceForm.style.display = 'block';
-                // Сбрасываем и инициализируем форму
                 newDeviceForm.reset();
                 generateCompositionTableRows();
                 updateReceiverRows();
                 updateTransmitterRows();
                 toggleCreateFormSections('parameters');
-
             } else if (action === 'search') {
-                // Показываем форму поиска
                 searchDeviceForm.style.display = 'block';
                 searchResultDiv.innerHTML = '';
             }
 
-            // Сбрасываем выбранный прибор при смене действия
-            selectedDeviceId     = null;
+            selectedDeviceId = null;
             selectedSerialNumber = null;
-            selectedCaseNumber   = null;
-            selectedDeviceType   = null;
+            selectedCaseNumber = null;
+            selectedDeviceType = null;
             localStorage.removeItem('selectedDevice');
 
-            // Деактивируем все вкладки, кроме активной (Tab 1)
             tabItems.forEach(tabItem => {
                 if (!tabItem.classList.contains('active')) {
                     tabItem.classList.add('disabled');
                 }
             });
-
-            // Скрываем подвкладки у всех parent-tab
             document.querySelectorAll('.parent-tab').forEach(parentTab => {
                 parentTab.classList.remove('active');
             });
         });
     });
-
 
     // Обработчик для кнопки "Найти приборы" (по параметрам)
     document.getElementById('fetchDevicesButton').addEventListener('click', function() {
@@ -1546,6 +1490,15 @@ document.addEventListener('DOMContentLoaded', function () {
         const searchResultDiv = document.getElementById('searchResult');
         const deviceListDiv = document.getElementById('deviceList');
         const deviceHistoryDiv = document.getElementById('deviceHistory'); // Для очистки истории при смене прибора
+
+        const tab8Pane = document.getElementById('tab-8');
+        if (tab8Pane) {
+            tab8Pane.querySelectorAll('.file-type-tabs .button.active').forEach(btn => btn.classList.remove('active'));
+            const fileDisplayArea = tab8Pane.querySelector('#file-display-area');
+            if (fileDisplayArea) {
+                fileDisplayArea.innerHTML = '<p class="info-message">Выберите тип файла для просмотра и управления.</p>';
+            }
+        }
 
         fetch('fetch_devices.php', {
             method: 'POST',
@@ -2963,7 +2916,7 @@ document.addEventListener('DOMContentLoaded', function () {
                                 newInfoContainer.innerHTML = `
                                     <p class="additional-info-field-label">Новые сведения</p>
                                     <div class="additional-info-value-box new-value-highlight">
-                                        ${currentAdditionalInfo !== null && currentAdditionalInfo !== undefined && String(currentAdditionalInfo).trim() !== '' ? htmlspecialchars(currentAdditionalInfo).replace(/\r?\n/g, '<br>') : '-'}
+                                        ${oldAdditionalInfo !== null && oldAdditionalInfo !== undefined && String(oldAdditionalInfo).trim() !== '' ? htmlspecialchars(oldAdditionalInfo).replace(/\r?\n/g, '<br>') : '-'}
                                     </div>
                                 `;
                                 infoSection.appendChild(newInfoContainer);
@@ -2973,7 +2926,7 @@ document.addEventListener('DOMContentLoaded', function () {
                                 oldInfoContainer.innerHTML = `
                                     <p class="additional-info-field-label">Старые сведения</p>
                                     <div class="additional-info-value-box old-value-no-highlight">
-                                        ${oldAdditionalInfo !== null && oldAdditionalInfo !== undefined && String(oldAdditionalInfo).trim() !== '' ? htmlspecialchars(oldAdditionalInfo).replace(/\r?\n/g, '<br>') : 'пусто'}
+                                        ${currentAdditionalInfo !== null && currentAdditionalInfo !== undefined && String(currentAdditionalInfo).trim() !== '' ? htmlspecialchars(currentAdditionalInfo).replace(/\r?\n/g, '<br>') : 'пусто'}
                                     </div>
                                 `;
                                 infoSection.appendChild(oldInfoContainer);
@@ -4418,86 +4371,359 @@ document.addEventListener('DOMContentLoaded', function () {
 
     }
 
-    // --- Логика для вкладки 8 (Файлы) ---
+        // --- Логика для вкладки 8 (Файлы) ---
+    if (tab8Pane) {
+        const fileTypeTabsContainer = tab8Pane.querySelector('.file-type-tabs');
+        const fileDisplayArea = tab8Pane.querySelector('#file-display-area');
+        let currentFiles = [];
+        let currentSortOrder = 'desc'; // 'desc' = новые сначала, 'asc' = старые сначала
 
-    if (newFileDataForm && uploadMessageDiv) {
-        newFileDataForm.addEventListener('submit', function (event) {
-            event.preventDefault(); // Предотвращаем стандартную отправку формы
+        // Обработчик кликов по вкладкам типов файлов (Термопрофиль, Метрология и т.д.)
+        fileTypeTabsContainer.addEventListener('click', function(event) {
+            const button = event.target.closest('button');
+            if (!button) return;
 
-            const submitter = event.submitter;
-            if (!submitter) {
-                alert('Ошибка: не удалось определить, какая кнопка была нажата.');
+            fileTypeTabsContainer.querySelectorAll('button').forEach(btn => btn.classList.remove('active'));
+            button.classList.add('active');
+
+            const fieldType = button.dataset.field;
+            loadFilesForType(fieldType);
+        });
+
+        // ИСПРАВЛЕНИЕ: Используем делегирование событий для обработки отправки формы.
+        // Один обработчик на родительском элементе для всех динамически создаваемых форм.
+        fileDisplayArea.addEventListener('submit', function(event) {
+            // Проверяем, что событие пришло от нашей формы загрузки
+            if (event.target && event.target.id === 'dynamicUploadForm') {
+                // Получаем тип файла из data-атрибута формы
+                const fieldType = event.target.dataset.fieldType;
+                if (fieldType) {
+                    // Вызываем основную функцию, которая теперь содержит preventDefault
+                    handleFileUpload(event, fieldType);
+                }
+            }
+        });
+
+        async function loadFilesForType(fieldType) {
+            fileDisplayArea.innerHTML = `<p class="info-message">Загрузка файлов...</p>`;
+
+            const serialNumber = document.getElementById('serialNumberTab8').textContent.trim();
+            const caseNumber = document.getElementById('caseNumberTab8').textContent.trim();
+            const deviceType = document.getElementById('deviceTypeTab8').textContent.trim();
+
+            if (serialNumber === '-' || caseNumber === '-' || deviceType === '-') {
+                fileDisplayArea.innerHTML = `<p class="error-message">Пожалуйста, выберите прибор на вкладке "Идентификационные данные".</p>`;
                 return;
             }
 
-            const fieldType = submitter.value;
-            const fileInput = newFileDataForm.querySelector(`input[name="${fieldType}"]`);
+            const formData = new FormData();
+            formData.append('serial_number', serialNumber);
+            formData.append('case_number', caseNumber);
+            formData.append('device_type', deviceType);
+            formData.append('field_name', fieldType);
+
+            try {
+                const response = await fetch('fetch_files.php', { method: 'POST', body: formData });
+                if (!response.ok) throw new Error(`Ошибка сервера: ${response.statusText}`);
+
+                const data = await response.json();
+                if (data.success) {
+                    currentFiles = data.files;
+                    sortFiles();
+                    renderFileDisplayArea(fieldType, data.is_admin);
+                } else {
+                    throw new Error(data.message || 'Не удалось загрузить файлы.');
+                }
+            } catch (error) {
+                console.error('Ошибка при загрузке файлов:', error);
+                fileDisplayArea.innerHTML = `<p class="error-message">${error.message}</p>`;
+            }
+        }
+
+        function renderFileDisplayArea(fieldType, isAdmin) {
+            fileDisplayArea.innerHTML = ''; // Очищаем область
+
+            // --- ИЗМЕНЕНИЕ: Форма создается через createElement для большей надежности ---
+
+            // 1. Создаем и добавляем форму для загрузки нового файла
+            const uploadFormContainer = document.createElement('div');
+            uploadFormContainer.className = 'upload-form-container';
+
+            const uploadTitle = document.createElement('h4');
+            uploadTitle.className = 'upload-title';
+            uploadTitle.textContent = 'Загрузить новый файл';
+            uploadFormContainer.appendChild(uploadTitle);
+
+            const form = document.createElement('form');
+            form.id = 'dynamicUploadForm';
+            form.dataset.fieldType = fieldType; // Сохраняем тип файла в data-атрибуте
+
+            const fileInput = document.createElement('input');
+            fileInput.type = 'file';
+            fileInput.name = 'file_upload';
+            fileInput.className = 'file-input';
+            fileInput.required = true;
+            form.appendChild(fileInput);
+
+            const submitButton = document.createElement('button');
+            submitButton.type = 'submit';
+            submitButton.className = 'button button-primary';
+            submitButton.innerHTML = '<i class="fas fa-upload"></i> Загрузить';
+            form.appendChild(submitButton);
+            uploadFormContainer.appendChild(form);
+
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'upload-message mt-2';
+            uploadFormContainer.appendChild(messageDiv);
+
+            fileDisplayArea.appendChild(uploadFormContainer);
+
+            // Обработчик отправки теперь находится на родительском элементе fileDisplayArea
+            // и больше не добавляется здесь.
+
+            // 2. Создаем заголовок и кнопки управления (для списка файлов)
+            const controlsContainer = document.createElement('div');
+            controlsContainer.className = 'file-area-controls';
+
+            const title = document.createElement('h4');
+            const fieldNameRu = {
+                thermoprofile: 'Термопрофиль',
+                metrology: 'Метрология',
+                calibration: 'Калибровка',
+                kis: 'КИС'
+            }[fieldType];
+            title.textContent = `Загруженные файлы: ${fieldNameRu}`;
+            controlsContainer.appendChild(title);
+
+            const buttonsWrapper = document.createElement('div');
+            buttonsWrapper.className = 'file-action-buttons';
+
+            const sortAscButton = document.createElement('button');
+            sortAscButton.className = 'button button-secondary button-small';
+            sortAscButton.innerHTML = `<i class="fas fa-sort-amount-up"></i> Сначала старые`;
+            sortAscButton.addEventListener('click', () => {
+                currentSortOrder = 'asc';
+                sortFiles();
+                renderFileDisplayArea(fieldType, isAdmin);
+            });
+
+            const sortDescButton = document.createElement('button');
+            sortDescButton.className = 'button button-secondary button-small';
+            sortDescButton.innerHTML = `<i class="fas fa-sort-amount-down-alt"></i> Сначала новые`;
+            sortDescButton.addEventListener('click', () => {
+                currentSortOrder = 'desc';
+                sortFiles();
+                renderFileDisplayArea(fieldType, isAdmin);
+            });
+
+            buttonsWrapper.appendChild(sortAscButton);
+            buttonsWrapper.appendChild(sortDescButton);
+            controlsContainer.appendChild(buttonsWrapper);
+
+            if (currentFiles.length > 0) {
+                fileDisplayArea.appendChild(controlsContainer);
+            }
+
+            // 3. Отображаем список файлов
+            if (currentFiles.length === 0) {
+                const noFilesMessage = document.createElement('p');
+                noFilesMessage.className = 'info-message';
+                noFilesMessage.textContent = 'Файлы этого типа не найдены.';
+                // Добавляем к uploadFormContainer, чтобы не перезаписать его
+                uploadFormContainer.insertAdjacentElement('afterend', noFilesMessage);
+            } else {
+                const fileList = document.createElement('ul');
+                fileList.className = 'file-list';
+                currentFiles.forEach(file => {
+                    const fileItem = document.createElement('li');
+                    fileItem.className = 'file-item';
+
+                    const fileInfo = document.createElement('div');
+                    fileInfo.className = 'file-info';
+
+                    const fileNameSpan = document.createElement('span');
+                    fileNameSpan.className = 'file-name';
+                    fileNameSpan.textContent = file.file_name;
+
+                    const fileDateSpan = document.createElement('span');
+                    fileDateSpan.className = 'file-date';
+                    fileDateSpan.textContent = `Загружен: ${new Date(file.created_at).toLocaleString('ru-RU')}`;
+
+                    fileInfo.appendChild(fileNameSpan);
+                    fileInfo.appendChild(fileDateSpan);
+
+                    const fileActions = document.createElement('div');
+                    fileActions.className = 'file-actions';
+
+                    const renameIcon = document.createElement('i');
+                    renameIcon.className = 'fas fa-pencil-alt rename-icon';
+                    renameIcon.title = 'Переименовать файл';
+                    renameIcon.addEventListener('click', () => openRenameModal(file, fieldType));
+
+                    const downloadLink = document.createElement('a');
+                    downloadLink.href = `download_file.php?id=${file.id}`;
+                    downloadLink.className = 'button button-secondary button-small';
+                    downloadLink.innerHTML = `<i class="fas fa-download"></i> Скачать`;
+
+                    fileActions.appendChild(renameIcon);
+                    fileActions.appendChild(downloadLink);
+
+                    if (isAdmin) {
+                        const deleteButton = document.createElement('button');
+                        deleteButton.className = 'button button-danger button-small';
+                        deleteButton.innerHTML = `<i class="fas fa-trash-alt"></i>`;
+                        deleteButton.title = 'Удалить файл';
+                        deleteButton.addEventListener('click', () => deleteFile(file.id, file.file_name, fieldType));
+                        fileActions.appendChild(deleteButton);
+                    }
+
+                    fileItem.appendChild(fileInfo);
+                    fileItem.appendChild(fileActions);
+                    fileList.appendChild(fileItem);
+                });
+                fileDisplayArea.appendChild(fileList);
+            }
+        }
+
+        function sortFiles() {
+            currentFiles.sort((a, b) => {
+                const dateA = new Date(a.created_at);
+                const dateB = new Date(b.created_at);
+                return currentSortOrder === 'desc' ? dateB - dateA : dateA - dateB;
+            });
+        }
+
+        async function handleFileUpload(event, fieldType) {
+            event.preventDefault(); // Самая важная строка, предотвращает перезагрузку
+            const form = event.target;
+            const messageDiv = form.nextElementSibling;
+            const fileInput = form.querySelector('input[type="file"]');
 
             if (!fileInput || fileInput.files.length === 0) {
-                alert(`Пожалуйста, выберите файл для поля "${fieldType}".`);
+                if (messageDiv) {
+                    messageDiv.textContent = 'Пожалуйста, выберите файл.';
+                    messageDiv.className = 'upload-message error-message mt-2';
+                }
                 return;
             }
 
-            // `selectedDeviceId` должен быть доступен в этой области видимости
-            if (!selectedDeviceId) {
-                 alert('Пожалуйста, выберите прибор на вкладке "Идентификационные данные" перед загрузкой файлов.');
-                 return;
+            const serialNumber = document.getElementById('serialNumberTab8').textContent.trim();
+            const caseNumber = document.getElementById('caseNumberTab8').textContent.trim();
+            const deviceType = document.getElementById('deviceTypeTab8').textContent.trim();
+
+            const formData = new FormData();
+            formData.append(fieldType, fileInput.files[0]);
+            formData.append('serial_number', serialNumber);
+            formData.append('case_number', caseNumber);
+            formData.append('device_type', deviceType);
+
+            if (messageDiv) {
+                messageDiv.textContent = 'Загрузка...';
+                messageDiv.className = 'upload-message info-message mt-2';
             }
 
-            const formData = new FormData(newFileDataForm);
-            // Добавляем только нужный файл и его тип, а не все данные формы
-            const singleFileFormData = new FormData();
-            singleFileFormData.append('serial_number', formData.get('serial_number'));
-            singleFileFormData.append('case_number', formData.get('case_number'));
-            singleFileFormData.append('device_type', formData.get('device_type'));
-            singleFileFormData.append('field', fieldType);
-            singleFileFormData.append(fieldType, fileInput.files[0]);
+            try {
+                const response = await fetch('upload_file.php', { method: 'POST', body: formData });
+                if (!response.ok) throw new Error(`Ошибка сервера: ${response.statusText}`);
 
-            fetch('upload_file.php', {
-                method: 'POST',
-                body: singleFileFormData
-            })
-            .then(response => {
-                 if (!response.ok) {
-                     return response.text().then(text => {
-                         throw new Error(`HTTP error! Status: ${response.status}. ${text}`);
-                     });
-                 }
-                 return response.json();
-            })
-            .then(data => {
+                const data = await response.json();
                 if (data.success) {
-                    // Сбрасываем форму, чтобы очистить поле input type="file"
-                    newFileDataForm.reset();
-                    // Если было сообщение об ошибке, скрываем его
-                    uploadMessageDiv.style.display = 'none';
-                    uploadMessageDiv.textContent = '';
-                    uploadMessageDiv.classList.remove('error', 'success');
-
-                    // Показываем confirm(), который и является сообщением об успехе
-                    if (confirm(data.message + '\nНажмите "ОК" для просмотра файла.')) {
-                         const field = data.field;
-                         // Запоминаем вкладку перед переходом
-                         rememberTab8();
-                         window.location.href = `view_files.php?serial_number=${encodeURIComponent(formData.get('serial_number'))}&case_number=${encodeURIComponent(formData.get('case_number'))}&device_type=${encodeURIComponent(formData.get('device_type'))}&field=${encodeURIComponent(field)}`;
+                    if (messageDiv) {
+                        messageDiv.textContent = data.message || 'Файл успешно загружен!';
+                        messageDiv.className = 'upload-message success-message mt-2';
                     }
+                    loadFilesForType(fieldType);
                 } else {
-                    // Для ошибок оставляем логику с div-сообщением
-                    uploadMessageDiv.classList.remove('success');
-                    uploadMessageDiv.classList.add('error');
-                    uploadMessageDiv.style.display = 'block';
-                    uploadMessageDiv.textContent = data.message || 'Произошла ошибка при загрузке файла.';
+                    throw new Error(data.message || 'Не удалось загрузить файл.');
                 }
-            })
-            .catch(error => {
+            } catch (error) {
                 console.error('Ошибка при загрузке файла:', error);
-                uploadMessageDiv.classList.remove('success');
-                uploadMessageDiv.classList.add('error');
-                uploadMessageDiv.style.display = 'block';
-                uploadMessageDiv.textContent = `Произошла ошибка при отправке запроса: ${error.message}`;
-            });
+                if (messageDiv) {
+                    messageDiv.textContent = error.message;
+                    messageDiv.className = 'upload-message error-message mt-2';
+                }
+            }
+        }
+
+        async function deleteFile(fileId, fileName, fieldType) {
+            if (!confirm(`Вы уверены, что хотите удалить файл "${fileName}"?`)) {
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('id', fileId);
+
+            try {
+                const response = await fetch('delete_file.php', { method: 'POST', body: formData });
+                if (!response.ok) throw new Error(`Ошибка сервера: ${response.statusText}`);
+
+                const data = await response.json();
+                if (data.success) {
+                    alert(data.message || 'Файл удален.');
+                    loadFilesForType(fieldType);
+                } else {
+                    throw new Error(data.message || 'Не удалось удалить файл.');
+                }
+            } catch (error) {
+                console.error('Ошибка при удалении файла:', error);
+                alert(`Ошибка: ${error.message}`);
+            }
+        }
+
+        const renameModal = document.getElementById('renameFileModal');
+        const renameModalClose = document.getElementById('renameModalCloseButton');
+        const cancelRenameBtn = document.getElementById('cancelRenameBtn');
+        const saveRenameBtn = document.getElementById('saveRenameBtn');
+        let currentFieldTypeForRename = null;
+
+        function openRenameModal(file, fieldType) {
+            currentFieldTypeForRename = fieldType;
+            document.getElementById('renameFileId').value = file.id;
+            document.getElementById('renameOldFileName').value = file.file_name;
+            document.getElementById('renameFileCreatedAt').value = file.created_at;
+            document.getElementById('newFileName').value = file.file_name;
+            document.getElementById('renameSerialNumber').value = document.getElementById('serialNumberTab8').textContent.trim();
+            document.getElementById('renameCaseNumber').value = document.getElementById('caseNumberTab8').textContent.trim();
+            document.getElementById('renameDeviceType').value = document.getElementById('deviceTypeTab8').textContent.trim();
+            renameModal.style.display = 'block';
+        }
+
+        function closeRenameModal() {
+            renameModal.style.display = 'none';
+        }
+
+        renameModalClose.onclick = closeRenameModal;
+        cancelRenameBtn.onclick = closeRenameModal;
+
+        saveRenameBtn.addEventListener('click', async () => {
+            const form = document.getElementById('renameFileForm');
+            const formData = new FormData(form);
+            const newFileName = formData.get('new_file_name').trim();
+
+            if (!newFileName) {
+                alert('Имя файла не может быть пустым.');
+                return;
+            }
+
+            try {
+                const response = await fetch('rename_file.php', { method: 'POST', body: formData });
+                if (!response.ok) throw new Error(`Ошибка сервера: ${response.statusText}`);
+
+                const data = await response.json();
+                if (data.success) {
+                    alert(data.message || 'Файл успешно переименован.');
+                    closeRenameModal();
+                    loadFilesForType(currentFieldTypeForRename);
+                } else {
+                    throw new Error(data.message || 'Не удалось переименовать файл.');
+                }
+            } catch (error) {
+                console.error('Ошибка при переименовании файла:', error);
+                alert(`Ошибка: ${error.message}`);
+            }
         });
     }
+
 
     // --- Логика мессенджера ---
     // Функция для загрузки списка пользователей и отображения его в модальном окне
