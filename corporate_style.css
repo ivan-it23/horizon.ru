@@ -1,0 +1,537 @@
+/* --- Глобальные переменные и стили --- */
+:root {
+    --primary-color: #005A9C; /* Глубокий корпоративный синий */
+    --primary-hover-color: #004B80;
+    --secondary-bg-color: #FFFFFF;
+    --main-bg-color: #F8F9FA; /* Очень светло-серый */
+    --text-color: #212529;
+    --text-muted-color: #6C757D;
+    --border-color: #DEE2E6;
+    --danger-color: #D9534F;
+    --card-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+    --card-hover-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+    --font-family: 'Inter', sans-serif;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    background-color: var(--main-bg-color);
+    color: var(--text-color);
+    font-family: var(--font-family);
+    line-height: 1.6;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    font-size: 16px;
+}
+
+body.menu-open,
+body.modal-open {
+    overflow: hidden;
+}
+
+a {
+    color: var(--primary-color);
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+a:hover {
+    color: var(--primary-hover-color);
+}
+
+img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+}
+
+.main-content {
+    flex-grow: 1;
+    width: 100%;
+}
+
+/* --- Контейнеры --- */
+.header-container,
+.main-container,
+.footer-container {
+    max-width: 1360px;
+    margin: 0 auto;
+    padding: 0 32px;
+    width: 100%;
+}
+
+/* --- Header --- */
+.site-header {
+    background-color: var(--secondary-bg-color);
+    border-bottom: 1px solid var(--border-color);
+    padding: 16px 0;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    box-shadow: var(--card-shadow);
+}
+
+.header-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    min-height: 48px;
+}
+
+.logo-img {
+    height: 40px;
+    width: auto;
+}
+
+.header-nav {
+    flex-grow: 1;
+    display: flex;
+    justify-content: center;
+}
+
+.header-nav ul {
+    display: flex;
+    list-style: none;
+}
+
+.header-right {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+/* Стили для авторизованного пользователя */
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.user-link-container {
+    position: relative;
+    display: flex;
+}
+
+.user-profile-link {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    transition: background-color 0.2s ease;
+}
+
+.user-profile-link:hover {
+    background-color: #EEF3F8;
+}
+
+.user-icon {
+    font-size: 1.6rem;
+    color: var(--text-muted-color);
+}
+
+.user-name {
+    color: var(--text-color);
+    white-space: nowrap;
+}
+
+.logout-form {
+    margin: 0;
+}
+
+.logout-link {
+    color: var(--text-muted-color);
+    background: none;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    transition: color 0.2s ease, background-color 0.2s ease;
+}
+
+.logout-link:hover {
+    color: var(--danger-color);
+    background-color: rgba(217, 83, 79, 0.1);
+}
+
+/* Бейдж непрочитанных сообщений */
+.unread-badge {
+    position: absolute;
+    top: -8px;
+    right: -10px;
+    background-color: var(--danger-color);
+    color: white;
+    border-radius: 50%;
+    padding: 2px 6px;
+    font-size: 11px;
+    font-weight: bold;
+    min-width: 18px;
+    height: 18px;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0 0 3px var(--secondary-bg-color);
+    opacity: 0;
+    transform: scale(0.8);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.unread-badge.visible {
+    display: inline-flex;
+    opacity: 1;
+    transform: scale(1);
+}
+
+/* Форма входа */
+.auth-form {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.auth-form input {
+    padding: 8px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    font-family: var(--font-family);
+    font-size: 0.95rem;
+}
+
+.login-button {
+    padding: 8px 16px;
+    border-radius: 6px;
+    border: none;
+    background-color: var(--primary-color);
+    color: white;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.login-button:hover {
+    background-color: var(--primary-hover-color);
+}
+
+/* --- Main Content & Hero --- */
+.main-content {
+    padding: 4rem 0;
+}
+
+.hero-section {
+    text-align: center;
+    margin-bottom: 4rem;
+}
+
+.hero-section h1 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--text-color);
+}
+
+.hero-section .subtitle {
+    font-size: 1.25rem;
+    color: var(--text-muted-color);
+    max-width: 600px;
+    margin: 1rem auto 0;
+}
+
+/* --- Секция выбора приборов --- */
+.device-type-selection {
+    text-align: center;
+}
+
+.device-type-selection h2 {
+    font-size: 1.75rem;
+    font-weight: 600;
+    margin-bottom: 2.5rem;
+    color: var(--text-color);
+}
+
+.device-type-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 2rem;
+}
+
+/* --- Стили для карточек приборов (бывшие .device-type-button) --- */
+.device-type-button {
+    all: unset;
+    box-sizing: border-box;
+    background-color: var(--secondary-bg-color);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 2rem;
+    text-align: center;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 220px;
+    position: relative;
+    overflow: hidden;
+}
+
+.device-type-button:not(.disabled):hover {
+    transform: translateY(-5px);
+    box-shadow: var(--card-hover-shadow);
+}
+
+.device-type-button.disabled {
+    cursor: not-allowed;
+    background-color: #F1F3F5;
+}
+
+.device-type-button .device-icon {
+    font-size: 3rem;
+    color: var(--primary-color);
+    margin-bottom: 1.5rem;
+    transition: color 0.2s ease;
+}
+
+.device-type-button.disabled .device-icon {
+    color: #ADB5BD;
+}
+
+.device-type-button span:not(.status-badge) {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-color);
+}
+
+.device-type-button.disabled span:not(.status-badge) {
+    color: var(--text-muted-color);
+}
+
+.status-badge {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background-color: #FFC107;
+    color: #212529;
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.status-badge .status-icon {
+    font-size: 0.8rem;
+}
+
+
+/* --- Footer --- */
+.site-footer {
+    background-color: var(--secondary-bg-color);
+    color: var(--text-muted-color);
+    padding: 24px 0;
+    border-top: 1px solid var(--border-color);
+    text-align: center;
+    font-size: 0.9rem;
+    margin-top: auto;
+}
+
+.footer-container a {
+    color: var(--primary-color);
+    font-weight: 500;
+}
+
+.footer-container a:hover {
+    text-decoration: underline;
+}
+
+/* --- Модальное окно --- */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 2000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.6);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.modal.is-visible {
+    display: block;
+    opacity: 1;
+}
+
+.modal-content {
+    background-color: #fff;
+    margin: 15% auto;
+    padding: 30px;
+    border: 1px solid #ddd;
+    width: 90%;
+    max-width: 450px;
+    border-radius: 12px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+    text-align: center;
+    position: relative;
+    transform: scale(0.9);
+    transition: transform 0.3s ease;
+}
+
+.modal.is-visible .modal-content {
+    transform: scale(1);
+}
+
+.close-button {
+    color: #aaa;
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.close-button:hover,
+.close-button:focus {
+    color: #333;
+}
+
+.modal-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+}
+
+#modalMessage {
+    font-size: 1.1rem;
+    line-height: 1.5;
+    color: var(--text-color);
+    margin-bottom: 1.5rem;
+}
+
+.modal-ok-button {
+    background-color: var(--primary-color);
+    color: white;
+    padding: 12px 25px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 500;
+    transition: background-color 0.2s ease;
+}
+
+.modal-ok-button:hover {
+    background-color: var(--primary-hover-color);
+}
+
+/* --- Мобильная адаптация --- */
+.mobile-menu-toggle {
+    display: none;
+    background: none;
+    border: none;
+    font-size: 1.8rem;
+    cursor: pointer;
+    color: var(--text-color);
+}
+
+@media (max-width: 1024px) {
+    .header-nav, .header-right .auth-form {
+        display: none;
+    }
+
+    .header-right {
+        display: contents; /* Позволяет элементам внутри участвовать в flex-контексте .header-container */
+    }
+    
+    .mobile-menu-toggle {
+        display: block;
+        order: 3; /* Помещаем кнопку меню после user-info */
+    }
+
+    .user-info {
+        order: 2;
+    }
+
+    .logo-link {
+        order: 1;
+    }
+
+    .header-container {
+        justify-content: space-between;
+    }
+    
+    .header-nav.mobile-active {
+        display: flex;
+        flex-direction: column;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        width: 100%;
+        background: var(--secondary-bg-color);
+        box-shadow: var(--card-shadow);
+        padding: 1rem 0;
+    }
+    .header-right.mobile-active {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 1rem;
+        padding: 1rem;
+    }
+
+    .header-nav ul {
+        flex-direction: column;
+        width: 100%;
+    }
+
+    .header-nav ul li {
+       text-align: center;
+       margin: 0;
+       border-bottom: 1px solid var(--border-color);
+    }
+     .header-nav ul li:last-child {
+        border-bottom: none;
+    }
+
+    .header-nav ul li a {
+        padding: 1rem;
+        display: block;
+        width: 100%;
+    }
+}
+
+@media (max-width: 768px) {
+    .header-container,
+    .main-container,
+    .footer-container {
+        padding: 0 16px;
+    }
+
+    .hero-section h1 {
+        font-size: 2rem;
+    }
+    
+    .hero-section .subtitle {
+        font-size: 1.1rem;
+    }
+
+    .modal-content {
+        width: 90%;
+        margin: 20% auto;
+    }
+} 

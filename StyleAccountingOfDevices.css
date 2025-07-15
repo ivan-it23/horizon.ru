@@ -3536,3 +3536,125 @@ button:disabled {
 #searchDeviceForm {
     display: none;
 }
+
+/* ====================================================================
+   Стили иконок действий в списке файлов (Tab 8)
+   ==================================================================== */
+.file-actions .button-icon,
+.file-actions .download-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px;               /* компактный отступ вокруг иконки */
+    font-size: 1.1rem;          /* чуть крупнее сама иконка */
+    background: transparent;    /* без серого фона по умолчанию */
+    border: none;               /* убираем рамку */
+    border-radius: var(--border-radius);
+    color: var(--secondary-color);
+    cursor: pointer;
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* Индивидуальные цвета */
+.file-actions .download-link       { color: var(--primary-color); }
+.file-actions .rename-icon         { color: var(--accent-color);  }
+.file-actions .button-icon.text-danger { color: var(--danger-color); }
+
+/* Ховер-эффекты */
+.file-actions .button-icon:hover,
+.file-actions .download-link:hover {
+    background-color: var(--bg-table-header);
+    color: var(--primary-color);
+}
+
+/* Убираем лишние отступы внутри <i> */
+.file-actions .button-icon i,
+.file-actions .download-link i {
+    margin: 0;
+}
+
+/* Стили для модального окна уведомлений */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 2000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.6);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.modal.is-visible {
+    display: block;
+    opacity: 1;
+}
+
+#notificationModal .modal-content {
+    background-color: #fff;
+    margin: 15% auto;
+    padding: 30px;
+    border: 1px solid #ddd;
+    width: 90%;
+    max-width: 450px;
+    border-radius: 12px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+    text-align: center;
+    position: relative;
+    transform: scale(0.9);
+    transition: transform 0.3s ease;
+}
+
+.modal.is-visible .modal-content {
+    transform: scale(1);
+}
+
+#notificationModal .close-button {
+    color: #aaa;
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+#notificationModal .close-button:hover,
+#notificationModal .close-button:focus {
+    color: #333;
+}
+
+#notificationModal .modal-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+}
+
+#notificationModal .modal-ok-button {
+    background-color: var(--primary-color);
+    color: white;
+    padding: 12px 25px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 500;
+    transition: background-color 0.2s ease;
+}
+
+#notificationModal .modal-ok-button:hover {
+    background-color: var(--hover-color);
+}
+
+body.modal-open {
+    overflow: hidden;
+}
+
+@media (max-width: 768px) {
+    #notificationModal .modal-content {
+        width: 90%;
+        margin: 20% auto;
+    }
+}

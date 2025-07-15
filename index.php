@@ -44,7 +44,7 @@ if ($is_logged_in) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Система учёта приборов АМК «Горизонт»</title>
     <link rel="icon" href="images/favicon1.png" type="image/png">
-    <link rel="stylesheet" href="Page1.css">
+    <link rel="stylesheet" href="corporate_style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
@@ -78,14 +78,14 @@ if ($is_logged_in) {
                             <?= $unread_count ?>
                         </span>
                     </div>
-                    <form method="POST" action="logout.php" class="logout-form">
+                    <form method="POST" action="front.php?c=auth&a=logout" class="logout-form">
                         <button type="submit" class="logout-link" title="Выйти из системы">
                            <i class="fas fa-sign-out-alt"></i> <span class="logout-text">Выход</span>
                         </button>
                     </form>
                 </div>
             <?php else: ?>
-                <form class="auth-form" method="POST" action="login.php">
+                <form class="auth-form" method="POST" action="front.php?c=auth&a=login">
                     <div class="input-wrapper">
                         <input type="text" name="username" placeholder="Логин" required aria-label="Логин">
                     </div>
@@ -212,6 +212,16 @@ if ($is_logged_in) {
 
     // Логика для мобильного меню и обработчики модального окна
     document.addEventListener('DOMContentLoaded', () => {
+        // Show modal on login error if present in URL
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('error') === 'login') {
+            if (typeof showModal === 'function') {
+                showModal('Неверный логин или пароль');
+            } else {
+                alert('Неверный логин или пароль');
+            }
+            history.replaceState(null, '', window.location.pathname);
+        }
         const mobileToggle = document.querySelector('.mobile-menu-toggle');
         const headerNav = document.querySelector('.header-nav');
         const headerRight = document.querySelector('.header-right');

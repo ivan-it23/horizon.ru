@@ -5,7 +5,8 @@ if (!isset($_SESSION['user']['is_admin']) || !$_SESSION['user']['is_admin']) {
     exit;
 }
 
-$mysqli = new mysqli("localhost", "root", "", "amk_gorizont1");
+require_once 'config.php';
+$mysqli = new mysqli(DB_HOST, DB_USERNAME, DB_PASSWORD, DB_NAME);
 
 if ($mysqli->connect_error) {
     die("Ошибка подключения к базе данных: " . $mysqli->connect_error);
@@ -193,14 +194,14 @@ if ($is_logged_in && isset($user_info['id'])) {
                                 <?= $unread_count ?>
                             </span>
                         </div>
-                        <form method="POST" action="logout.php" class="logout-form">
+                        <form method="POST" action="front.php?c=auth&a=logout" class="logout-form">
                             <button type="submit" class="logout-link" title="Выйти из системы">
                                <i class="fas fa-sign-out-alt"></i> <span class="logout-text">Выход</span>
                             </button>
                         </form>
                     </div>
                 <?php else: ?>
-                    <form class="auth-form" method="POST" action="login.php">
+                    <form class="auth-form" method="POST" action="front.php?c=auth&a=login">
                         <div class="input-wrapper">
                             <input type="text" name="username" placeholder="Логин" required aria-label="Логин">
                         </div>

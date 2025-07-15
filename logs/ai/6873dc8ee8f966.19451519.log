@@ -1,0 +1,16 @@
+{
+    "timestamp": "2025-07-13 19:19:26",
+    "user": "",
+    "message": "Сколько приборов типа LWD?",
+    "analysis": {
+        "type": "count_devices_by_type",
+        "device_type": "LWD"
+    },
+    "dbResult": {
+        "success": true,
+        "count": 1,
+        "device_type": "LWD",
+        "message": "В базе данных найдено 1 приборов типа LWD."
+    },
+    "response": "В базе данных найдено 1 приборов типа LWD.\n\nОтвет сформирован 2025-07-13 19:19:26, пользователь: . Подробнее: "
+}

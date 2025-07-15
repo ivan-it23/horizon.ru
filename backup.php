@@ -5,10 +5,17 @@ if (!isset($_SESSION['user']['is_admin']) || !$_SESSION['user']['is_admin']) {
     exit;
 }
 
-$dbHost = "localhost";
-$dbUser = "root";
-$dbPass = "";
-$dbName = "amk_gorizont1";
+require_once 'config.php';
+// Для сайта на Beget
+$dbHost = DB_HOST;
+$dbUser = DB_USERNAME;
+$dbPass = DB_PASSWORD;
+$dbName = DB_NAME;
+// Для удалённого доступа используйте:
+// $dbHost = DB_REMOTE_HOST;
+// $dbUser = DB_REMOTE_USER;
+// $dbPass = DB_REMOTE_PASS;
+// $dbName = DB_NAME;
 
 // Формирование имени файла резервной копии с отметкой времени
 $backupFile = 'backup_' . date('Y-m-d_H-i-s') . '.sql';
