@@ -13,22 +13,36 @@ class AiAgentController extends BaseController
         // Начинаем буферизацию и подавляем отображение ошибок
         ini_set('display_errors', '0');
         ob_start();
+        
         try {
-            session_start();
-            header('Content-Type: application/json');
+            // Проверка авторизации
+            $this->requireAuth();
+            
+            // Rate limiting для AI-агента (не более 20 запросов в минуту)
+            if (!$this->checkRateLimit($this->getClientIP(), 'ai_chat', 20, 60)) {
+                ob_clean();
+                $this->jsonResponse(['error' => 'Слишком много запросов к AI-агенту. Попробуйте через минуту.'], 429);
+            }
+
             // Очищаем буфер от возможного HTML-выхода
             ob_clean();
 
             // Разрешаем только POST-запросы
             if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-                http_response_code(405);
-                ob_clean();
-                echo json_encode(['error' => 'Method Not Allowed']);
-                return;
+                $this->jsonResponse(['error' => 'Method Not Allowed'], 405);
             }
 
             $input = file_get_contents('php://input');
             $data  = json_decode($input, true) ?: [];
+            
+            // Валидация JSON
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                $this->logSecurityEvent('ai_invalid_json', [
+                    'user_id' => $_SESSION['user']['id'],
+                    'json_error' => json_last_error_msg()
+                ]);
+                $this->jsonResponse(['error' => 'Invalid JSON format'], 400);
+            }
 
             // Очистка истории диалога
             if (isset($data['clear_history']) && $data['clear_history'] === true) {
@@ -53,13 +67,18 @@ class AiAgentController extends BaseController
                 return;
             }
 
-            // Получаем сообщение от пользователя
-            $userMessage = $data['message'] ?? '';
-            if (!$userMessage) {
-                http_response_code(400);
-                echo json_encode(['error' => 'No message provided']);
-                return;
+            // Получаем и валидируем сообщение от пользователя
+            $userMessage = $this->sanitizeString($data['message'] ?? '', 2000); // Ограничиваем длину сообщения
+            if (empty($userMessage)) {
+                $this->jsonResponse(['error' => 'No message provided'], 400);
             }
+
+            // Логируем запрос к AI-агенту
+            $this->logSecurityEvent('ai_chat_request', [
+                'user_id' => $_SESSION['user']['id'],
+                'message_length' => strlen($userMessage),
+                'has_clear_history' => isset($data['clear_history'])
+            ]);
 
             // Анализируем запрос и выполняем при необходимости SQL
             $dbHandler    = new \App\Service\DatabaseQueryHandler($conn);

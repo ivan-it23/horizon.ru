@@ -11,18 +11,33 @@ class DeviceHistoryController extends BaseController
      */
     public function history(): void
     {
-        header('Content-Type: application/json');
+        // Проверка авторизации
+        $this->requireAuth();
+        
+        // Rate limiting для получения истории приборов (30 запросов в минуту)
+        if (!$this->checkRateLimit($this->getClientIP(), 'device_history', 30, 60)) {
+            $this->jsonResponse(['error' => 'Слишком много запросов истории приборов'], 429);
+        }
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->jsonResponse(['error' => 'Неверный метод запроса'], 405);
+        }
         
         // Подключаем соединение с базой данных
         require_once __DIR__ . '/../../db_connection.php';
 
-        $deviceId    = isset($_POST['device_id']) ? (int)$_POST['device_id'] : 0;
-        $historyType = isset($_POST['history_type']) ? $_POST['history_type'] : 'parameters';
+        // Безопасная валидация входных данных
+        $deviceId    = $this->validateInt($_POST['device_id'] ?? 0, 1);
+        $historyType = $this->sanitizeString($_POST['history_type'] ?? 'parameters');
 
-        if ($deviceId <= 0) {
-            echo json_encode(['error' => 'Неверный ID прибора']);
-            $conn->close();
-            exit;
+        if (!$deviceId) {
+            $this->jsonResponse(['error' => 'Неверный ID прибора'], 400);
+        }
+
+        // Валидация типа истории
+        $allowedHistoryTypes = ['parameters', 'composition'];
+        if (!in_array($historyType, $allowedHistoryTypes)) {
+            $this->jsonResponse(['error' => 'Недопустимый тип истории'], 400);
         }
 
         $final_history_output = [];
@@ -99,9 +114,16 @@ class DeviceHistoryController extends BaseController
                 }
                 $stmt_current->close();
             } else {
-                echo json_encode(['error' => 'Ошибка подготовки запроса для текущих параметров: ' . $conn->error]);
-                $conn->close();
-                exit;
+                $this->logSecurityEvent('device_history_current_error', [
+                    'user_id' => $_SESSION['user']['id'],
+                    'device_id' => $deviceId,
+                    'error' => $conn->error
+                ]);
+                $this->handleError('Ошибка подготовки запроса для текущих параметров: ' . $conn->error, [
+                    'method' => 'history',
+                    'device_id' => $deviceId,
+                    'history_type' => $historyType
+                ], 500);
             }
 
             // Если текущие данные успешно получены, добавляем в итоговый массив
@@ -159,9 +181,16 @@ class DeviceHistoryController extends BaseController
                 }
                 $stmt_history->close();
             } else {
-                echo json_encode(['error' => 'Ошибка подготовки запроса для истории параметров: ' . $conn->error]);
-                $conn->close();
-                exit;
+                $this->logSecurityEvent('device_history_parameters_error', [
+                    'user_id' => $_SESSION['user']['id'],
+                    'device_id' => $deviceId,
+                    'error' => $conn->error
+                ]);
+                $this->handleError('Ошибка подготовки запроса для истории параметров: ' . $conn->error, [
+                    'method' => 'history',
+                    'device_id' => $deviceId,
+                    'history_type' => $historyType
+                ], 500);
             }
 
             // --- 3. Фильтрация исторических записей и вычисление diff_details ---
@@ -249,9 +278,16 @@ class DeviceHistoryController extends BaseController
             ";
             $stmt_current_comp = $conn->prepare($sql_current_comp);
             if ($stmt_current_comp === false) {
-                echo json_encode(['error' => 'Ошибка подготовки запроса для текущего состава: ' . $conn->error]);
-                $conn->close();
-                exit;
+                $this->logSecurityEvent('device_history_composition_current_error', [
+                    'user_id' => $_SESSION['user']['id'],
+                    'device_id' => $deviceId,
+                    'error' => $conn->error
+                ]);
+                $this->handleError('Ошибка подготовки запроса для текущего состава: ' . $conn->error, [
+                    'method' => 'history',
+                    'device_id' => $deviceId,
+                    'history_type' => $historyType
+                ], 500);
             }
             $stmt_current_comp->bind_param("i", $deviceId);
             if ($stmt_current_comp->execute()) {
@@ -296,9 +332,16 @@ class DeviceHistoryController extends BaseController
             ";
             $stmt_history_comp = $conn->prepare($sql_history_comp);
             if ($stmt_history_comp === false) {
-                echo json_encode(['error' => 'Ошибка подготовки запроса для истории состава: ' . $conn->error]);
-                $conn->close();
-                exit;
+                $this->logSecurityEvent('device_history_composition_history_error', [
+                    'user_id' => $_SESSION['user']['id'],
+                    'device_id' => $deviceId,
+                    'error' => $conn->error
+                ]);
+                $this->handleError('Ошибка подготовки запроса для истории состава: ' . $conn->error, [
+                    'method' => 'history',
+                    'device_id' => $deviceId,
+                    'history_type' => $historyType
+                ], 500);
             }
             $stmt_history_comp->bind_param("i", $deviceId);
             if ($stmt_history_comp->execute()) {
@@ -448,7 +491,15 @@ class DeviceHistoryController extends BaseController
             });
         }
 
+        // Логируем успешное получение истории прибора
+        $this->logSecurityEvent('device_history_accessed', [
+            'user_id' => $_SESSION['user']['id'],
+            'device_id' => $deviceId,
+            'history_type' => $historyType,
+            'records_count' => count($final_history_output)
+        ]);
+
         $conn->close();
-        echo json_encode($final_history_output);
+        $this->jsonResponse($final_history_output);
     }
 }

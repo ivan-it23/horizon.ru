@@ -10,50 +10,187 @@ class FileController extends BaseController
      */
     public function upload(): void
     {
-        header('Content-Type: application/json; charset=utf-8');
-        session_start();
-        require_once __DIR__ . '/../../db_connection.php';
+        // Проверка авторизации
+        $this->requireAuth();
+        
+        // Rate limiting для загрузки файлов (не более 10 файлов в час)
+        if (!$this->checkRateLimit($this->getClientIP(), 'file_upload', 10, 3600)) {
+            $this->jsonResponse(['success' => false, 'message' => 'Слишком много загрузок файлов. Попробуйте через час.'], 429);
+        }
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            echo json_encode(['success' => false, 'message' => 'Неверный метод запроса.']);
-            return;
+            $this->jsonResponse(['success' => false, 'message' => 'Неверный метод запроса.'], 405);
         }
 
+        require_once __DIR__ . '/../../db_connection.php';
+
+        // Безопасная валидация входных данных
         if (!isset($_POST['serial_number'], $_POST['case_number'], $_POST['device_type'])) {
-            echo json_encode(['success' => false, 'message' => 'Не все параметры были предоставлены.']);
-            return;
+            $this->jsonResponse(['success' => false, 'message' => 'Не все параметры были предоставлены.'], 400);
         }
-        $serialNumber = trim($_POST['serial_number']);
-        $caseNumber   = trim($_POST['case_number']);
-        $deviceType   = trim($_POST['device_type']);
+        
+        $serialNumber = $this->sanitizeString($_POST['serial_number']);
+        $caseNumber   = $this->sanitizeString($_POST['case_number']);
+        $deviceType   = $this->sanitizeString($_POST['device_type']);
 
-        $fields = ['thermoprofile', 'metrology', 'calibration', 'kis'];
+        if (empty($serialNumber) || empty($caseNumber) || empty($deviceType)) {
+            $this->jsonResponse(['success' => false, 'message' => 'Параметры не могут быть пустыми.'], 400);
+        }
+
+        // Валидация поля загрузки
+        $allowedFields = ['thermoprofile', 'metrology', 'calibration', 'kis'];
         $uploadedField = null;
-        foreach ($fields as $field) {
+        foreach ($allowedFields as $field) {
             if (isset($_FILES[$field]) && $_FILES[$field]['error'] === UPLOAD_ERR_OK) {
                 $uploadedField = $field;
                 break;
             }
         }
+        
         if (!$uploadedField) {
-            echo json_encode(['success' => false, 'message' => 'Файл не был выбран или произошла ошибка при загрузке.']);
-            return;
+            $this->jsonResponse(['success' => false, 'message' => 'Файл не был выбран или произошла ошибка при загрузке.'], 400);
         }
 
-        $fileName    = basename($_FILES[$uploadedField]['name']);
-        $fileTmpPath = $_FILES[$uploadedField]['tmp_name'];
-        if (!file_exists($fileTmpPath)) {
-            echo json_encode(['success' => false, 'message' => 'Временный файл не найден.']);
-            return;
+        // Безопасная валидация файла
+        $file = $_FILES[$uploadedField];
+        $fileName = $this->sanitizeString(basename($file['name']));
+        $fileTmpPath = $file['tmp_name'];
+        $fileSize = $file['size'];
+        
+        // Проверка размера файла
+        if ($fileSize > MAX_FILE_SIZE) {
+            $this->jsonResponse(['success' => false, 'message' => 'Размер файла превышает допустимый лимит (' . (MAX_FILE_SIZE / 1024 / 1024) . ' MB).'], 400);
         }
+        
+        if (!file_exists($fileTmpPath)) {
+            $this->jsonResponse(['success' => false, 'message' => 'Временный файл не найден.'], 400);
+        }
+
+        // Валидация типа файла по расширению - расширенный список для геофизических приборов
+        // Основан на реальных данных из базы uploaded_files
+        $allowedExtensions = [
+            // Офисные документы
+            'pdf', 'doc', 'docx', 'xls', 'xlsx', 'txt', 'rtf',
+            
+            // Изображения
+            'jpg', 'jpeg', 'png', 'gif', 'bmp', 'tiff', 'tif',
+            
+            // Основные форматы геофизических данных (из реальной базы)
+            'bin', 'dev', 'dat', 'raw', 'hex', 'cal', 'cfg', 'ini',
+            'BIN', 'DEV', 'DAT', 'RAW', 'HEX', 'CAL', 'CFG', 'INI', // Заглавные варианты
+            
+            // Каротажные данные
+            'las', 'lis', 'dlis', 'segy', 'seg', 'sgd', 'wits',
+            'LAS', 'LIS', 'DLIS', 'SEGY', 'SEG', 'SGD', 'WITS',
+            
+            // Текстовые форматы данных
+            'csv', 'log', 'ascii', 'asc', 'prn', 'out', 'res', 'rpt',
+            'CSV', 'LOG', 'ASCII', 'ASC', 'PRN', 'OUT', 'RES', 'RPT',
+            
+            // Конфигурационные и системные файлы приборов
+            'xml', 'json', 'yaml', 'yml', 'conf', 'config', 'settings',
+            'XML', 'JSON', 'YAML', 'YML', 'CONF', 'CONFIG', 'SETTINGS',
+            
+            // Специализированные форматы приборов
+            'ram', 'rom', 'eep', 'flash', 'mem', 'dump', 'trace',
+            'RAM', 'ROM', 'EEP', 'FLASH', 'MEM', 'DUMP', 'TRACE',
+            
+            // Дополнительные форматы для геофизических исследований
+            'mwd', 'lwd', 'mud', 'well', 'curve', 'depth', 'temp', 'press',
+            'MWD', 'LWD', 'MUD', 'WELL', 'CURVE', 'DEPTH', 'TEMP', 'PRESS',
+            
+            // Форматы данных с приборов
+            'metro', 'thermo', 'calib', 'kis', 'air', 'okt',
+            'METRO', 'THERMO', 'CALIB', 'KIS', 'AIR', 'OKT'
+        ];
+        
+        $fileExtension = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
+        
+        // Приводим все расширения к нижнему регистру для сравнения
+        $allowedExtensionsLower = array_map('strtolower', $allowedExtensions);
+        
+        if (!in_array($fileExtension, $allowedExtensionsLower)) {
+            $this->jsonResponse(['success' => false, 'message' => 'Недопустимый тип файла. Разрешены: ' . implode(', ', array_slice($allowedExtensionsLower, 0, 20)) . '...'], 400);
+        }
+
+        // Проверка MIME-типа для дополнительной безопасности
+        $finfo = finfo_open(FILEINFO_MIME_TYPE);
+        $mimeType = finfo_file($finfo, $fileTmpPath);
+        finfo_close($finfo);
+        
+        $allowedMimeTypes = [
+            // Офисные документы
+            'application/pdf',
+            'application/msword',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'application/vnd.ms-excel',
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'application/rtf',
+            
+            // Текстовые файлы
+            'text/plain',
+            'text/csv',
+            'text/xml',
+            'application/xml',
+            'application/json',
+            'text/yaml',
+            'application/yaml',
+            
+            // Изображения
+            'image/jpeg',
+            'image/png',
+            'image/gif',
+            'image/bmp',
+            'image/tiff',
+            
+            // Бинарные данные приборов (часто определяются как application/octet-stream)
+            'application/octet-stream',
+            
+            // Специализированные MIME-типы для геофизических данных
+            'application/x-binary',
+            'application/binary',
+            'application/x-raw',
+            'application/x-hex',
+            'application/x-config',
+            'application/x-ini',
+            
+            // Дополнительные типы для совместимости
+            'application/force-download',
+            'application/unknown',
+            'binary/octet-stream'
+        ];
+        
+        // Для геофизических файлов часто MIME-тип определяется как application/octet-stream
+        // Поэтому делаем более гибкую проверку для всех специализированных форматов
+        $isGeophysicalFile = in_array($fileExtension, [
+            // Основные геофизические форматы
+            'bin', 'dev', 'dat', 'raw', 'hex', 'cal', 'cfg', 'ini', 
+            // Каротажные данные
+            'las', 'lis', 'dlis', 'segy', 'seg', 'sgd', 'wits',
+            // Специализированные форматы приборов
+            'ram', 'rom', 'eep', 'flash', 'mem', 'dump', 'trace',
+            // Дополнительные форматы для геофизических исследований
+            'mwd', 'lwd', 'mud', 'well', 'curve', 'depth', 'temp', 'press',
+            // Форматы данных с приборов (из реальной базы)
+            'metro', 'thermo', 'calib', 'kis', 'air', 'okt'
+        ]);
+        
+        if (!in_array($mimeType, $allowedMimeTypes) && !$isGeophysicalFile) {
+            // Логируем для отладки
+            $this->logSecurityEvent('file_mime_type_check', [
+                'user_id' => $_SESSION['user']['id'],
+                'file_name' => $fileName,
+                'file_extension' => $fileExtension,
+                'detected_mime_type' => $mimeType,
+                'is_geophysical' => $isGeophysicalFile
+            ]);
+            
+            $this->jsonResponse(['success' => false, 'message' => 'Недопустимый MIME-тип файла: ' . $mimeType], 400);
+        }
+
         $fileData = file_get_contents($fileTmpPath);
         if ($fileData === false) {
-            echo json_encode(['success' => false, 'message' => 'Не удалось прочитать файл.']);
-            return;
-        }
-        if ($_FILES[$uploadedField]['size'] > MAX_FILE_SIZE) {
-            echo json_encode(['success' => false, 'message' => 'Размер файла превышает допустимый лимит.']);
-            return;
+            $this->jsonResponse(['success' => false, 'message' => 'Не удалось прочитать файл.'], 500);
         }
 
         // Ensure the table exists
@@ -83,11 +220,27 @@ class FileController extends BaseController
                 VALUES (?, ?, ?, ?, ?, ?, NOW())");
             $stmt->bind_param('ssssss', $uploadedField, $fileName, $fileData, $serialNumber, $caseNumber, $deviceType);
             $stmt->execute();
-            echo json_encode(['success' => true, 'message' => 'Файл успешно загружен.', 'field' => $uploadedField]);
+            
+            // Логируем успешную загрузку файла
+            $this->logSecurityEvent('file_uploaded', [
+                'user_id' => $_SESSION['user']['id'],
+                'field_name' => $uploadedField,
+                'file_name' => $fileName,
+                'file_size' => $fileSize,
+                'serial_number' => $serialNumber,
+                'case_number' => $caseNumber,
+                'device_type' => $deviceType
+            ]);
+            
+            $this->jsonResponse(['success' => true, 'message' => 'Файл успешно загружен.', 'field' => $uploadedField]);
             $stmt->close();
         } catch (\Exception $e) {
-            http_response_code(500);
-            echo json_encode(['success' => false, 'message' => 'Ошибка при загрузке файла.']);
+            $this->logSecurityEvent('file_upload_error', [
+                'user_id' => $_SESSION['user']['id'],
+                'error' => $e->getMessage(),
+                'file_name' => $fileName
+            ]);
+            $this->jsonResponse(['success' => false, 'message' => 'Ошибка при загрузке файла.'], 500);
         }
         $conn->close();
     }
@@ -97,21 +250,34 @@ class FileController extends BaseController
      */
     public function list(): void
     {
-        header('Content-Type: application/json; charset=utf-8');
-        session_start();
-        require_once __DIR__ . '/../../db_connection.php';
+        // Проверка авторизации
+        $this->requireAuth();
+        
+        // Rate limiting для получения списка файлов
+        if (!$this->checkRateLimit($this->getClientIP(), 'file_list', 30, 60)) {
+            $this->jsonResponse(['success' => false, 'message' => 'Слишком много запросов списка файлов'], 429);
+        }
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            echo json_encode(['success' => false, 'message' => 'Неверный метод запроса.']);
-            return;
+            $this->jsonResponse(['success' => false, 'message' => 'Неверный метод запроса.'], 405);
         }
-        $serialNumber = $_POST['serial_number'] ?? '';
-        $caseNumber   = $_POST['case_number'] ?? '';
-        $deviceType   = $_POST['device_type'] ?? '';
-        $fieldName    = $_POST['field_name'] ?? '';
+
+        require_once __DIR__ . '/../../db_connection.php';
+
+        // Безопасная валидация входных данных
+        $serialNumber = $this->sanitizeString($_POST['serial_number'] ?? '');
+        $caseNumber   = $this->sanitizeString($_POST['case_number'] ?? '');
+        $deviceType   = $this->sanitizeString($_POST['device_type'] ?? '');
+        $fieldName    = $this->sanitizeString($_POST['field_name'] ?? '');
+        
         if (empty($serialNumber) || empty($caseNumber) || empty($deviceType) || empty($fieldName)) {
-            echo json_encode(['success' => false, 'message' => 'Не все параметры были предоставлены.']);
-            return;
+            $this->jsonResponse(['success' => false, 'message' => 'Не все параметры были предоставлены.'], 400);
+        }
+
+        // Валидация поля по whitelist
+        $allowedFields = ['thermoprofile', 'metrology', 'calibration', 'kis'];
+        if (!in_array($fieldName, $allowedFields)) {
+            $this->jsonResponse(['success' => false, 'message' => 'Недопустимое поле файла.'], 400);
         }
 
         // Ensure the table exists
@@ -139,7 +305,7 @@ class FileController extends BaseController
         try {
             $stmt = $conn->prepare("SELECT id, file_name, created_at FROM uploaded_files
                 WHERE serial_number = ? AND case_number = ? AND device_type = ? AND field_name = ?
-                ORDER BY created_at DESC");
+                ORDER BY created_at DESC LIMIT 100");
             $stmt->bind_param('ssss', $serialNumber, $caseNumber, $deviceType, $fieldName);
             $stmt->execute();
             $result = $stmt->get_result();
@@ -147,10 +313,24 @@ class FileController extends BaseController
             $stmt->close();
 
             $isAdmin = isset($_SESSION['user']['is_admin']) && $_SESSION['user']['is_admin'];
-            echo json_encode(['success' => true, 'files' => $files, 'is_admin' => $isAdmin]);
+            
+            // Логируем получение списка файлов
+            $this->logSecurityEvent('file_list_accessed', [
+                'user_id' => $_SESSION['user']['id'],
+                'serial_number' => $serialNumber,
+                'case_number' => $caseNumber,
+                'device_type' => $deviceType,
+                'field_name' => $fieldName,
+                'files_count' => count($files)
+            ]);
+            
+            $this->jsonResponse(['success' => true, 'files' => $files, 'is_admin' => $isAdmin]);
         } catch (\Exception $e) {
-            http_response_code(500);
-            echo json_encode(['success' => false, 'message' => 'Ошибка при получении списка файлов.']);
+            $this->logSecurityEvent('file_list_error', [
+                'user_id' => $_SESSION['user']['id'],
+                'error' => $e->getMessage()
+            ]);
+            $this->jsonResponse(['success' => false, 'message' => 'Ошибка при получении списка файлов.'], 500);
         }
         $conn->close();
     }
@@ -160,43 +340,56 @@ class FileController extends BaseController
      */
     public function download(): void
     {
-        session_start();
+        // Проверка авторизации
+        $this->requireAuth();
+        
+        // Rate limiting для скачивания файлов
+        if (!$this->checkRateLimit($this->getClientIP(), 'file_download', 50, 60)) {
+            $this->handleError('Слишком много скачиваний файлов. Попробуйте через минуту.', [], 429);
+        }
+
         require_once __DIR__ . '/../../db_connection.php';
 
-        if (!isset($_SESSION['user'])) {
-            echo "Доступ запрещен. Пожалуйста, авторизуйтесь.";
-            return;
-        }
-        $fileId = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
+        $fileId = $this->validateInt($_GET['id'] ?? 0, 1);
         if (!$fileId) {
-            echo "Неверный запрос. ID файла не указан или некорректен.";
-            return;
+            $this->handleError('Неверный запрос. ID файла не указан или некорректен.', [], 400);
         }
 
         try {
-            $stmt = $conn->prepare("SELECT file_name, file_data FROM uploaded_files WHERE id = ?");
+            $stmt = $conn->prepare("SELECT file_name, file_data, serial_number, case_number, device_type FROM uploaded_files WHERE id = ?");
             $stmt->bind_param('i', $fileId);
             $stmt->execute();
-            $stmt->store_result();
+            $result = $stmt->get_result();
 
-            if ($stmt->num_rows > 0) {
-                $stmt->bind_result($fileName, $fileData);
-                $stmt->fetch();
+            if ($result->num_rows > 0) {
+                $row = $result->fetch_assoc();
+                $fileName = $row['file_name'];
+                $fileData = $row['file_data'];
+                
+                // Логируем скачивание файла
+                $this->logSecurityEvent('file_downloaded', [
+                    'user_id' => $_SESSION['user']['id'],
+                    'file_id' => $fileId,
+                    'file_name' => $fileName,
+                    'serial_number' => $row['serial_number'],
+                    'case_number' => $row['case_number'],
+                    'device_type' => $row['device_type'],
+                    'file_size' => strlen($fileData)
+                ]);
 
-                ob_clean();
-                header("Content-Type: application/octet-stream");
-                header("Content-Disposition: attachment; filename=\"" . basename($fileName) . "\"");
-                header("Content-Length: " . strlen($fileData));
-
-                echo $fileData;
-                exit;
+                // Используем безопасный метод отправки файла
+                $this->sendFileDownload($fileName, $fileData);
             } else {
-                echo "Файл не найден.";
+                $this->handleError('Файл не найден.', ['file_id' => $fileId], 404);
             }
             $stmt->close();
         } catch (\Exception $e) {
-            http_response_code(500);
-            echo "Ошибка: " . $e->getMessage();
+            $this->logSecurityEvent('file_download_error', [
+                'user_id' => $_SESSION['user']['id'],
+                'file_id' => $fileId,
+                'error' => $e->getMessage()
+            ]);
+            $this->handleError('Ошибка при скачивании файла.', [], 500);
         }
         $conn->close();
     }
@@ -206,38 +399,68 @@ class FileController extends BaseController
      */
     public function delete(): void
     {
-        header('Content-Type: application/json; charset=utf-8');
-        session_start();
-        require_once __DIR__ . '/../../db_connection.php';
+        // Проверка авторизации
+        $this->requireAuth();
+        
+        // Rate limiting для удаления файлов
+        if (!$this->checkRateLimit($this->getClientIP(), 'file_delete', 20, 60)) {
+            $this->jsonResponse(['success' => false, 'message' => 'Слишком много удалений файлов'], 429);
+        }
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            echo json_encode(['success' => false, 'message' => 'Неверный метод запроса.']);
-            return;
+            $this->jsonResponse(['success' => false, 'message' => 'Неверный метод запроса.'], 405);
         }
-        if (!isset($_SESSION['user'])) {
-            echo json_encode(['success' => false, 'message' => 'Доступ запрещен. Пользователь не авторизован.']);
-            return;
-        }
-        $fileId = filter_input(INPUT_POST, 'id', FILTER_VALIDATE_INT);
+
+        require_once __DIR__ . '/../../db_connection.php';
+
+        $fileId = $this->validateInt($_POST['id'] ?? 0, 1);
         if (!$fileId) {
-            echo json_encode(['success' => false, 'message' => 'Неверный ID файла.']);
-            return;
+            $this->jsonResponse(['success' => false, 'message' => 'Неверный ID файла.'], 400);
         }
 
         try {
-            $stmt = $conn->prepare("DELETE FROM uploaded_files WHERE id = ?");
-            $stmt->bind_param('i', $fileId);
-            $stmt->execute();
-
-            if ($stmt->affected_rows > 0) {
-                echo json_encode(['success' => true, 'message' => 'Файл успешно удален.']);
-            } else {
-                echo json_encode(['success' => false, 'message' => 'Файл с указанным ID не найден.']);
+            // Сначала получаем информацию о файле для логирования
+            $selectStmt = $conn->prepare("SELECT file_name, serial_number, case_number, device_type FROM uploaded_files WHERE id = ?");
+            $selectStmt->bind_param('i', $fileId);
+            $selectStmt->execute();
+            $result = $selectStmt->get_result();
+            
+            if ($result->num_rows === 0) {
+                $selectStmt->close();
+                $this->jsonResponse(['success' => false, 'message' => 'Файл с указанным ID не найден.'], 404);
             }
-            $stmt->close();
+            
+            $fileInfo = $result->fetch_assoc();
+            $selectStmt->close();
+
+            // Удаляем файл
+            $deleteStmt = $conn->prepare("DELETE FROM uploaded_files WHERE id = ?");
+            $deleteStmt->bind_param('i', $fileId);
+            $deleteStmt->execute();
+
+            if ($deleteStmt->affected_rows > 0) {
+                // Логируем удаление файла
+                $this->logSecurityEvent('file_deleted', [
+                    'user_id' => $_SESSION['user']['id'],
+                    'file_id' => $fileId,
+                    'file_name' => $fileInfo['file_name'],
+                    'serial_number' => $fileInfo['serial_number'],
+                    'case_number' => $fileInfo['case_number'],
+                    'device_type' => $fileInfo['device_type']
+                ]);
+                
+                $this->jsonResponse(['success' => true, 'message' => 'Файл успешно удален.']);
+            } else {
+                $this->jsonResponse(['success' => false, 'message' => 'Не удалось удалить файл.'], 500);
+            }
+            $deleteStmt->close();
         } catch (\Exception $e) {
-            http_response_code(500);
-            echo json_encode(['success' => false, 'message' => 'Ошибка при удалении файла.']);
+            $this->logSecurityEvent('file_delete_error', [
+                'user_id' => $_SESSION['user']['id'],
+                'file_id' => $fileId,
+                'error' => $e->getMessage()
+            ]);
+            $this->jsonResponse(['success' => false, 'message' => 'Ошибка при удалении файла.'], 500);
         }
         $conn->close();
     }
@@ -247,33 +470,78 @@ class FileController extends BaseController
      */
     public function rename(): void
     {
-        header('Content-Type: application/json; charset=utf-8');
-        session_start();
-        require_once __DIR__ . '/../../db_connection.php';
+        // Проверка авторизации
+        $this->requireAuth();
+        
+        // Rate limiting для переименования файлов
+        if (!$this->checkRateLimit($this->getClientIP(), 'file_rename', 20, 60)) {
+            $this->jsonResponse(['success' => false, 'message' => 'Слишком много переименований файлов'], 429);
+        }
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            echo json_encode(['success' => false, 'message' => 'Недопустимый метод запроса.']);
-            return;
+            $this->jsonResponse(['success' => false, 'message' => 'Недопустимый метод запроса.'], 405);
         }
-        if (!isset($_SESSION['user'])) {
-            echo json_encode(['success' => false, 'message' => 'Вы не авторизованы.']);
-            return;
+
+        require_once __DIR__ . '/../../db_connection.php';
+
+        // Безопасная валидация входных данных
+        $fileId       = $this->validateInt($_POST['id'] ?? 0, 1);
+        $oldFileName  = $this->sanitizeString($_POST['old_file_name'] ?? '');
+        $newFileName  = $this->sanitizeString($_POST['new_file_name'] ?? '');
+        $createdAt    = $this->sanitizeString($_POST['created_at'] ?? '');
+        $serialNumber = $this->sanitizeString($_POST['serial_number'] ?? '');
+        $caseNumber   = $this->sanitizeString($_POST['case_number'] ?? '');
+        $deviceType   = $this->sanitizeString($_POST['device_type'] ?? '');
+        
+        if (!$fileId || empty($oldFileName) || empty($newFileName) || empty($createdAt) || empty($serialNumber) || empty($caseNumber) || empty($deviceType)) {
+            $this->jsonResponse(['success' => false, 'message' => 'Не все обязательные параметры указаны.'], 400);
         }
-        $fileId       = filter_input(INPUT_POST, 'id', FILTER_VALIDATE_INT);
-        $oldFileName  = $_POST['old_file_name'] ?? '';
-        $newFileName  = $_POST['new_file_name'] ?? '';
-        $createdAt    = $_POST['created_at'] ?? '';
-        $serialNumber = $_POST['serial_number'] ?? '';
-        $caseNumber   = $_POST['case_number'] ?? '';
-        $deviceType   = $_POST['device_type'] ?? '';
-        if (!$fileId || empty($oldFileName) || empty(trim($newFileName)) || empty($createdAt) || empty($serialNumber) || empty($caseNumber) || empty($deviceType)) {
-            echo json_encode(['success' => false, 'message' => 'Не все обязательные параметры указаны.']);
-            return;
-        }
+
+        // Дополнительная валидация имени файла
         $newFileName = basename($newFileName);
-        if (preg_match('/[^\p{L}\p{N}\s\.\-_()\[\]]/u', $newFileName)) {
-            echo json_encode(['success' => false, 'message' => 'Новое имя файла содержит недопустимые символы.']);
-            return;
+        if (strlen($newFileName) > 255) {
+            $this->jsonResponse(['success' => false, 'message' => 'Имя файла слишком длинное.'], 400);
+        }
+        
+        // Проверка на недопустимые символы (более строгая)
+        if (!preg_match('/^[\p{L}\p{N}\s\.\-_()[\]]+$/u', $newFileName)) {
+            $this->jsonResponse(['success' => false, 'message' => 'Новое имя файла содержит недопустимые символы.'], 400);
+        }
+
+        // Валидация расширения файла - используем тот же список что и для загрузки
+        $allowedExtensions = [
+            // Офисные документы
+            'pdf', 'doc', 'docx', 'xls', 'xlsx', 'txt', 'rtf',
+            
+            // Изображения
+            'jpg', 'jpeg', 'png', 'gif', 'bmp', 'tiff', 'tif',
+            
+            // Основные форматы геофизических данных (из реальной базы)
+            'bin', 'dev', 'dat', 'raw', 'hex', 'cal', 'cfg', 'ini',
+            
+            // Каротажные данные
+            'las', 'lis', 'dlis', 'segy', 'seg', 'sgd', 'wits',
+            
+            // Текстовые форматы данных
+            'csv', 'log', 'ascii', 'asc', 'prn', 'out', 'res', 'rpt',
+            
+            // Конфигурационные и системные файлы приборов
+            'xml', 'json', 'yaml', 'yml', 'conf', 'config', 'settings',
+            
+            // Специализированные форматы приборов
+            'ram', 'rom', 'eep', 'flash', 'mem', 'dump', 'trace',
+            
+            // Дополнительные форматы для геофизических исследований
+            'mwd', 'lwd', 'mud', 'well', 'curve', 'depth', 'temp', 'press',
+            
+            // Форматы данных с приборов
+            'metro', 'thermo', 'calib', 'kis', 'air', 'okt'
+        ];
+        
+        $fileExtension = strtolower(pathinfo($newFileName, PATHINFO_EXTENSION));
+        
+        if (!in_array($fileExtension, $allowedExtensions)) {
+            $this->jsonResponse(['success' => false, 'message' => 'Недопустимое расширение файла. Разрешены: ' . implode(', ', array_slice($allowedExtensions, 0, 20)) . '...'], 400);
         }
 
         try {
@@ -287,15 +555,33 @@ class FileController extends BaseController
                   AND device_type = ?");
             $stmt->bind_param('sisssss', $newFileName, $fileId, $oldFileName, $createdAt, $serialNumber, $caseNumber, $deviceType);
             $stmt->execute();
+            
             if ($stmt->affected_rows > 0) {
-                echo json_encode(['success' => true, 'message' => 'Файл успешно переименован.']);
+                // Логируем переименование файла
+                $this->logSecurityEvent('file_renamed', [
+                    'user_id' => $_SESSION['user']['id'],
+                    'file_id' => $fileId,
+                    'old_name' => $oldFileName,
+                    'new_name' => $newFileName,
+                    'serial_number' => $serialNumber,
+                    'case_number' => $caseNumber,
+                    'device_type' => $deviceType
+                ]);
+                
+                $this->jsonResponse(['success' => true, 'message' => 'Файл успешно переименован.']);
             } else {
-                echo json_encode(['success' => false, 'message' => 'Не удалось найти файл для переименования или новое имя совпадает со старым.']);
+                $this->jsonResponse(['success' => false, 'message' => 'Не удалось найти файл для переименования или новое имя совпадает со старым.'], 404);
             }
             $stmt->close();
         } catch (\Exception $e) {
-            http_response_code(500);
-            echo json_encode(['success' => false, 'message' => 'Ошибка при переименовании файла.']);
+            $this->logSecurityEvent('file_rename_error', [
+                'user_id' => $_SESSION['user']['id'],
+                'file_id' => $fileId,
+                'old_name' => $oldFileName,
+                'new_name' => $newFileName,
+                'error' => $e->getMessage()
+            ]);
+            $this->jsonResponse(['success' => false, 'message' => 'Ошибка при переименовании файла.'], 500);
         }
         $conn->close();
     }

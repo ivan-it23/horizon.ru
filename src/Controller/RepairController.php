@@ -10,30 +10,44 @@ class RepairController extends BaseController
      */
     public function create(): void
     {
-        header('Content-Type: application/json; charset=utf-8');
-        session_start();
-        require_once __DIR__ . '/../../db_connection.php';
-
-        // Check auth
-        if (!isset($_SESSION['user']['id'])) {
-            echo json_encode(['success' => false, 'message' => 'Доступ запрещен.']);
-            return;
+        // Проверка авторизации
+        $this->requireAuth();
+        
+        // Rate limiting для создания записей о ремонте (10 записей в час)
+        if (!$this->checkRateLimit($this->getClientIP(), 'repair_create', 10, 3600)) {
+            $this->jsonResponse(['success' => false, 'message' => 'Слишком много попыток создания записей о ремонте'], 429);
         }
 
-        $serial_number      = $_POST['serial_number']      ?? '';
-        $case_number        = $_POST['case_number']        ?? '';
-        $repair_reason      = $_POST['repair_reason']      ?? null;
-        $failure_reason     = $_POST['failure_reason']     ?? null;
-        $admission_date     = $_POST['admission_date']     ?? null;
-        $release_date       = $_POST['release_date']       ?? null;
-        $actions_description= $_POST['actions_description']?? null;
-        $repair_creator     = $_POST['repair_creator']     ?? null;
-        $creator_id         = $_SESSION['user']['id'];
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->jsonResponse(['success' => false, 'message' => 'Неверный метод запроса'], 405);
+        }
+
+        require_once __DIR__ . '/../../db_connection.php';
+
+        // Безопасная валидация и очистка входных данных
+        $serial_number       = $this->sanitizeString($_POST['serial_number'] ?? '');
+        $case_number         = $this->sanitizeString($_POST['case_number'] ?? '');
+        $repair_reason       = $this->sanitizeString($_POST['repair_reason'] ?? '', 500);
+        $failure_reason      = $this->sanitizeString($_POST['failure_reason'] ?? '', 500);
+        $admission_date      = $this->sanitizeString($_POST['admission_date'] ?? '');
+        $release_date        = $this->sanitizeString($_POST['release_date'] ?? '');
+        $actions_description = $this->sanitizeString($_POST['actions_description'] ?? '', 2000);
+        $repair_creator      = $this->sanitizeString($_POST['repair_creator'] ?? '');
+        $creator_id          = $_SESSION['user']['id'];
 
         if (empty($serial_number) || empty($case_number)) {
-            echo json_encode(['success' => false, 'message' => 'Ошибка: Не указан серийный номер или номер корпуса.']);
-            if (isset($conn) && $conn instanceof \mysqli) $conn->close();
-            return;
+            $this->jsonResponse(['success' => false, 'message' => 'Ошибка: Не указан серийный номер или номер корпуса.'], 400);
+        }
+
+        // Валидация длины полей
+        if (strlen($repair_reason) > 500) {
+            $this->jsonResponse(['success' => false, 'message' => 'Причина ремонта слишком длинная (максимум 500 символов)'], 400);
+        }
+        if (strlen($failure_reason) > 500) {
+            $this->jsonResponse(['success' => false, 'message' => 'Причина неисправности слишком длинная (максимум 500 символов)'], 400);
+        }
+        if (strlen($actions_description) > 2000) {
+            $this->jsonResponse(['success' => false, 'message' => 'Описание действий слишком длинное (максимум 2000 символов)'], 400);
         }
 
         try {
@@ -45,10 +59,29 @@ class RepairController extends BaseController
                 [$serial_number, $case_number, $repair_reason, $failure_reason, $admission_date, $release_date, $actions_description, $repair_creator, $creator_id],
                 'ssssssssi'
             );
-            echo json_encode(['success' => true, 'message' => 'Новая запись о ремонте успешно создана!']);
+            
+            // Логируем успешное создание записи о ремонте
+            $this->logSecurityEvent('repair_created', [
+                'user_id' => $_SESSION['user']['id'],
+                'serial_number' => $serial_number,
+                'case_number' => $case_number,
+                'repair_creator' => $repair_creator
+            ]);
+            
+            $this->jsonResponse(['success' => true, 'message' => 'Новая запись о ремонте успешно создана!']);
         } catch (\Exception $e) {
-            error_log('RepairController::create error: ' . $e->getMessage());
-            echo json_encode(['success' => false, 'message' => 'Ошибка при создании записи: ' . $e->getMessage()]);
+            $this->logSecurityEvent('repair_create_error', [
+                'user_id' => $_SESSION['user']['id'],
+                'error' => $e->getMessage(),
+                'serial_number' => $serial_number,
+                'case_number' => $case_number
+            ]);
+            
+            $this->handleError('Ошибка при создании записи: ' . $e->getMessage(), [
+                'method' => 'create',
+                'serial_number' => $serial_number,
+                'case_number' => $case_number
+            ], 500);
         } finally {
             if (isset($conn) && $conn instanceof \mysqli) $conn->close();
         }
@@ -59,28 +92,52 @@ class RepairController extends BaseController
      */
     public function update(): void
     {
-        header('Content-Type: application/json; charset=utf-8');
-        session_start();
+        // Очищаем буфер вывода для предотвращения проблем с JSON
+        if (ob_get_level()) {
+            ob_clean();
+        }
+        
+        // Проверка авторизации
+        $this->requireAuth();
+        
+        // Rate limiting для обновления записей о ремонте (15 обновлений в час)
+        if (!$this->checkRateLimit($this->getClientIP(), 'repair_update', 15, 3600)) {
+            $this->jsonResponse(['success' => false, 'message' => 'Слишком много попыток обновления записей о ремонте'], 429);
+        }
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->jsonResponse(['success' => false, 'message' => 'Неверный метод запроса'], 405);
+        }
+
         require_once __DIR__ . '/../../db_connection.php';
 
-        // Check auth and parameters
-        if (!isset($_SESSION['user']['id'])) {
-            echo json_encode(['success' => false, 'message' => 'Доступ запрещен.']);
-            return;
-        }
-        $repair_id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
+        // Безопасная валидация ID записи
+        $repair_id = $this->validateInt($_POST['id'] ?? 0, 1);
         if (!$repair_id) {
-            echo json_encode(['success' => false, 'message' => 'Отсутствует ID записи.']);
-            return;
+            $this->jsonResponse(['success' => false, 'message' => 'Отсутствует или некорректный ID записи.'], 400);
         }
+        
         $user_id = $_SESSION['user']['id'];
+        
+        // Безопасная валидация и очистка входных данных
         $new_data = [
-            'repair_reason'      => $_POST['repair_reason']      ?? null,
-            'failure_reason'     => $_POST['failure_reason']     ?? null,
-            'admission_date'     => $_POST['admission_date']     ?? null,
-            'release_date'       => $_POST['release_date']       ?? null,
-            'actions_description'=> $_POST['actions_description']?? null
+            'repair_reason'      => $this->sanitizeString($_POST['repair_reason'] ?? '', 500),
+            'failure_reason'     => $this->sanitizeString($_POST['failure_reason'] ?? '', 500),
+            'admission_date'     => $this->sanitizeString($_POST['admission_date'] ?? ''),
+            'release_date'       => $this->sanitizeString($_POST['release_date'] ?? ''),
+            'actions_description'=> $this->sanitizeString($_POST['actions_description'] ?? '', 2000)
         ];
+
+        // Валидация длины полей
+        if (strlen($new_data['repair_reason']) > 500) {
+            $this->jsonResponse(['success' => false, 'message' => 'Причина ремонта слишком длинная (максимум 500 символов)'], 400);
+        }
+        if (strlen($new_data['failure_reason']) > 500) {
+            $this->jsonResponse(['success' => false, 'message' => 'Причина неисправности слишком длинная (максимум 500 символов)'], 400);
+        }
+        if (strlen($new_data['actions_description']) > 2000) {
+            $this->jsonResponse(['success' => false, 'message' => 'Описание действий слишком длинное (максимум 2000 символов)'], 400);
+        }
 
         try {
             $conn->begin_transaction();
@@ -91,6 +148,10 @@ class RepairController extends BaseController
             $stmt->execute();
             $old_data = $stmt->get_result()->fetch_assoc();
             $stmt->close();
+            
+            if (!$old_data) {
+                throw new \Exception('Запись с ID ' . $repair_id . ' не найдена');
+            }
 
             // Insert history
             $sqlHist = "INSERT INTO repair_data_history (repair_data_id, repair_reason, failure_reason, admission_date, release_date, actions_description, changed_by_user_id) VALUES (?, ?, ?, ?, ?, ?, ?)";
@@ -107,11 +168,32 @@ class RepairController extends BaseController
             $stmt->close();
 
             $conn->commit();
-            echo json_encode(['success' => true, 'message' => 'Изменения успешно сохранены!']);
+            
+            // Логируем успешное обновление записи о ремонте
+            $this->logSecurityEvent('repair_updated', [
+                'user_id' => $_SESSION['user']['id'],
+                'repair_id' => $repair_id
+            ]);
+            
+            $this->jsonResponse(['success' => true, 'message' => 'Изменения успешно сохранены!']);
         } catch (\Exception $e) {
-            $conn->rollback();
-            error_log('RepairController::update error: ' . $e->getMessage());
-            echo json_encode(['success' => false, 'message' => 'Ошибка при сохранении изменений: ' . $e->getMessage()]);
+            if (isset($conn) && $conn instanceof \mysqli) {
+                $conn->rollback();
+            }
+            
+            $this->logSecurityEvent('repair_update_error', [
+                'user_id' => $_SESSION['user']['id'],
+                'error' => $e->getMessage(),
+                'repair_id' => $repair_id,
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            $this->jsonResponse([
+                'success' => false, 
+                'message' => 'Ошибка при сохранении изменений: ' . $e->getMessage()
+            ], 500);
         } finally {
             if (isset($conn) && $conn instanceof \mysqli) $conn->close();
         }
@@ -122,28 +204,58 @@ class RepairController extends BaseController
      */
     public function history(): void
     {
-        header('Content-Type: application/json; charset=utf-8');
+        // Проверка авторизации
+        $this->requireAuth();
+        
+        // Rate limiting для получения истории ремонтов (30 запросов в минуту)
+        if (!$this->checkRateLimit($this->getClientIP(), 'repair_history', 30, 60)) {
+            $this->jsonResponse(['error' => 'Слишком много запросов истории ремонтов'], 429);
+        }
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->jsonResponse(['error' => 'Неверный метод запроса'], 405);
+        }
+
         require_once __DIR__ . '/../../db_connection.php';
 
-        $serial_number = $_POST['serial_number'] ?? '';
-        $case_number   = $_POST['case_number']   ?? '';
+        // Безопасная валидация входных данных
+        $serial_number = $this->sanitizeString($_POST['serial_number'] ?? '');
+        $case_number   = $this->sanitizeString($_POST['case_number'] ?? '');
+        
         if (empty($serial_number) || empty($case_number)) {
-            echo json_encode(['error' => 'Отсутствуют серийный номер или номер корпуса.']);
-            return;
+            $this->jsonResponse(['error' => 'Отсутствуют серийный номер или номер корпуса.'], 400);
         }
 
         try {
             $data = fetchResults(
                 $conn,
-                "SELECT * FROM repair_data WHERE serial_number = ? AND case_number = ? ORDER BY created_at DESC",
+                "SELECT * FROM repair_data WHERE serial_number = ? AND case_number = ? ORDER BY created_at DESC LIMIT 100",
                 [$serial_number, $case_number],
                 'ss'
             );
-            echo json_encode($data);
+            
+            // Логируем получение истории ремонтов
+            $this->logSecurityEvent('repair_history_accessed', [
+                'user_id' => $_SESSION['user']['id'],
+                'serial_number' => $serial_number,
+                'case_number' => $case_number,
+                'records_count' => count($data)
+            ]);
+            
+            $this->jsonResponse($data);
         } catch (\Exception $e) {
-            error_log('RepairController::history error: ' . $e->getMessage());
-            http_response_code(500);
-            echo json_encode(['error' => 'Ошибка загрузки истории: ' . $e->getMessage()]);
+            $this->logSecurityEvent('repair_history_error', [
+                'user_id' => $_SESSION['user']['id'],
+                'error' => $e->getMessage(),
+                'serial_number' => $serial_number,
+                'case_number' => $case_number
+            ]);
+            
+            $this->handleError('Ошибка загрузки истории: ' . $e->getMessage(), [
+                'method' => 'history',
+                'serial_number' => $serial_number,
+                'case_number' => $case_number
+            ], 500);
         } finally {
             if (isset($conn) && $conn instanceof \mysqli) $conn->close();
         }
@@ -154,13 +266,24 @@ class RepairController extends BaseController
      */
     public function editHistory(): void
     {
-        header('Content-Type: application/json; charset=utf-8');
+        // Проверка авторизации
+        $this->requireAuth();
+        
+        // Rate limiting для получения истории правок (30 запросов в минуту)
+        if (!$this->checkRateLimit($this->getClientIP(), 'repair_edit_history', 30, 60)) {
+            $this->jsonResponse(['error' => 'Слишком много запросов истории правок'], 429);
+        }
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
+            $this->jsonResponse(['error' => 'Неверный метод запроса'], 405);
+        }
+
         require_once __DIR__ . '/../../db_connection.php';
 
-        $repair_id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+        // Безопасная валидация ID записи
+        $repair_id = $this->validateInt($_GET['id'] ?? 0, 1);
         if (!$repair_id) {
-            echo json_encode(['error' => 'ID записи не указан.']);
-            return;
+            $this->jsonResponse(['error' => 'ID записи не указан или некорректен.'], 400);
         }
 
         try {
@@ -170,15 +293,31 @@ class RepairController extends BaseController
                  FROM repair_data_history h
                  LEFT JOIN users u ON h.changed_by_user_id = u.id
                  WHERE h.repair_data_id = ?
-                 ORDER BY h.changed_at DESC",
+                 ORDER BY h.changed_at DESC
+                 LIMIT 100",
                 [$repair_id],
                 'i'
             );
-            echo json_encode($data);
+            
+            // Логируем получение истории правок
+            $this->logSecurityEvent('repair_edit_history_accessed', [
+                'user_id' => $_SESSION['user']['id'],
+                'repair_id' => $repair_id,
+                'records_count' => count($data)
+            ]);
+            
+            $this->jsonResponse($data);
         } catch (\Exception $e) {
-            error_log('RepairController::editHistory error: ' . $e->getMessage());
-            http_response_code(500);
-            echo json_encode(['error' => 'Ошибка загрузки истории правок: ' . $e->getMessage()]);
+            $this->logSecurityEvent('repair_edit_history_error', [
+                'user_id' => $_SESSION['user']['id'],
+                'error' => $e->getMessage(),
+                'repair_id' => $repair_id
+            ]);
+            
+            $this->handleError('Ошибка загрузки истории правок: ' . $e->getMessage(), [
+                'method' => 'editHistory',
+                'repair_id' => $repair_id
+            ], 500);
         } finally {
             if (isset($conn) && $conn instanceof \mysqli) $conn->close();
         }
@@ -189,17 +328,35 @@ class RepairController extends BaseController
      */
     public function delete(): void
     {
-        header('Content-Type: application/json; charset=utf-8');
-        session_start();
+        // Проверка авторизации
+        $this->requireAuth();
+        
+        // Rate limiting для удаления записей о ремонте (5 удалений в час)
+        if (!$this->checkRateLimit($this->getClientIP(), 'repair_delete', 5, 3600)) {
+            $this->jsonResponse(['success' => false, 'message' => 'Слишком много попыток удаления записей о ремонте'], 429);
+        }
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->jsonResponse(['success' => false, 'message' => 'Неверный метод запроса'], 405);
+        }
+
         require_once __DIR__ . '/../../db_connection.php';
 
-        $repair_id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
+        // Безопасная валидация ID записи
+        $repair_id = $this->validateInt($_POST['id'] ?? 0, 1);
         if (!$repair_id) {
-            echo json_encode(['success' => false, 'message' => 'ID записи не указан.']);
-            return;
+            $this->jsonResponse(['success' => false, 'message' => 'ID записи не указан или некорректен.'], 400);
         }
 
         try {
+            // Получаем информацию о записи перед удалением для логирования
+            $repairInfo = fetchResults(
+                $conn,
+                "SELECT serial_number, case_number FROM repair_data WHERE id = ?",
+                [$repair_id],
+                'i'
+            );
+            
             // Delete history first
             executeQuery($conn,
                 'DELETE FROM repair_data_history WHERE repair_data_id = ?',
@@ -210,11 +367,27 @@ class RepairController extends BaseController
                 'DELETE FROM repair_data WHERE id = ?',
                 [$repair_id], 'i'
             );
-            echo json_encode(['success' => true, 'message' => 'Запись и история удалены.']);
+            
+            // Логируем успешное удаление записи о ремонте
+            $this->logSecurityEvent('repair_deleted', [
+                'user_id' => $_SESSION['user']['id'],
+                'repair_id' => $repair_id,
+                'serial_number' => $repairInfo[0]['serial_number'] ?? 'unknown',
+                'case_number' => $repairInfo[0]['case_number'] ?? 'unknown'
+            ]);
+            
+            $this->jsonResponse(['success' => true, 'message' => 'Запись и история удалены.']);
         } catch (\Exception $e) {
-            error_log('RepairController::delete error: ' . $e->getMessage());
-            http_response_code(500);
-            echo json_encode(['success' => false, 'message' => 'Ошибка при удалении: ' . $e->getMessage()]);
+            $this->logSecurityEvent('repair_delete_error', [
+                'user_id' => $_SESSION['user']['id'],
+                'error' => $e->getMessage(),
+                'repair_id' => $repair_id
+            ]);
+            
+            $this->handleError('Ошибка при удалении: ' . $e->getMessage(), [
+                'method' => 'delete',
+                'repair_id' => $repair_id
+            ], 500);
         } finally {
             if (isset($conn) && $conn instanceof \mysqli) $conn->close();
         }

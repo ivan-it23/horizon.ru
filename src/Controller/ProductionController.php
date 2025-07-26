@@ -10,23 +10,31 @@ class ProductionController extends BaseController
      */
     public function create(): void
     {
-        header('Content-Type: application/json; charset=utf-8');
+        // Проверка авторизации
+        $this->requireAuth();
+        
+        // Rate limiting для создания записей о прекращении производства (10 записей в час)
+        if (!$this->checkRateLimit($this->getClientIP(), 'production_create', 10, 3600)) {
+            $this->jsonResponse(['success' => false, 'message' => 'Слишком много запросов на создание записей о прекращении производства'], 429);
+        }
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->jsonResponse(['success' => false, 'message' => 'Неверный метод запроса'], 405);
+        }
+
         require_once __DIR__ . '/../../db_connection.php';
 
-        $discontinuation_date = $_POST['discontinuation_date'] ?? '';
-        $creator_surname      = $_POST['creator_surname']      ?? '';
-        $serial_number        = $_POST['serial_number']        ?? '';
-        $case_number          = $_POST['case_number']          ?? '';
+        // Безопасная валидация и очистка входных данных
+        $discontinuation_date = $this->sanitizeString($_POST['discontinuation_date'] ?? '');
+        $creator_surname      = $this->sanitizeString($_POST['creator_surname'] ?? '');
+        $serial_number        = $this->sanitizeString($_POST['serial_number'] ?? '');
+        $case_number          = $this->sanitizeString($_POST['case_number'] ?? '');
 
         if (empty($discontinuation_date) || empty($creator_surname) || empty($serial_number) || empty($case_number)) {
-            echo json_encode([
+            $this->jsonResponse([
                 'success' => false,
                 'message' => 'Ошибка: Не указаны все обязательные поля.'
-            ]);
-            if (isset($conn) && $conn instanceof \mysqli) {
-                $conn->close();
-            }
-            return;
+            ], 400);
         }
 
         try {
@@ -39,17 +47,32 @@ class ProductionController extends BaseController
                 [$discontinuation_date, $creator_surname, $serial_number, $case_number],
                 'ssss'
             );
-            echo json_encode([
+            
+            // Логируем успешное создание записи о прекращении производства
+            $this->logSecurityEvent('production_discontinuation_created', [
+                'user_id' => $_SESSION['user']['id'],
+                'serial_number' => $serial_number,
+                'case_number' => $case_number,
+                'discontinuation_date' => $discontinuation_date
+            ]);
+            
+            $this->jsonResponse([
                 'success' => true,
                 'message' => 'Данные успешно сохранены!'
             ]);
         } catch (\Exception $e) {
-            error_log('ProductionController::create error: ' . $e->getMessage());
-            http_response_code(500);
-            echo json_encode([
-                'success' => false,
-                'message' => 'Ошибка при сохранении данных: ' . $e->getMessage()
+            $this->logSecurityEvent('production_discontinuation_create_error', [
+                'user_id' => $_SESSION['user']['id'],
+                'error' => $e->getMessage(),
+                'serial_number' => $serial_number,
+                'case_number' => $case_number
             ]);
+            
+            $this->handleError('Ошибка при сохранении данных: ' . $e->getMessage(), [
+                'method' => 'create',
+                'serial_number' => $serial_number,
+                'case_number' => $case_number
+            ], 500);
         } finally {
             if (isset($conn) && $conn instanceof \mysqli) {
                 $conn->close();
@@ -62,32 +85,58 @@ class ProductionController extends BaseController
      */
     public function history(): void
     {
-        header('Content-Type: application/json; charset=utf-8');
+        // Проверка авторизации
+        $this->requireAuth();
+        
+        // Rate limiting для получения истории прекращения производства (30 запросов в минуту)
+        if (!$this->checkRateLimit($this->getClientIP(), 'production_history', 30, 60)) {
+            $this->jsonResponse(['error' => 'Слишком много запросов истории прекращения производства'], 429);
+        }
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->jsonResponse(['error' => 'Неверный метод запроса'], 405);
+        }
+
         require_once __DIR__ . '/../../db_connection.php';
 
-        $serial_number = $_POST['serial_number'] ?? '';
-        $case_number   = $_POST['case_number']   ?? '';
+        // Безопасная валидация входных данных
+        $serial_number = $this->sanitizeString($_POST['serial_number'] ?? '');
+        $case_number   = $this->sanitizeString($_POST['case_number'] ?? '');
 
         if (empty($serial_number) || empty($case_number)) {
-            echo json_encode(['error' => 'Ошибка: Не указан серийный номер или номер корпуса.']);
-            if (isset($conn) && $conn instanceof \mysqli) {
-                $conn->close();
-            }
-            return;
+            $this->jsonResponse(['error' => 'Ошибка: Не указан серийный номер или номер корпуса.'], 400);
         }
 
         try {
             $data = fetchResults(
                 $conn,
-                "SELECT * FROM production_discontinuation WHERE serial_number = ? AND case_number = ? ORDER BY created_at DESC",
+                "SELECT * FROM production_discontinuation WHERE serial_number = ? AND case_number = ? ORDER BY created_at DESC LIMIT 100",
                 [$serial_number, $case_number],
                 'ss'
             );
-            echo json_encode(['history' => $data]);
+            
+            // Логируем получение истории прекращения производства
+            $this->logSecurityEvent('production_discontinuation_history_accessed', [
+                'user_id' => $_SESSION['user']['id'],
+                'serial_number' => $serial_number,
+                'case_number' => $case_number,
+                'records_count' => count($data)
+            ]);
+            
+            $this->jsonResponse(['history' => $data]);
         } catch (\Exception $e) {
-            error_log('ProductionController::history error: ' . $e->getMessage());
-            http_response_code(500);
-            echo json_encode(['error' => 'Ошибка загрузки истории: ' . $e->getMessage()]);
+            $this->logSecurityEvent('production_discontinuation_history_error', [
+                'user_id' => $_SESSION['user']['id'],
+                'error' => $e->getMessage(),
+                'serial_number' => $serial_number,
+                'case_number' => $case_number
+            ]);
+            
+            $this->handleError('Ошибка загрузки истории: ' . $e->getMessage(), [
+                'method' => 'history',
+                'serial_number' => $serial_number,
+                'case_number' => $case_number
+            ], 500);
         } finally {
             if (isset($conn) && $conn instanceof \mysqli) {
                 $conn->close();

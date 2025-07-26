@@ -1,15 +1,22 @@
 <?php
 session_start();
-if (!isset($_SESSION['user']['is_admin']) || !$_SESSION['user']['is_admin']) {
-    header('Location: index.php');
-    exit;
-}
+
+// Подключаем сервис безопасности
+require_once __DIR__ . '/src/Service/SecurityService.php';
+use App\Service\SecurityService;
+
+// Проверка прав администратора
+SecurityService::requireAdmin();
+
+// Установка безопасных заголовков
+SecurityService::setSecurityHeaders();
 
 require_once 'config.php';
 $mysqli = new mysqli(DB_HOST, DB_USERNAME, DB_PASSWORD, DB_NAME);
 
 if ($mysqli->connect_error) {
-    die("Ошибка подключения к базе данных: " . $mysqli->connect_error);
+    SecurityService::logSecurityEvent('database_connection_error', ['error' => $mysqli->connect_error]);
+    die("Ошибка подключения к базе данных.");
 }
 
 // Устанавливаем кодировку соединения на UTF-8
@@ -17,24 +24,58 @@ $mysqli->set_charset("utf8mb4");
 
 // Обработка добавления пользователя
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_user'])) {
-    $username = $_POST['username'];
-    $password = md5($_POST['password']);
-    $lastname = $_POST['lastname'];
-    $firstname = $_POST['firstname'];
-    $middlename = $_POST['middlename'];
+    // Валидация и очистка входных данных
+    $username = SecurityService::sanitizeString($_POST['username'] ?? '');
+    $password = $_POST['password'] ?? '';
+    $lastname = SecurityService::sanitizeString($_POST['lastname'] ?? '');
+    $firstname = SecurityService::sanitizeString($_POST['firstname'] ?? '');
+    $middlename = SecurityService::sanitizeString($_POST['middlename'] ?? '');
 
-    // Изменён запрос: сначала firstname, затем lastname
-    $stmt = $mysqli->prepare("INSERT INTO users (username, password, firstname, lastname, middlename) VALUES (?, ?, ?, ?, ?)");
-    $stmt->bind_param("sssss", $username, $password, $firstname, $lastname, $middlename);
-
-    if ($stmt->execute()) {
-        $message = "Пользователь успешно добавлен!";
-        $message_type = 'success'; // Добавляем тип сообщения
+    // Проверка обязательных полей
+    if (empty($username) || empty($password) || empty($lastname) || empty($firstname)) {
+        $message = "Все обязательные поля должны быть заполнены";
+        $message_type = 'danger';
     } else {
-        $message = "Ошибка при добавлении пользователя: " . $stmt->error;
-        $message_type = 'danger'; // Добавляем тип сообщения
+        // Проверка уникальности логина
+        $checkStmt = $mysqli->prepare("SELECT id FROM users WHERE username = ?");
+        $checkStmt->bind_param("s", $username);
+        $checkStmt->execute();
+        $checkResult = $checkStmt->get_result();
+        
+        if ($checkResult->num_rows > 0) {
+            $message = "Пользователь с таким логином уже существует";
+            $message_type = 'danger';
+            $checkStmt->close();
+        } else {
+            $checkStmt->close();
+            
+            // Безопасное хеширование пароля
+            $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
+            
+            // Изменён запрос: сначала firstname, затем lastname
+            $stmt = $mysqli->prepare("INSERT INTO users (username, password, firstname, lastname, middlename) VALUES (?, ?, ?, ?, ?)");
+            $stmt->bind_param("sssss", $username, $hashedPassword, $firstname, $lastname, $middlename);
+
+            if ($stmt->execute()) {
+                $message = "Пользователь успешно добавлен!";
+                $message_type = 'success';
+                
+                // Логируем создание пользователя
+                SecurityService::logSecurityEvent('user_created', [
+                    'new_username' => $username,
+                    'created_by' => $_SESSION['user']['id']
+                ]);
+            } else {
+                $message = "Ошибка при добавлении пользователя";
+                $message_type = 'danger';
+                SecurityService::logSecurityEvent('user_creation_failed', [
+                    'username' => $username,
+                    'error' => $stmt->error
+                ]);
+            }
+            $stmt->close();
+        }
     }
-    $stmt->close();
 }
 
 // Обработка SQL-запроса
@@ -43,31 +84,73 @@ $sql_query_message = null; // Сообщение для SQL запроса
 $sql_query_message_type = null; // Тип сообщения для SQL запроса
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['sql_query'])) {
-    $sql_query = $_POST['sql_query'];
-
-    if (stripos($sql_query, 'SELECT') === 0 || stripos($sql_query, 'SHOW') === 0 || stripos($sql_query, 'DESCRIBE') === 0) {
-        $result = $mysqli->query($sql_query);
-
-        if ($result) {
-            if (is_object($result)) {
-                $sql_query_result = [];
-                while ($row = $result->fetch_assoc()) {
-                    $sql_query_result[] = $row;
-                }
-                $result->free();
-                $sql_query_message = "Запрос успешно выполнен.";
-                $sql_query_message_type = 'success';
-            } else {
-                $sql_query_message = "Запрос успешно выполнен. Затронуто строк: " . $mysqli->affected_rows;
-                $sql_query_message_type = 'success';
-            }
-        } else {
-            $sql_query_message = "Ошибка выполнения запроса: " . $mysqli->error;
-            $sql_query_message_type = 'danger';
-        }
-    } else {
-        $sql_query_message = "Разрешены только запросы SELECT, SHOW и DESCRIBE.";
+    $sql_query = trim($_POST['sql_query'] ?? '');
+    
+    // Rate limiting для SQL-запросов
+    $clientIP = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+    if (!SecurityService::checkRateLimit($clientIP, 'sql_query', 10, 300)) {
+        $sql_query_message = "Слишком много SQL-запросов. Попробуйте через 5 минут.";
+        $sql_query_message_type = 'danger';
+    } elseif (empty($sql_query)) {
+        $sql_query_message = "SQL-запрос не может быть пустым.";
         $sql_query_message_type = 'warning';
+    } elseif (!SecurityService::validateSQLQuery($sql_query)) {
+        $sql_query_message = "Запрос содержит недопустимые команды или конструкции. Разрешены только SELECT, SHOW, DESCRIBE и EXPLAIN.";
+        $sql_query_message_type = 'danger';
+        
+        // Логируем подозрительную активность
+        SecurityService::logSecurityEvent('suspicious_sql_query', [
+            'query' => $sql_query,
+            'user_id' => $_SESSION['user']['id']
+        ]);
+    } else {
+        // Логируем выполнение SQL-запроса
+        SecurityService::logSecurityEvent('sql_query_executed', [
+            'query' => substr($sql_query, 0, 100) . (strlen($sql_query) > 100 ? '...' : ''),
+            'user_id' => $_SESSION['user']['id']
+        ]);
+        
+        try {
+            $result = $mysqli->query($sql_query);
+
+            if ($result) {
+                if (is_object($result)) {
+                    $sql_query_result = [];
+                    $row_count = 0;
+                    while ($row = $result->fetch_assoc() && $row_count < 1000) { // Ограничиваем количество строк
+                        $sql_query_result[] = $row;
+                        $row_count++;
+                    }
+                    $result->free();
+                    $sql_query_message = "Запрос успешно выполнен. Найдено строк: " . count($sql_query_result);
+                    if ($row_count >= 1000) {
+                        $sql_query_message .= " (показаны первые 1000 строк)";
+                    }
+                    $sql_query_message_type = 'success';
+                } else {
+                    $sql_query_message = "Запрос успешно выполнен. Затронуто строк: " . $mysqli->affected_rows;
+                    $sql_query_message_type = 'success';
+                }
+            } else {
+                $sql_query_message = "Ошибка выполнения запроса";
+                $sql_query_message_type = 'danger';
+                
+                // Логируем ошибку SQL
+                SecurityService::logSecurityEvent('sql_query_error', [
+                    'query' => substr($sql_query, 0, 100),
+                    'error' => $mysqli->error,
+                    'user_id' => $_SESSION['user']['id']
+                ]);
+            }
+        } catch (Exception $e) {
+            $sql_query_message = "Ошибка выполнения запроса";
+            $sql_query_message_type = 'danger';
+            SecurityService::logSecurityEvent('sql_query_exception', [
+                'query' => substr($sql_query, 0, 100),
+                'error' => $e->getMessage(),
+                'user_id' => $_SESSION['user']['id']
+            ]);
+        }
     }
 }
 
@@ -97,26 +180,55 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['search_user'])) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['edit_user'])) {
-    $id = $_POST['id'];
-    $username = $_POST['username'];
-    $password = !empty($_POST['password']) ? md5($_POST['password']) : $_POST['old_password'];
-    $lastname = $_POST['lastname'];
-    $firstname = $_POST['firstname'];
-    $middlename = $_POST['middlename'];
+    // Валидация и очистка входных данных
+    $id = SecurityService::validateInt($_POST['id'] ?? 0, 1);
+    $username = SecurityService::sanitizeString($_POST['username'] ?? '');
+    $newPassword = $_POST['password'] ?? '';
+    $oldPassword = $_POST['old_password'] ?? '';
+    $lastname = SecurityService::sanitizeString($_POST['lastname'] ?? '');
+    $firstname = SecurityService::sanitizeString($_POST['firstname'] ?? '');
+    $middlename = SecurityService::sanitizeString($_POST['middlename'] ?? '');
     $is_admin = isset($_POST['is_admin']) ? 1 : 0;
 
-    $stmt = $mysqli->prepare("UPDATE users SET username = ?, password = ?, firstname = ?, lastname = ?, middlename = ?, is_admin = ? WHERE id = ?");
-    $stmt->bind_param("ssssssi", $username, $password, $firstname, $lastname, $middlename, $is_admin, $id);
-
-    if ($stmt->execute()) {
-        $message = "Данные пользователя успешно обновлены!";
-        $message_type = 'success'; // Добавляем тип сообщения
-        $userData = null; // Очищаем форму после успешного обновления
+    if (!$id || empty($username) || empty($lastname) || empty($firstname)) {
+        $message = "Все обязательные поля должны быть заполнены";
+        $message_type = 'danger';
     } else {
-        $message = "Ошибка при обновлении данных: " . $stmt->error;
-        $message_type = 'danger'; // Добавляем тип сообщения
+        // Определяем пароль для обновления
+        if (!empty($newPassword)) {
+            // Новый пароль - хешируем безопасно
+            $password = password_hash($newPassword, PASSWORD_DEFAULT);
+        } else {
+            // Оставляем старый пароль
+            $password = $oldPassword;
+        }
+
+        $stmt = $mysqli->prepare("UPDATE users SET username = ?, password = ?, firstname = ?, lastname = ?, middlename = ?, is_admin = ? WHERE id = ?");
+        $stmt->bind_param("ssssssi", $username, $password, $firstname, $lastname, $middlename, $is_admin, $id);
+
+        if ($stmt->execute()) {
+            $message = "Данные пользователя успешно обновлены!";
+            $message_type = 'success';
+            $userData = null; // Очищаем форму после успешного обновления
+            
+            // Логируем изменение пользователя
+            SecurityService::logSecurityEvent('user_updated', [
+                'updated_user_id' => $id,
+                'updated_username' => $username,
+                'password_changed' => !empty($newPassword),
+                'admin_changed' => $is_admin,
+                'updated_by' => $_SESSION['user']['id']
+            ]);
+        } else {
+            $message = "Ошибка при обновлении данных";
+            $message_type = 'danger';
+            SecurityService::logSecurityEvent('user_update_failed', [
+                'user_id' => $id,
+                'error' => $stmt->error
+            ]);
+        }
+        $stmt->close();
     }
-    $stmt->close();
 }
 
 $unread_count = 0; // Значение по умолчанию
@@ -253,56 +365,78 @@ if ($is_logged_in && isset($user_info['id'])) {
             </div>
 
             <div id="table-data-container" class="table-data-container mt-4">
-                <?php if ($selectedTable && in_array($selectedTable, $tables)): ?>
+                <?php if ($selectedTable && SecurityService::validateTableName($selectedTable)): ?>
                     <h2>Данные таблицы: <?= htmlspecialchars($selectedTable) ?></h2>
                     <div class="table-responsive">
                         <table class="data-table">
                             <thead>
                                 <tr>
                                     <?php
-                                    // Используем подготовленный запрос для SHOW COLUMNS для безопасности, хотя для SHOW/DESCRIBE это не так критично
-                                    // как для SELECT с пользовательским вводом. Но для единообразия и потенциальных будущих изменений.
-                                    // Однако, SHOW COLUMNS не поддерживает привязку параметров для имени таблицы, поэтому используем прямой запрос с экранированием.
-                                    $escaped_table_name = $mysqli->real_escape_string($selectedTable);
-                                    $result = $mysqli->query("SHOW COLUMNS FROM `$escaped_table_name`");
-                                    $column_count = 0; // Счетчик столбцов для colspan
-                                    if ($result):
-                                        while ($column = $result->fetch_assoc()):
-                                            $column_count++;?>
-                                            <th><?= htmlspecialchars($column['Field']) ?></th>
-                                        <?php endwhile;
-                                    else: ?>
-                                        <th>Ошибка загрузки столбцов</th>
-                                        <?php $column_count = 1; ?>
-                                    <?php endif; ?>
+                                    // Безопасное получение структуры таблицы через whitelist
+                                    try {
+                                        // Используем whitelist вместо экранирования
+                                        $safeTableName = $selectedTable; // Уже проверено через validateTableName
+                                        $result = $mysqli->query("SHOW COLUMNS FROM `$safeTableName`");
+                                        $column_count = 0;
+                                        
+                                        if ($result):
+                                            while ($column = $result->fetch_assoc()):
+                                                $column_count++;?>
+                                                <th><?= htmlspecialchars($column['Field']) ?></th>
+                                            <?php endwhile;
+                                        else: ?>
+                                            <th>Ошибка загрузки столбцов</th>
+                                            <?php $column_count = 1; ?>
+                                        <?php endif;
+                                    } catch (Exception $e) {
+                                        $column_count = 1;
+                                        echo '<th>Ошибка загрузки структуры таблицы</th>';
+                                        SecurityService::logSecurityEvent('table_structure_error', [
+                                            'table' => $selectedTable,
+                                            'error' => $e->getMessage()
+                                        ]);
+                                    } ?>
                                 </tr>
                             </thead>
                             <tbody>
                                 <?php
-                                // Используем подготовленный запрос для SELECT
-                                $stmt_select = $mysqli->prepare("SELECT * FROM `$escaped_table_name` LIMIT 100");
-                                if ($stmt_select) {
-                                    $stmt_select->execute();
-                                    $result_data = $stmt_select->get_result();
-                                    if ($result_data):
-                                        while ($row = $result_data->fetch_assoc()): ?>
-                                            <tr>
-                                                <?php foreach ($row as $value): ?>
-                                                    <td><?= htmlspecialchars($value) ?></td>
-                                                <?php endforeach; ?>
-                                            </tr>
-                                        <?php endwhile;
-                                        $stmt_select->close();
-                                    else: ?>
-                                        <tr><td colspan="<?= $column_count ?>">Ошибка загрузки данных: <?= $mysqli->error ?></td></tr>
-                                    <?php endif;
-                                } else { ?>
-                                     <tr><td colspan="<?= $column_count ?>">Ошибка подготовки запроса SELECT: <?= $mysqli->error ?></td></tr>
-                                <?php } ?>
-
-                                 <?php if (isset($result_data) && $result_data && $result_data->num_rows >= 100): ?>
-                                     <tr><td colspan="<?= $column_count ?>">Показаны первые 100 строк. Для просмотра всех данных используйте SQL-запрос.</td></tr>
-                                 <?php endif; ?>
+                                try {
+                                    // Безопасный SELECT с ограничением строк
+                                    $stmt_select = $mysqli->prepare("SELECT * FROM `$safeTableName` LIMIT 100");
+                                    if ($stmt_select) {
+                                        $stmt_select->execute();
+                                        $result_data = $stmt_select->get_result();
+                                        $row_count = 0;
+                                        
+                                        if ($result_data):
+                                            while ($row = $result_data->fetch_assoc()): 
+                                                $row_count++; ?>
+                                                <tr>
+                                                    <?php foreach ($row as $value): ?>
+                                                        <td><?= htmlspecialchars($value ?? '') ?></td>
+                                                    <?php endforeach; ?>
+                                                </tr>
+                                            <?php endwhile;
+                                            $stmt_select->close();
+                                            
+                                            if ($row_count === 0): ?>
+                                                <tr><td colspan="<?= $column_count ?>">Таблица пуста</td></tr>
+                                            <?php elseif ($row_count >= 100): ?>
+                                                <tr><td colspan="<?= $column_count ?>">Показаны первые 100 строк. Для просмотра всех данных используйте SQL-запрос.</td></tr>
+                                            <?php endif;
+                                        else: ?>
+                                            <tr><td colspan="<?= $column_count ?>">Ошибка загрузки данных</td></tr>
+                                        <?php endif;
+                                    } else { ?>
+                                         <tr><td colspan="<?= $column_count ?>">Ошибка подготовки запроса</td></tr>
+                                    <?php }
+                                } catch (Exception $e) {
+                                    echo '<tr><td colspan="' . $column_count . '">Ошибка получения данных таблицы</td></tr>';
+                                    SecurityService::logSecurityEvent('table_data_error', [
+                                        'table' => $selectedTable,
+                                        'error' => $e->getMessage()
+                                    ]);
+                                } ?>
                             </tbody>
                         </table>
                     </div>

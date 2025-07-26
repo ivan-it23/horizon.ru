@@ -10,24 +10,40 @@ class InspectionController extends BaseController
      */
     public function create(): void
     {
-        header('Content-Type: application/json; charset=utf-8');
+        // Проверка авторизации
+        $this->requireAuth();
+        
+        // Rate limiting для создания записей контроля (15 записей в минуту)
+        if (!$this->checkRateLimit($this->getClientIP(), 'inspection_create', 15, 60)) {
+            $this->jsonResponse(['success' => false, 'message' => 'Слишком много запросов на создание записей контроля'], 429);
+        }
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->jsonResponse(['success' => false, 'message' => 'Неверный метод запроса'], 405);
+        }
+
         require_once __DIR__ . '/../../db_connection.php';
 
-        $inspection_date   = $_POST['inspection_date']   ?? '';
-        $inspection_result = $_POST['inspection_result'] ?? '';
-        $creator_surname   = $_POST['creator_surname']   ?? '';
-        $serial_number     = $_POST['serial_number']     ?? '';
-        $case_number       = $_POST['case_number']       ?? '';
+        // Безопасная валидация и очистка входных данных
+        $inspection_date   = $this->sanitizeString($_POST['inspection_date'] ?? '');
+        $inspection_result = $this->sanitizeString($_POST['inspection_result'] ?? '', 1000);
+        $creator_surname   = $this->sanitizeString($_POST['creator_surname'] ?? '');
+        $serial_number     = $this->sanitizeString($_POST['serial_number'] ?? '');
+        $case_number       = $this->sanitizeString($_POST['case_number'] ?? '');
 
         if (empty($inspection_date) || empty($inspection_result) || empty($creator_surname) || empty($serial_number) || empty($case_number)) {
-            echo json_encode([
+            $this->jsonResponse([
                 'success' => false,
                 'message' => 'Ошибка: Не все обязательные поля были заполнены.'
-            ]);
-            if (isset($conn) && $conn instanceof \mysqli) {
-                $conn->close();
-            }
-            return;
+            ], 400);
+        }
+
+        // Валидация длины результата контроля
+        if (strlen($inspection_result) > 1000) {
+            $this->jsonResponse([
+                'success' => false,
+                'message' => 'Результат контроля слишком длинный (максимум 1000 символов)'
+            ], 400);
         }
 
         try {
@@ -39,16 +55,32 @@ class InspectionController extends BaseController
                 [$inspection_date, $inspection_result, $creator_surname, $serial_number, $case_number],
                 'sssss'
             );
-            echo json_encode([
+            
+            // Логируем успешное создание записи контроля
+            $this->logSecurityEvent('inspection_created', [
+                'user_id' => $_SESSION['user']['id'],
+                'serial_number' => $serial_number,
+                'case_number' => $case_number,
+                'inspection_date' => $inspection_date
+            ]);
+            
+            $this->jsonResponse([
                 'success' => true,
                 'message' => 'Данные успешно сохранены!'
             ]);
         } catch (\Exception $e) {
-            error_log('InspectionController::create error: ' . $e->getMessage());
-            echo json_encode([
-                'success' => false,
-                'message' => 'Ошибка при сохранении данных: ' . $e->getMessage()
+            $this->logSecurityEvent('inspection_create_error', [
+                'user_id' => $_SESSION['user']['id'],
+                'error' => $e->getMessage(),
+                'serial_number' => $serial_number,
+                'case_number' => $case_number
             ]);
+            
+            $this->handleError('Ошибка при сохранении данных: ' . $e->getMessage(), [
+                'method' => 'create',
+                'serial_number' => $serial_number,
+                'case_number' => $case_number
+            ], 500);
         } finally {
             if (isset($conn) && $conn instanceof \mysqli) {
                 $conn->close();
@@ -61,26 +93,58 @@ class InspectionController extends BaseController
      */
     public function history(): void
     {
-        header('Content-Type: application/json; charset=utf-8');
+        // Проверка авторизации
+        $this->requireAuth();
+        
+        // Rate limiting для получения истории контроля (30 запросов в минуту)
+        if (!$this->checkRateLimit($this->getClientIP(), 'inspection_history', 30, 60)) {
+            $this->jsonResponse(['error' => 'Слишком много запросов истории контроля'], 429);
+        }
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->jsonResponse(['error' => 'Неверный метод запроса'], 405);
+        }
+
         require_once __DIR__ . '/../../db_connection.php';
 
-        $serial_number = $_POST['serial_number'] ?? '';
-        $case_number   = $_POST['case_number']   ?? '';
+        // Безопасная валидация входных данных
+        $serial_number = $this->sanitizeString($_POST['serial_number'] ?? '');
+        $case_number   = $this->sanitizeString($_POST['case_number'] ?? '');
+
+        if (empty($serial_number) || empty($case_number)) {
+            $this->jsonResponse(['error' => 'Не указан серийный номер или номер корпуса'], 400);
+        }
 
         try {
             $data = fetchResults(
                 $conn,
-                "SELECT * FROM inspection_data WHERE serial_number = ? AND case_number = ? ORDER BY created_at DESC",
+                "SELECT * FROM inspection_data WHERE serial_number = ? AND case_number = ? ORDER BY created_at DESC LIMIT 100",
                 [$serial_number, $case_number],
                 'ss'
             );
-            echo json_encode($data);
-        } catch (\Exception $e) {
-            error_log('InspectionController::history error: ' . $e->getMessage());
-            http_response_code(500);
-            echo json_encode([
-                'error' => 'Ошибка загрузки истории: ' . $e->getMessage()
+            
+            // Логируем получение истории контроля
+            $this->logSecurityEvent('inspection_history_accessed', [
+                'user_id' => $_SESSION['user']['id'],
+                'serial_number' => $serial_number,
+                'case_number' => $case_number,
+                'records_count' => count($data)
             ]);
+            
+            $this->jsonResponse($data);
+        } catch (\Exception $e) {
+            $this->logSecurityEvent('inspection_history_error', [
+                'user_id' => $_SESSION['user']['id'],
+                'error' => $e->getMessage(),
+                'serial_number' => $serial_number,
+                'case_number' => $case_number
+            ]);
+            
+            $this->handleError('Ошибка загрузки истории: ' . $e->getMessage(), [
+                'method' => 'history',
+                'serial_number' => $serial_number,
+                'case_number' => $case_number
+            ], 500);
         } finally {
             if (isset($conn) && $conn instanceof \mysqli) {
                 $conn->close();

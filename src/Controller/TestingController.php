@@ -10,21 +10,38 @@ class TestingController extends BaseController
      */
     public function create(): void
     {
-        header('Content-Type: application/json; charset=utf-8');
-        session_start();
+        // Проверка авторизации
+        $this->requireAuth();
+        
+        // Rate limiting для создания записей испытаний (30 записей в час для активной работы с испытаниями)
+        if (!$this->checkRateLimit($this->getClientIP(), 'testing_create', 30, 3600)) {
+            $this->jsonResponse(['success' => false, 'message' => 'Слишком много попыток создания записей испытаний'], 429);
+        }
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->jsonResponse(['success' => false, 'message' => 'Неверный метод запроса'], 405);
+        }
+
         require_once __DIR__ . '/../../db_connection.php';
 
-        // Базовые поля
-        $serial_number    = $_POST['serial_number'] ?? '';
-        $case_number      = $_POST['case_number'] ?? '';
-        $creator          = $_POST['creator_surname'] ?? '';
-        $temperature_test = $_POST['temperature_test'] ?? null;
-        $vibration_test   = $_POST['vibration_test'] ?? null;
-        $test_result      = $_POST['test_result'] ?? '';
+        // Безопасная валидация и очистка базовых полей
+        $serial_number    = $this->sanitizeString($_POST['serial_number'] ?? '');
+        $case_number      = $this->sanitizeString($_POST['case_number'] ?? '');
+        $creator          = $this->sanitizeString($_POST['creator_surname'] ?? '');
+        $temperature_test = $this->sanitizeString($_POST['temperature_test'] ?? '');
+        $vibration_test   = $this->sanitizeString($_POST['vibration_test'] ?? '');
+        $test_result      = $this->sanitizeString($_POST['test_result'] ?? '', 500);
 
         if (empty($serial_number) || empty($case_number)) {
-            echo json_encode(['success' => false, 'message' => 'Не указаны серийный номер или номер корпуса.']);
-            return;
+            $this->jsonResponse(['success' => false, 'message' => 'Не указаны серийный номер или номер корпуса.'], 400);
+        }
+
+        // Валидация длины результата испытания
+        if (strlen($test_result) > 500) {
+            $this->jsonResponse([
+                'success' => false,
+                'message' => 'Результат испытания слишком длинный (максимум 500 символов)'
+            ], 400);
         }
 
         // Собираем массив числовых метрик (float)
@@ -65,15 +82,34 @@ class TestingController extends BaseController
 
         try {
             executeQuery($conn, $sql, $params, $types);
-            echo json_encode([
+            
+            // Логируем успешное создание записи испытаний
+            $this->logSecurityEvent('testing_created', [
+                'user_id' => $_SESSION['user']['id'],
+                'serial_number' => $serial_number,
+                'case_number' => $case_number,
+                'test_result' => $test_result,
+                'metrics_count' => count($floats)
+            ]);
+            
+            $this->jsonResponse([
                 'success' => true,
                 'test_result_status' => $test_result,
                 'message' => 'Данные испытаний успешно сохранены!'
             ]);
         } catch (\Exception $e) {
-            error_log('TestingController::create error: ' . $e->getMessage());
-            http_response_code(500);
-            echo json_encode(['success' => false, 'message' => 'Ошибка при сохранении данных: ' . $e->getMessage()]);
+            $this->logSecurityEvent('testing_create_error', [
+                'user_id' => $_SESSION['user']['id'],
+                'error' => $e->getMessage(),
+                'serial_number' => $serial_number,
+                'case_number' => $case_number
+            ]);
+            
+            $this->handleError('Ошибка при сохранении данных: ' . $e->getMessage(), [
+                'method' => 'create',
+                'serial_number' => $serial_number,
+                'case_number' => $case_number
+            ], 500);
         } finally {
             if (isset($conn) && $conn instanceof \mysqli) {
                 $conn->close();
@@ -86,33 +122,58 @@ class TestingController extends BaseController
      */
     public function history(): void
     {
-        header('Content-Type: application/json; charset=utf-8');
-        // Suppress PHP warnings to avoid breaking JSON
-        error_reporting(0);
-        ini_set('display_errors', 0);
-        session_start();
+        // Проверка авторизации
+        $this->requireAuth();
+        
+        // Rate limiting для получения истории испытаний (30 запросов в минуту)
+        if (!$this->checkRateLimit($this->getClientIP(), 'testing_history', 30, 60)) {
+            $this->jsonResponse(['error' => 'Слишком много запросов истории испытаний'], 429);
+        }
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->jsonResponse(['error' => 'Неверный метод запроса'], 405);
+        }
+
         require_once __DIR__ . '/../../db_connection.php';
 
-        $serial_number = $_POST['serial_number'] ?? '';
-        $case_number   = $_POST['case_number']   ?? '';
+        // Безопасная валидация входных данных
+        $serial_number = $this->sanitizeString($_POST['serial_number'] ?? '');
+        $case_number   = $this->sanitizeString($_POST['case_number'] ?? '');
 
         if (empty($serial_number) || empty($case_number)) {
-            echo json_encode(['error' => 'Не указаны серийный номер или номер корпуса.']);
-            return;
+            $this->jsonResponse(['error' => 'Не указаны серийный номер или номер корпуса.'], 400);
         }
 
         try {
             $data = fetchResults(
                 $conn,
-                "SELECT * FROM testing_data WHERE serial_number = ? AND case_number = ? ORDER BY created_at DESC",
+                "SELECT * FROM testing_data WHERE serial_number = ? AND case_number = ? ORDER BY created_at DESC LIMIT 100",
                 [$serial_number, $case_number],
                 'ss'
             );
-            echo json_encode($data);
+            
+            // Логируем получение истории испытаний
+            $this->logSecurityEvent('testing_history_accessed', [
+                'user_id' => $_SESSION['user']['id'],
+                'serial_number' => $serial_number,
+                'case_number' => $case_number,
+                'records_count' => count($data)
+            ]);
+            
+            $this->jsonResponse($data);
         } catch (\Exception $e) {
-            error_log('TestingController::history error: ' . $e->getMessage());
-            http_response_code(500);
-            echo json_encode(['error' => 'Ошибка загрузки истории: ' . $e->getMessage()]);
+            $this->logSecurityEvent('testing_history_error', [
+                'user_id' => $_SESSION['user']['id'],
+                'error' => $e->getMessage(),
+                'serial_number' => $serial_number,
+                'case_number' => $case_number
+            ]);
+            
+            $this->handleError('Ошибка загрузки истории: ' . $e->getMessage(), [
+                'method' => 'history',
+                'serial_number' => $serial_number,
+                'case_number' => $case_number
+            ], 500);
         } finally {
             if (isset($conn) && $conn instanceof \mysqli) {
                 $conn->close();

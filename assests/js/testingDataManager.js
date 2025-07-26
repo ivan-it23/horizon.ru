@@ -529,7 +529,7 @@
             if (loadedTolerancesForTab3[cacheKey] === undefined) { // Загружаем, только если еще не в кэше
                 const [deviceType, parameter, frequency, column] = cacheKey.split('-');
                 promises.push(
-                    fetch('get_tolerances.php', {
+                    fetch('front.php?c=tolerance&a=get', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ 

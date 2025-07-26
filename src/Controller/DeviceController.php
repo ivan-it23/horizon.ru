@@ -10,18 +10,37 @@ class DeviceController extends BaseController
      */
     public function search(): void
     {
-        header('Content-Type: application/json; charset=utf-8');
+        // Проверка авторизации
+        $this->requireAuth();
+        
+        // Проверка метода запроса
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->jsonResponse(['success' => false, 'message' => 'Неверный метод запроса'], 405);
+        }
+        
+        // Rate limiting для поиска
+        if (!$this->checkRateLimit($this->getClientIP(), 'device_search', 20, 60)) {
+            $this->jsonResponse(['success' => false, 'message' => 'Слишком много запросов поиска'], 429);
+        }
+
         // Подключаем соединение и вспомогательные функции
         require_once __DIR__ . '/../../db_connection.php';
 
-        $serialNumber = isset($_POST['serial_number']) ? trim($_POST['serial_number']) : null;
-        $caseNumber   = isset($_POST['case_number'])   ? trim($_POST['case_number'])   : null;
+        // Безопасная валидация входных данных
+        $serialNumber = isset($_POST['serial_number']) ? $this->sanitizeString($_POST['serial_number']) : null;
+        $caseNumber   = isset($_POST['case_number'])   ? $this->sanitizeString($_POST['case_number'])   : null;
 
         // Проверка параметров
         if (!$serialNumber && !$caseNumber) {
-            echo json_encode(['success' => false, 'message' => 'Не указаны параметры поиска']);
-            return;
+            $this->jsonResponse(['success' => false, 'message' => 'Не указаны параметры поиска'], 400);
         }
+
+        // Логируем поиск
+        $this->logSecurityEvent('device_search', [
+            'serial_number' => $serialNumber,
+            'case_number' => $caseNumber,
+            'user_id' => $_SESSION['user']['id']
+        ]);
 
         // Строим запрос
         $sql = 'SELECT * FROM device_identification WHERE 1=1';
@@ -71,13 +90,26 @@ class DeviceController extends BaseController
      */
     public function filter(): void
     {
-        header('Content-Type: application/json; charset=utf-8');
+        // Проверка авторизации
+        $this->requireAuth();
+        
+        // Проверка метода запроса
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->jsonResponse(['error' => 'Неверный метод запроса'], 405);
+        }
+        
+        // Rate limiting для фильтрации
+        if (!$this->checkRateLimit($this->getClientIP(), 'device_filter', 30, 60)) {
+            $this->jsonResponse(['error' => 'Слишком много запросов фильтрации'], 429);
+        }
+
         require_once __DIR__ . '/../../db_connection.php';
 
-        $deviceType       = isset($_POST['device_type'])       ? trim($_POST['device_type'])       : null;
-        $nominalDiameter  = isset($_POST['nominal_diameter'])  ? trim($_POST['nominal_diameter'])  : null;
-        $transmitterCount = isset($_POST['transmitter_count']) ? trim($_POST['transmitter_count']) : null;
-        $deviceId         = isset($_POST['device_id'])         ? trim($_POST['device_id'])         : null;
+        // Безопасная валидация входных данных
+        $deviceType       = isset($_POST['device_type'])       ? $this->sanitizeString($_POST['device_type'])       : null;
+        $nominalDiameter  = isset($_POST['nominal_diameter'])  ? $this->sanitizeString($_POST['nominal_diameter'])  : null;
+        $transmitterCount = isset($_POST['transmitter_count']) ? $this->sanitizeString($_POST['transmitter_count']) : null;
+        $deviceId         = isset($_POST['device_id'])         ? $this->validateInt($_POST['device_id'], 1)         : null;
 
         $sql    = 'SELECT * FROM device_identification WHERE 1=1';
         $params = [];
@@ -107,10 +139,30 @@ class DeviceController extends BaseController
 
         try {
             $devices = fetchResults($conn, $sql, $params, $types);
-            echo json_encode($devices);
+            
+            // Логируем успешную фильтрацию
+            $this->logSecurityEvent('device_filter_success', [
+                'user_id' => $_SESSION['user']['id'],
+                'device_type' => $deviceType,
+                'nominal_diameter' => $nominalDiameter,
+                'transmitter_count' => $transmitterCount,
+                'device_id' => $deviceId,
+                'results_count' => count($devices)
+            ]);
+            
+            $this->jsonResponse($devices);
         } catch (\Exception $e) {
-            error_log('DeviceController::filter error: ' . $e->getMessage());
-            echo json_encode([]);
+            $this->logSecurityEvent('device_filter_error', [
+                'user_id' => $_SESSION['user']['id'],
+                'error' => $e->getMessage(),
+                'device_type' => $deviceType,
+                'nominal_diameter' => $nominalDiameter,
+                'transmitter_count' => $transmitterCount
+            ]);
+            
+            $this->handleError('Ошибка при фильтрации приборов: ' . $e->getMessage(), [
+                'method' => 'filter'
+            ], 500);
         } finally {
             if (isset($conn) && $conn instanceof \mysqli) {
                 $conn->close();
@@ -123,7 +175,9 @@ class DeviceController extends BaseController
      */
     public function index(): void
     {
-        session_start();
+        // Проверка авторизации
+        $this->requireAuth();
+        
         require_once __DIR__ . '/../../db_connection.php';
 
         // Подготовка данных пользователя и непрочитанных сообщений
@@ -155,13 +209,19 @@ class DeviceController extends BaseController
      */
     public function composition(): void
     {
-        header('Content-Type: application/json; charset=utf-8');
+        // Проверка авторизации
+        $this->requireAuth();
+        
+        // Rate limiting
+        if (!$this->checkRateLimit($this->getClientIP(), 'device_composition', 50, 60)) {
+            $this->jsonResponse(['error' => 'Слишком много запросов состава'], 429);
+        }
+
         require_once __DIR__ . '/../../db_connection.php';
 
-        $deviceId = filter_input(INPUT_POST, 'device_id', FILTER_VALIDATE_INT);
+        $deviceId = $this->validateInt($_POST['device_id'] ?? 0, 1);
         if (!$deviceId) {
-            echo json_encode(['error' => 'Не указан идентификатор прибора']);
-            return;
+            $this->jsonResponse(['error' => 'Не указан идентификатор прибора']);
         }
 
         try {
@@ -183,13 +243,19 @@ class DeviceController extends BaseController
      */
     public function history(): void
     {
-        header('Content-Type: application/json; charset=utf-8');
+        // Проверка авторизации
+        $this->requireAuth();
+        
+        // Rate limiting
+        if (!$this->checkRateLimit($this->getClientIP(), 'device_history', 50, 60)) {
+            $this->jsonResponse(['error' => 'Слишком много запросов истории'], 429);
+        }
+
         require_once __DIR__ . '/../../db_connection.php';
 
-        $deviceId = filter_input(INPUT_POST, 'device_id', FILTER_VALIDATE_INT);
+        $deviceId = $this->validateInt($_POST['device_id'] ?? 0, 1);
         if (!$deviceId) {
-            echo json_encode([]);
-            return;
+            $this->jsonResponse([]);
         }
 
         try {
@@ -211,16 +277,39 @@ class DeviceController extends BaseController
      */
     public function export(): void
     {
-        session_start();
+        // Проверка авторизации
+        $this->requireAuth();
+        
+        // Rate limiting для экспорта (не чаще 5 раз в минуту)
+        if (!$this->checkRateLimit($this->getClientIP(), 'device_export', 5, 60)) {
+            $this->handleError('Слишком много запросов экспорта. Попробуйте через минуту.', [], 429);
+        }
+
         require_once __DIR__ . '/../../db_connection.php';
         mysqli_set_charset($conn, 'utf8');
 
-        $deviceId     = filter_input(INPUT_GET, 'device_id', FILTER_VALIDATE_INT);
-        $serialNumber = mysqli_real_escape_string($conn, $_GET['serial_number'] ?? '');
-        $caseNumber   = mysqli_real_escape_string($conn, $_GET['case_number']   ?? '');
+        // Безопасная валидация входных данных
+        $deviceId     = $this->validateInt($_GET['device_id'] ?? 0, 1);
+        $serialNumber = $this->sanitizeString($_GET['serial_number'] ?? '');
+        $caseNumber   = $this->sanitizeString($_GET['case_number'] ?? '');
 
+        if (!$deviceId || !$serialNumber || !$caseNumber) {
+            $this->handleError('Некорректные параметры для экспорта', [], 400);
+        }
+
+        // Логируем экспорт
+        $this->logSecurityEvent('device_export', [
+            'device_id' => $deviceId,
+            'serial_number' => $serialNumber,
+            'case_number' => $caseNumber,
+            'user_id' => $_SESSION['user']['id']
+        ]);
+
+        // Безопасное имя файла
+        $safeFileName = 'device_' . preg_replace('/[^a-zA-Z0-9_-]/', '_', $serialNumber) . '_' . preg_replace('/[^a-zA-Z0-9_-]/', '_', $caseNumber) . '.xls';
+        
         header('Content-Type: application/vnd.ms-excel');
-        header('Content-Disposition: attachment; filename="device_{$serialNumber}_{$caseNumber}.xls"');
+        header('Content-Disposition: attachment; filename="' . $safeFileName . '"');
         header('Pragma: no-cache');
         header('Expires: 0');
 
@@ -282,8 +371,8 @@ class DeviceController extends BaseController
         $stmt->close();
         $output .= generateTable($compHistory, 'История состава прибора');
 
-        // 5. Other lifecycle tables
-        $tables = [
+        // 5. Other lifecycle tables - безопасные запросы
+        $allowedTables = [
             'production_discontinuation' => 'Сведения о выходе из производства',
             'testing_data'              => 'Сведения об испытаниях',
             'repair_data'               => 'Сведения о ремонте',
@@ -291,25 +380,50 @@ class DeviceController extends BaseController
             'termination_data'          => 'Сведения о прекращении эксплуатации',
             'additional_data'           => 'Дополнительные сведения'
         ];
-        foreach ($tables as $table => $title) {
-            $query  = "SELECT * FROM {$table} WHERE serial_number = '{$serialNumber}' AND case_number = '{$caseNumber}'";
-            $result = $conn->query($query);
-            $data   = $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
-            $output .= generateTable($data, $title);
+        
+        foreach ($allowedTables as $table => $title) {
+            try {
+                $stmt = $conn->prepare("SELECT * FROM `{$table}` WHERE serial_number = ? AND case_number = ?");
+                $stmt->bind_param('ss', $serialNumber, $caseNumber);
+                $stmt->execute();
+                $result = $stmt->get_result();
+                $data = $result->fetch_all(MYSQLI_ASSOC);
+                $stmt->close();
+                $output .= generateTable($data, $title);
+            } catch (\Exception $e) {
+                // Логируем ошибку, но продолжаем экспорт
+                $this->logSecurityEvent('export_table_error', [
+                    'table' => $table,
+                    'error' => $e->getMessage(),
+                    'device_id' => $deviceId
+                ]);
+            }
         }
 
-        // 6. Допуски в зависимости от типа прибора
+        // 6. Допуски в зависимости от типа прибора - безопасные запросы
         $deviceType = $device[0]['device_type'] ?? '';
-        $tolMap = [
+        $allowedToleranceTables = [
             'Автономный' => ['tolerances_autonomous', 'Допуски (Автономный)'],
             'Картограф'  => ['tolerances_cartographer', 'Допуски (Картограф)'],
             'LWD'        => ['tolerances_lwd', 'Допуски (LWD)'],
         ];
-        if (isset($tolMap[$deviceType])) {
-            list($tolTable, $tolTitle) = $tolMap[$deviceType];
-            $result = $conn->query("SELECT * FROM {$tolTable}");
-            $data   = $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
-            $output .= generateTable($data, $tolTitle);
+        
+        if (isset($allowedToleranceTables[$deviceType])) {
+            list($tolTable, $tolTitle) = $allowedToleranceTables[$deviceType];
+            try {
+                $stmt = $conn->prepare("SELECT * FROM `{$tolTable}`");
+                $stmt->execute();
+                $result = $stmt->get_result();
+                $data = $result->fetch_all(MYSQLI_ASSOC);
+                $stmt->close();
+                $output .= generateTable($data, $tolTitle);
+            } catch (\Exception $e) {
+                $this->logSecurityEvent('export_tolerance_error', [
+                    'table' => $tolTable,
+                    'error' => $e->getMessage(),
+                    'device_type' => $deviceType
+                ]);
+            }
         }
         $output .= '</body></html>';
         echo $output;

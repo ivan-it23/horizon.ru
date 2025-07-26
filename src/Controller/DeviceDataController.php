@@ -11,31 +11,35 @@ class DeviceDataController extends BaseController
      */
     public function create(): void
     {
-        header('Content-Type: application/json; charset=utf-8');
-        // Start session for user info
-        session_start();
+        // Проверка авторизации
+        $this->requireAuth();
+        
+        // Rate limiting для создания приборов (5 приборов в час)
+        if (!$this->checkRateLimit($this->getClientIP(), 'device_create', 5, 3600)) {
+            $this->jsonResponse(['success' => false, 'error' => 'Слишком много попыток создания приборов. Попробуйте через час.'], 429);
+        }
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->jsonResponse(['success' => false, 'error' => 'Неверный метод запроса'], 405);
+        }
+
         // Create DB connection
         require_once __DIR__ . '/../../db_connection.php';
 
-        // Helper to get sanitized POST data
-        $getPost = function(string $key) use ($conn) {
-            if (isset($_POST[$key]) && $_POST[$key] !== '') {
-                return mysqli_real_escape_string($conn, trim($_POST[$key]));
-            }
-            return null;
-        };
+        // Безопасная валидация и очистка входных данных
+        $device_type       = $this->sanitizeString($_POST['device_type'] ?? '');
+        $nominal_diameter  = $this->sanitizeString($_POST['nominal_diameter'] ?? '');
+        $transmitter_count = $this->sanitizeString($_POST['transmitter_count'] ?? '');
+        $serial_number     = $this->sanitizeString($_POST['serial_number'] ?? '');
+        $case_number       = $this->sanitizeString($_POST['case_number'] ?? '');
 
-        // Required fields
-        $device_type       = $getPost('device_type');
-        $nominal_diameter  = $getPost('nominal_diameter');
-        $transmitter_count = $getPost('transmitter_count');
-        $serial_number     = $getPost('serial_number');
-        $case_number       = $getPost('case_number');
+        if (empty($serial_number) || empty($case_number)) {
+            $this->jsonResponse(['success' => false, 'error' => 'Серийный номер и номер корпуса обязательны.'], 400);
+        }
 
-        if (!$serial_number || !$case_number) {
-            echo json_encode(['success' => false, 'error' => 'Серийный номер и номер корпуса обязательны.']);
-            $conn->close();
-            return;
+        // Валидация обязательных полей
+        if (empty($device_type)) {
+            $this->jsonResponse(['success' => false, 'error' => 'Тип прибора обязателен.'], 400);
         }
 
         // Duplicate check
@@ -45,37 +49,43 @@ class DeviceDataController extends BaseController
             $stmt->execute();
             $stmt->store_result();
             if ($stmt->num_rows > 0) {
-                echo json_encode(['success' => false, 'error' => 'Прибор уже существует в базе данных.']);
-                $stmt->close();
-                $conn->close();
-                return;
+                $this->logSecurityEvent('device_duplicate_attempt', [
+                    'user_id' => $_SESSION['user']['id'],
+                    'serial_number' => $serial_number,
+                    'case_number' => $case_number
+                ]);
+                $this->jsonResponse(['success' => false, 'error' => 'Прибор уже существует в базе данных.'], 409);
             }
             $stmt->close();
         } catch (\Exception $e) {
-            echo json_encode(['success' => false, 'error' => 'Ошибка проверки дублирования: ' . $e->getMessage()]);
-            $conn->close();
-            return;
+            $this->logSecurityEvent('device_duplicate_check_error', [
+                'user_id' => $_SESSION['user']['id'],
+                'error' => $e->getMessage(),
+                'serial_number' => $serial_number,
+                'case_number' => $case_number
+            ]);
+            $this->handleError('Ошибка проверки дублирования: ' . $e->getMessage(), [], 500);
         }
 
-        // Additional fields
-        $length_mm            = $getPost('length_mm');
-        $diameter_mm          = $getPost('diameter_mm');
-        $upper_thread         = $getPost('upper_thread');
-        $lower_thread         = $getPost('lower_thread');
-        $frequency1_khz       = $getPost('frequency1_khz');
-        $frequency2_khz       = $getPost('frequency2_khz');
-        $transmitter_base1_mm = $getPost('transmitter_base1_mm');
-        $transmitter_base2_mm = $getPost('transmitter_base2_mm');
-        $transmitter_base3_mm = $getPost('transmitter_base3_mm');
-        $transmitter_base4_mm = $getPost('transmitter_base4_mm');
-        $transmitter_base5_mm = $getPost('transmitter_base5_mm');
-        $receiver_base1_mm    = $getPost('receiver_base1_mm');
-        $receiver_base2_mm    = $getPost('receiver_base2_mm');
-        $receiver_base3_mm    = $getPost('receiver_base3_mm');
-        $record_date          = $getPost('record_date');
-        $additional_info      = $getPost('additional_info');
+        // Additional fields - безопасная очистка
+        $length_mm            = $this->sanitizeString($_POST['length_mm'] ?? '');
+        $diameter_mm          = $this->sanitizeString($_POST['diameter_mm'] ?? '');
+        $upper_thread         = $this->sanitizeString($_POST['upper_thread'] ?? '');
+        $lower_thread         = $this->sanitizeString($_POST['lower_thread'] ?? '');
+        $frequency1_khz       = $this->sanitizeString($_POST['frequency1_khz'] ?? '');
+        $frequency2_khz       = $this->sanitizeString($_POST['frequency2_khz'] ?? '');
+        $transmitter_base1_mm = $this->sanitizeString($_POST['transmitter_base1_mm'] ?? '');
+        $transmitter_base2_mm = $this->sanitizeString($_POST['transmitter_base2_mm'] ?? '');
+        $transmitter_base3_mm = $this->sanitizeString($_POST['transmitter_base3_mm'] ?? '');
+        $transmitter_base4_mm = $this->sanitizeString($_POST['transmitter_base4_mm'] ?? '');
+        $transmitter_base5_mm = $this->sanitizeString($_POST['transmitter_base5_mm'] ?? '');
+        $receiver_base1_mm    = $this->sanitizeString($_POST['receiver_base1_mm'] ?? '');
+        $receiver_base2_mm    = $this->sanitizeString($_POST['receiver_base2_mm'] ?? '');
+        $receiver_base3_mm    = $this->sanitizeString($_POST['receiver_base3_mm'] ?? '');
+        $record_date          = $this->sanitizeString($_POST['record_date'] ?? '');
+        $additional_info      = $this->sanitizeString($_POST['additional_info'] ?? '', 1000);
         $creator_lastname     = isset($_SESSION['user'])
-            ? mysqli_real_escape_string($conn, trim($_SESSION['user']['lastname'] . ' ' . $_SESSION['user']['firstname'] . ' ' . $_SESSION['user']['middlename']))
+            ? trim($_SESSION['user']['lastname'] . ' ' . $_SESSION['user']['firstname'] . ' ' . $_SESSION['user']['middlename'])
             : 'Неизвестный пользователь';
 
         // Insert into device_identification
@@ -120,61 +130,102 @@ class DeviceDataController extends BaseController
             $stmt->execute();
             $deviceId = $conn->insert_id;
             $stmt->close();
+            
+            // Логируем успешное создание прибора
+            $this->logSecurityEvent('device_created', [
+                'user_id' => $_SESSION['user']['id'],
+                'device_id' => $deviceId,
+                'serial_number' => $serial_number,
+                'case_number' => $case_number,
+                'device_type' => $device_type
+            ]);
+            
         } catch (\Exception $e) {
-            echo json_encode(['success' => false, 'error' => 'Ошибка создания прибора: ' . $e->getMessage()]);
-            $conn->close();
-            return;
+            $this->logSecurityEvent('device_create_error', [
+                'user_id' => $_SESSION['user']['id'],
+                'error' => $e->getMessage(),
+                'serial_number' => $serial_number,
+                'case_number' => $case_number
+            ]);
+            
+            $this->handleError('Ошибка создания прибора: ' . $e->getMessage(), [
+                'method' => 'create',
+                'serial_number' => $serial_number,
+                'case_number' => $case_number
+            ], 500);
         }
 
-        // Build composition_data
+        // Build composition_data - безопасная обработка
         $composition_data = [];
-        if ($getPost('controller_type') !== null || $getPost('controller_version') !== null || $getPost('controller_serial') !== null) {
+        
+        // Контроллер
+        $controller_type = $this->sanitizeString($_POST['controller_type'] ?? '');
+        $controller_version = $this->sanitizeString($_POST['controller_version'] ?? '');
+        $controller_serial = $this->sanitizeString($_POST['controller_serial'] ?? '');
+        if (!empty($controller_type) || !empty($controller_version) || !empty($controller_serial)) {
             $composition_data[] = [
                 'board_name'    => 'Контроллер',
-                'type'          => $getPost('controller_type'),
-                'version'       => $getPost('controller_version'),
-                'serial_number' => $getPost('controller_serial')
+                'type'          => $controller_type,
+                'version'       => $controller_version,
+                'serial_number' => $controller_serial
             ];
         }
-        if ($getPost('inclinometer_type') !== null || $getPost('inclinometer_version') !== null || $getPost('inclinometer_serial') !== null) {
+        
+        // Инклинометр
+        $inclinometer_type = $this->sanitizeString($_POST['inclinometer_type'] ?? '');
+        $inclinometer_version = $this->sanitizeString($_POST['inclinometer_version'] ?? '');
+        $inclinometer_serial = $this->sanitizeString($_POST['inclinometer_serial'] ?? '');
+        if (!empty($inclinometer_type) || !empty($inclinometer_version) || !empty($inclinometer_serial)) {
             $composition_data[] = [
                 'board_name'    => 'Инклинометр',
-                'type'          => $getPost('inclinometer_type'),
-                'version'       => $getPost('inclinometer_version'),
-                'serial_number' => $getPost('inclinometer_serial')
+                'type'          => $inclinometer_type,
+                'version'       => $inclinometer_version,
+                'serial_number' => $inclinometer_serial
             ];
         }
+        
+        // Приёмники
         for ($i = 1; isset($_POST["receiver_{$i}_type"]); $i++) {
-            if ($getPost("receiver_{$i}_type") !== null || $getPost("receiver_{$i}_version") !== null || $getPost("receiver_{$i}_serial") !== null) {
+            $receiver_type = $this->sanitizeString($_POST["receiver_{$i}_type"] ?? '');
+            $receiver_version = $this->sanitizeString($_POST["receiver_{$i}_version"] ?? '');
+            $receiver_serial = $this->sanitizeString($_POST["receiver_{$i}_serial"] ?? '');
+            if (!empty($receiver_type) || !empty($receiver_version) || !empty($receiver_serial)) {
                 $composition_data[] = [
                     'board_name'    => "Приёмник {$i}",
-                    'type'          => $getPost("receiver_{$i}_type"),
-                    'version'       => $getPost("receiver_{$i}_version"),
-                    'serial_number' => $getPost("receiver_{$i}_serial")
+                    'type'          => $receiver_type,
+                    'version'       => $receiver_version,
+                    'serial_number' => $receiver_serial
                 ];
             }
         }
+        
+        // Передатчики
         for ($i = 1; isset($_POST["transmitter_{$i}_type"]); $i++) {
-            if ($getPost("transmitter_{$i}_type") !== null || $getPost("transmitter_{$i}_version") !== null || $getPost("transmitter_{$i}_serial") !== null) {
+            $transmitter_type = $this->sanitizeString($_POST["transmitter_{$i}_type"] ?? '');
+            $transmitter_version = $this->sanitizeString($_POST["transmitter_{$i}_version"] ?? '');
+            $transmitter_serial = $this->sanitizeString($_POST["transmitter_{$i}_serial"] ?? '');
+            if (!empty($transmitter_type) || !empty($transmitter_version) || !empty($transmitter_serial)) {
                 $composition_data[] = [
                     'board_name'    => "Передатчик {$i}",
-                    'type'          => $getPost("transmitter_{$i}_type"),
-                    'version'       => $getPost("transmitter_{$i}_version"),
-                    'serial_number' => $getPost("transmitter_{$i}_serial")
+                    'type'          => $transmitter_type,
+                    'version'       => $transmitter_version,
+                    'serial_number' => $transmitter_serial
                 ];
             }
         }
+        
+        // Другие платы
         if (isset($_POST['other_board_name']) && is_array($_POST['other_board_name'])) {
             $others = $_POST['other_board_name'];
             $typesArr = $_POST['other_board_type'] ?? [];
             $versArr  = $_POST['other_board_version'] ?? [];
             $serArr   = $_POST['other_board_serial'] ?? [];
             foreach ($others as $idx => $name) {
-                $nm = mysqli_real_escape_string($conn, (string)$name);
-                $tp = mysqli_real_escape_string($conn, $typesArr[$idx] ?? '');
-                $vr = mysqli_real_escape_string($conn, $versArr[$idx] ?? '');
-                $sr = mysqli_real_escape_string($conn, $serArr[$idx]  ?? '');
-                if ($nm || $tp || $vr || $sr) {
+                $nm = $this->sanitizeString((string)$name);
+                $tp = $this->sanitizeString($typesArr[$idx] ?? '');
+                $vr = $this->sanitizeString($versArr[$idx] ?? '');
+                $sr = $this->sanitizeString($serArr[$idx] ?? '');
+                if (!empty($nm) || !empty($tp) || !empty($vr) || !empty($sr)) {
                     $composition_data[] = ['board_name'=>$nm, 'type'=>$tp, 'version'=>$vr, 'serial_number'=>$sr];
                 }
             }
@@ -190,7 +241,7 @@ class DeviceDataController extends BaseController
         }
 
         // Success response
-        echo json_encode(['success' => true, 'device_id' => $deviceId]);
+        $this->jsonResponse(['success' => true, 'device_id' => $deviceId]);
         $conn->close();
     }
 
@@ -199,11 +250,17 @@ class DeviceDataController extends BaseController
      */
     public function update(): void
     {
-        // Устанавливаем заголовок, чтобы клиент знал, что ответ в формате JSON
-        header('Content-Type: application/json');
+        // Проверка авторизации
+        $this->requireAuth();
         
-        // Убедимся, что сессия запущена для доступа к $_SESSION['user']
-        session_start();
+        // Rate limiting для обновления приборов (10 обновлений в час)
+        if (!$this->checkRateLimit($this->getClientIP(), 'device_update', 10, 3600)) {
+            $this->jsonResponse(['success' => false, 'message' => 'Слишком много попыток обновления приборов. Попробуйте через час.'], 429);
+        }
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST' && $_SERVER['REQUEST_METHOD'] !== 'PUT') {
+            $this->jsonResponse(['success' => false, 'message' => 'Неверный метод запроса'], 405);
+        }
         
         // Подключаем файл с настройками подключения к БД
         require_once __DIR__ . '/../../db_connection.php';
@@ -213,13 +270,18 @@ class DeviceDataController extends BaseController
         // Декодируем JSON в ассоциативный массив PHP
         $data = json_decode($json_data, true);
 
-        // Проверяем, авторизован ли пользователь
+        // Валидация JSON данных
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            $this->logSecurityEvent('device_update_invalid_json', [
+                'user_id' => $_SESSION['user']['id'],
+                'json_error' => json_last_error_msg()
+            ]);
+            $this->jsonResponse(['success' => false, 'message' => 'Некорректные JSON данные'], 400);
+        }
+
+        // Проверяем, авторизован ли пользователь (дублирующая проверка для совместимости)
         if (!isset($_SESSION['user']['id'])) {
-            echo json_encode(['success' => false, 'message' => "Ошибка: Пользователь не авторизован."]);
-            if (isset($conn) && $conn instanceof \mysqli) {
-                $conn->close();
-            }
-            exit;
+            $this->jsonResponse(['success' => false, 'message' => "Ошибка: Пользователь не авторизован."], 401);
         }
 
         // Получаем данные текущего пользователя из сессии
@@ -230,7 +292,10 @@ class DeviceDataController extends BaseController
 
         // Проверяем, что данные получены, декодированы и содержат ID
         if ($data && isset($data['id'])) {
-            $id = mysqli_real_escape_string($conn, $data['id']); // Экранируем ID для безопасности
+            $id = $this->validateInt($data['id'], 1); // Безопасная валидация ID
+            if (!$id) {
+                $this->jsonResponse(['success' => false, 'message' => 'Некорректный ID прибора'], 400);
+            }
 
             // --- Получаем текущие данные прибора ПЕРЕД обновлением для записи в историю ---
             $sql_select = "SELECT * FROM device_identification WHERE id = ?";
