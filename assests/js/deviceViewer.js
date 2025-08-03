@@ -67,7 +67,17 @@
                      throw new Error(`HTTP error! Status: ${response.status}. ${text}`);
                  });
              }
-             return response.json();
+             return response.text().then(text => {
+                 // Проверяем, не является ли ответ HTML страницей (редирект на авторизацию)
+                 if (text.trim().startsWith('<!DOCTYPE') || text.trim().startsWith('<html')) {
+                     throw new Error('Сессия истекла. Пожалуйста, обновите страницу и войдите в систему заново.');
+                 }
+                 try {
+                     return JSON.parse(text);
+                 } catch (e) {
+                     throw new Error('Получен некорректный ответ от сервера. Возможно, сессия истекла.');
+                 }
+             });
         })
         .then(devices => {
             if (!devices || devices.length === 0) {
@@ -218,7 +228,17 @@
                                 throw new Error(`HTTP error! Status: ${response.status}. ${text}`);
                             });
                         }
-                        return response.json();
+                        return response.text().then(text => {
+                            // Проверяем, не является ли ответ HTML страницей (редирект на авторизацию)
+                            if (text.trim().startsWith('<!DOCTYPE') || text.trim().startsWith('<html')) {
+                                throw new Error('Сессия истекла. Пожалуйста, обновите страницу и войдите в систему заново.');
+                            }
+                            try {
+                                return JSON.parse(text);
+                            } catch (e) {
+                                throw new Error('Получен некорректный ответ от сервера. Возможно, сессия истекла.');
+                            }
+                        });
                     })
                     .then(data => {
                         compositionSection.innerHTML = ''; // Очищаем перед заполнением
@@ -512,7 +532,17 @@
                      if (!response.ok) {
                          return response.text().then(text => { throw new Error(`HTTP error ${response.status}: ${text}`) });
                      }
-                     return response.json();
+                     return response.text().then(text => {
+                         // Проверяем, не является ли ответ HTML страницей (редирект на авторизацию)
+                         if (text.trim().startsWith('<!DOCTYPE') || text.trim().startsWith('<html')) {
+                             throw new Error('Сессия истекла. Пожалуйста, обновите страницу и войдите в систему заново.');
+                         }
+                         try {
+                             return JSON.parse(text);
+                         } catch (e) {
+                             throw new Error('Получен некорректный ответ от сервера. Возможно, сессия истекла.');
+                         }
+                     });
                  })
                  .then(history => {
                      const latestHistoryEntry = history && history.length > 0 ? history[0] : null;
@@ -613,7 +643,25 @@
             console.error('Ошибка при отображении данных прибора:', error);
             const target = document.getElementById('searchDeviceForm').classList.contains('active') ? searchResultDiv : deviceListDiv;
             if (target) {
-                target.innerHTML = `<p class="error-message">Произошла ошибка при отображении данных прибора: ${error.message}</p>`;
+                // Проверяем, является ли ошибка связанной с истекшей сессией
+                if (error.message.includes('Сессия истекла') || error.message.includes('некорректный ответ от сервера')) {
+                    // Используем функцию из sessionUtils.js если доступна, иначе встроенную логику
+                    if (typeof showSessionExpiredMessage === 'function') {
+                        showSessionExpiredMessage(target);
+                    } else {
+                        target.innerHTML = `
+                            <div class="error-message session-expired">
+                                <h3>⚠️ Сессия истекла</h3>
+                                <p>Ваша сессия истекла. Для продолжения работы необходимо войти в систему заново.</p>
+                                <button onclick="window.location.href='index.php'" class="button button-primary">
+                                    🔐 Войти в систему
+                                </button>
+                            </div>
+                        `;
+                    }
+                } else {
+                    target.innerHTML = `<p class="error-message">Произошла ошибка при отображении данных прибора: ${error.message}</p>`;
+                }
             }
             selectedDeviceId = null;
             selectedSerialNumber = null;

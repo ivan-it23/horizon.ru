@@ -139,8 +139,8 @@ class SecurityService
         $csp = "default-src 'self'; " .
                "script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; " .
                "style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; " .
-               "font-src 'self' https://fonts.gstatic.com; " .
-               "img-src 'self' data:; " .
+               "font-src 'self' https://fonts.gstatic.com https://fonts.googleapis.com https://cdnjs.cloudflare.com data:; " .
+               "img-src 'self' data: https:; " .
                "connect-src 'self'";
         
         header("Content-Security-Policy: $csp");

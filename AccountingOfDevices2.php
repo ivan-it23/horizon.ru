@@ -1,9 +1,14 @@
 <?php
-session_start();
+// КРИТИЧЕСКИ ВАЖНО: Инициализируем систему безопасности
+require_once __DIR__ . '/security_init.php';
+
+// Проверяем авторизацию, устанавливаем заголовки, логируем доступ
+initPageSecurity('AccountingOfDevices2.php');
+
 include 'db_connection.php'; // Подключение к БД
 
 $unread_count = 0; // Значение по умолчанию для непрочитанных сообщений
-$is_logged_in = isset($_SESSION['user']['id']); // Проверка авторизации
+$is_logged_in = isset($_SESSION['user']['id']); // Проверка авторизации (теперь всегда true после requireAuth)
 $user_info = null; // Информация о пользователе
 
 // Если пользователь авторизован, получаем информацию и количество непрочитанных сообщений
@@ -1028,5 +1033,7 @@ window.alert = function(message) {
     }
 };
 </script>
+
+<?php echo generateSecurityScript('index.php', 300000); ?>
 </body>
 </html>

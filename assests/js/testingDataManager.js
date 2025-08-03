@@ -116,16 +116,16 @@
             const numericInputs = elements.newTestingDataForm.querySelectorAll('.nested-table input[type="number"]');
             numericInputs.forEach(input => {
                 // Обработчик для валидации при вводе
-                input.addEventListener('input', function() {
+                input.addEventListener('input', function () {
                     if (global.ToleranceManager) {
                         global.ToleranceManager.validateAndHighlightInput(this);
                     } else if (typeof validateAndHighlightInput === 'function') {
                         validateAndHighlightInput(this);
                     }
                 });
-                
+
                 // Обработчик для валидации при потере фокуса
-                input.addEventListener('change', function() {
+                input.addEventListener('change', function () {
                     if (global.ToleranceManager) {
                         global.ToleranceManager.validateAndHighlightInput(this);
                     } else if (typeof validateAndHighlightInput === 'function') {
@@ -156,18 +156,18 @@
 
         const currentSelectedDeviceType = elements.deviceTypeTab3.textContent;
 
-        if (currentSelectedDeviceType && currentSelectedDeviceType !== '-' && 
+        if (currentSelectedDeviceType && currentSelectedDeviceType !== '-' &&
             elements.tab3Pane.classList.contains('active')) {
-            
+
             // Сбрасываем кэш допусков
             if (global.ToleranceManager) {
                 global.ToleranceManager.loadedTolerancesForTab3 = {};
             } else if (global.loadedTolerancesForTab3) {
                 global.loadedTolerancesForTab3 = {};
             }
-            
+
             // Перевалидируем поля в форме испытаний, если форма активна
-            if (elements.newTestingDataForm && 
+            if (elements.newTestingDataForm &&
                 elements.newTestingDataForm.style.display !== 'none') {
                 validateAllTestingFormInputs();
             }
@@ -192,7 +192,7 @@
     async function saveTestingData() {
         const serial = document.getElementById('serialNumberTab3')?.textContent;
         const caseNo = document.getElementById('caseNumberTab3')?.textContent;
-        
+
         if (!serial || serial === '-' || !caseNo || caseNo === '-') {
             if (typeof global.showNotification === 'function') {
                 global.showNotification('Ошибка: Прибор не выбран. Пожалуйста, выберите прибор на вкладке "Идентификационные данные".', 'error');
@@ -204,7 +204,7 @@
 
         // Финальная валидация и подсветка
         await validateAllTestingFormInputs();
-        
+
         if (global.ToleranceManager) {
             global.ToleranceManager.updateTestResultOverall();
         } else if (typeof updateTestResultOverall === 'function') {
@@ -225,31 +225,31 @@
                 method: 'POST',
                 body: formData
             });
-            
+
             if (!response.ok) {
                 const errText = await response.text();
                 throw new Error(errText || `HTTP error! Status: ${response.status}`);
             }
-            
+
             const result = await response.json();
-            
+
             if (result.success) {
                 if (typeof global.showNotification === 'function') {
                     global.showNotification(`${result.test_result_status}. ${result.message}`, 'success');
                 } else {
                     alert(`${result.test_result_status}. ${result.message}`);
                 }
-                
+
                 // Сбрасываем форму и подсветку
                 elements.newTestingDataForm.reset();
                 elements.newTestingDataForm.querySelectorAll('.nested-table td')
                     .forEach(cell => cell.classList.remove('bg-success-light', 'bg-danger-light', 'bg-warning-light', 'tolerance-valid', 'tolerance-invalid', 'no-highlight'));
-                    
+
                 elements.newTestingDataForm.querySelectorAll('.nested-table input[type="number"]')
                     .forEach(input => delete input.dataset.isValid);
-                    
+
                 elements.testResultInput.value = "Испытания не пройдены";
-                
+
                 // Переключаем на историю
                 if (elements.showHistoryTab3Button) elements.showHistoryTab3Button.click();
             } else {
@@ -287,48 +287,48 @@
 
         const deviceTypeElem = document.getElementById('deviceTypeTab3');
         const currentSelectedDeviceType = deviceTypeElem ? deviceTypeElem.textContent : '';
-        
+
         if (!currentSelectedDeviceType || currentSelectedDeviceType === '-') {
             targetDiv.innerHTML = '<p class="info-message">Выберите прибор на вкладке "Идентификационные данные" для просмотра истории.</p>';
             return;
         }
 
         // Получаем доступ к конфигурации допусков
-        const toleranceConfig = global.ToleranceManager?.toleranceConfig || 
-                              global.toleranceConfig || {
+        const toleranceConfig = global.ToleranceManager?.toleranceConfig ||
+            global.toleranceConfig || {
             "СКО шума приёмника": {
                 frequencies: [400, 2000],
-                columns: ['X1','Y1','Z1','X2','Y2','Z2'],
+                columns: ['X1', 'Y1', 'Z1', 'X2', 'Y2', 'Z2'],
                 unit: 'дБмкВ',
                 param_key_base: 'noise_sko'
             },
             "МДС передатчика": {
                 frequencies: [400, 2000],
-                columns: ['1','2','3','4','5'],
+                columns: ['1', '2', '3', '4', '5'],
                 unit: 'А*виток',
                 param_key_base: 'mds_transmitter'
             },
             "Вторая гармоника": {
                 frequencies: [400, 2000],
-                columns: ['1','2','3','4','5'],
+                columns: ['1', '2', '3', '4', '5'],
                 unit: 'дБн',
                 param_key_base: 'second_harmonic'
             },
             "Третья гармоника": {
                 frequencies: [400, 2000],
-                columns: ['1','2','3','4','5'],
+                columns: ['1', '2', '3', '4', '5'],
                 unit: 'дБн',
                 param_key_base: 'third_harmonic'
             },
             "Уровень негармонических компонент": {
                 frequencies: [400, 2000],
-                columns: ['1','2','3','4','5'],
+                columns: ['1', '2', '3', '4', '5'],
                 unit: 'дБн, кГц',
                 param_key_base: 'non_harmonic_components'
             },
             "Дрейф разности фаз": {
                 frequencies: [400, 2000],
-                columns: ['1','2','3','4','5'],
+                columns: ['1', '2', '3', '4', '5'],
                 unit: 'Миллиградусы',
                 param_key_base: 'phase_difference_drift'
             }
@@ -338,8 +338,8 @@
         await loadTolerancesForDisplayedHistory(historyData, currentSelectedDeviceType, toleranceConfig);
 
         // Получаем доступ к загруженным допускам
-        const loadedTolerancesForTab3 = global.ToleranceManager?.loadedTolerancesForTab3 || 
-                                      global.loadedTolerancesForTab3 || {};
+        const loadedTolerancesForTab3 = global.ToleranceManager?.loadedTolerancesForTab3 ||
+            global.loadedTolerancesForTab3 || {};
 
         // Отрисовываем историю испытаний
         historyData.forEach(record => {
@@ -370,7 +370,7 @@
                 nonNumericCell.appendChild(tempLabel);
                 nonNumericCell.appendChild(tempValueDiv);
             }
-            
+
             const vibTestValue = record['vibration_test'];
             if (vibTestValue) {
                 const vibLabel = document.createElement('p');
@@ -382,7 +382,7 @@
                 nonNumericCell.appendChild(vibLabel);
                 nonNumericCell.appendChild(vibValueDiv);
             }
-            
+
             if (nonNumericCell.hasChildNodes()) { // Добавляем строку, только если есть что отображать
                 nonNumericRow.appendChild(nonNumericCell);
                 tbody.appendChild(nonNumericRow);
@@ -413,7 +413,7 @@
                 fTh.className = 'p-2 border border-gray-300 bg-gray-50 text-left';
                 fTh.textContent = 'f';
                 nestedHeaderRow.appendChild(fTh);
-                
+
                 config.columns.forEach(colName => {
                     const th = document.createElement('th');
                     th.className = 'p-2 border border-gray-300 bg-gray-50 text-left';
@@ -502,12 +502,12 @@
      */
     async function loadTolerancesForDisplayedHistory(historyData, deviceType, toleranceConfig) {
         // Получаем доступ к глобальному хранилищу допусков
-        const loadedTolerancesForTab3 = global.ToleranceManager?.loadedTolerancesForTab3 || 
-                                      global.loadedTolerancesForTab3 || {};
-        
+        const loadedTolerancesForTab3 = global.ToleranceManager?.loadedTolerancesForTab3 ||
+            global.loadedTolerancesForTab3 || {};
+
         // Создаем набор уникальных ключей для загрузки допусков
         const uniqueToleranceKeys = new Set();
-        
+
         historyData.forEach(record => {
             for (const [parameterName, config] of Object.entries(toleranceConfig)) {
                 config.frequencies.forEach(freq => {
@@ -524,7 +524,7 @@
 
         // Массив промисов для загрузки допусков
         const promises = [];
-        
+
         uniqueToleranceKeys.forEach(cacheKey => {
             if (loadedTolerancesForTab3[cacheKey] === undefined) { // Загружаем, только если еще не в кэше
                 const [deviceType, parameter, frequency, column] = cacheKey.split('-');
@@ -532,28 +532,28 @@
                     fetch('front.php?c=tolerance&a=get', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ 
-                            deviceType, 
-                            parameter, 
-                            frequency: parseInt(frequency), 
-                            column 
+                        body: JSON.stringify({
+                            deviceType,
+                            parameter,
+                            frequency: parseInt(frequency),
+                            column
                         })
                     })
-                    .then(response => response.ok ? response.json() : Promise.resolve(null))
-                    .then(data => {
-                        loadedTolerancesForTab3[cacheKey] = data; // Кэшируем результат
-                    })
-                    .catch(error => {
-                        console.error(`Failed to preload tolerance for ${cacheKey} in history:`, error);
-                        loadedTolerancesForTab3[cacheKey] = null; // Помечаем как неудачную загрузку
-                    })
+                        .then(response => response.ok ? response.json() : Promise.resolve(null))
+                        .then(data => {
+                            loadedTolerancesForTab3[cacheKey] = data; // Кэшируем результат
+                        })
+                        .catch(error => {
+                            console.error(`Failed to preload tolerance for ${cacheKey} in history:`, error);
+                            loadedTolerancesForTab3[cacheKey] = null; // Помечаем как неудачную загрузку
+                        })
                 );
             }
         });
 
         // Ждем загрузки всех допусков
         await Promise.all(promises);
-        
+
         // Обновляем глобальный кэш допусков
         if (global.ToleranceManager) {
             global.ToleranceManager.loadedTolerancesForTab3 = loadedTolerancesForTab3;

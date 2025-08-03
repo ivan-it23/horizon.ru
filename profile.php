@@ -1,10 +1,10 @@
 <?php
-session_start();
-// Проверка авторизации пользователя
-if (empty($_SESSION['user']['id'])) {
-    header('Location: index.php'); // Перенаправление на страницу входа, если не авторизован
-    exit;
-}
+// КРИТИЧЕСКИ ВАЖНО: Инициализируем систему безопасности
+require_once __DIR__ . '/security_init.php';
+
+// Проверяем авторизацию, устанавливаем заголовки, логируем доступ
+initPageSecurity('profile.php');
+
 // Подключение к БД
 include 'db_connection.php';
 
@@ -538,6 +538,8 @@ try {
 
     });
 </script>
+
+<?php echo generateSecurityScript('index.php', 300000); ?>
 
 </body>
 </html>

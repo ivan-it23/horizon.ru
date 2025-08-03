@@ -150,4 +150,67 @@ class AuthController extends BaseController
         header("Location: index.php");
         exit();
     }
+
+    /**
+     * Проверка валидности сессии (AJAX endpoint)
+     * Используется для периодической проверки авторизации на клиентской стороне
+     */
+    public function checkSession(): void
+    {
+        session_start();
+        
+        // Rate limiting для проверки сессии (20 запросов в минуту)
+        if (!$this->checkRateLimit($this->getClientIP(), 'check_session', 20, 60)) {
+            $this->jsonResponse([
+                'success' => false,
+                'authenticated' => false,
+                'error' => 'Rate limit exceeded'
+            ], 429);
+            return;
+        }
+        
+        // Проверяем наличие пользователя в сессии
+        $isAuthenticated = isset($_SESSION['user']['id']);
+        
+        if ($isAuthenticated) {
+            // Дополнительная проверка валидности данных сессии
+            $user = $_SESSION['user'];
+            $isValid = isset($user['id'], $user['lastname'], $user['firstname']) && 
+                      is_numeric($user['id']) && 
+                      !empty($user['lastname']) && 
+                      !empty($user['firstname']);
+            
+            if (!$isValid) {
+                // Сессия повреждена - очищаем её
+                session_destroy();
+                $isAuthenticated = false;
+                
+                $this->logSecurityEvent('auth_session_corrupted', [
+                    'ip' => $this->getClientIP(),
+                    'user_data' => $user
+                ]);
+            } else {
+                // Логируем успешную проверку сессии (только каждые 10 минут для уменьшения логов)
+                $lastCheck = $_SESSION['last_session_check'] ?? 0;
+                if (time() - $lastCheck > 600) { // 10 минут
+                    $_SESSION['last_session_check'] = time();
+                    $this->logSecurityEvent('auth_session_checked', [
+                        'user_id' => $user['id'],
+                        'ip' => $this->getClientIP()
+                    ]);
+                }
+            }
+        }
+        
+        // Возвращаем JSON ответ
+        $this->jsonResponse([
+            'success' => true,
+            'authenticated' => $isAuthenticated,
+            'user' => $isAuthenticated ? [
+                'id' => $_SESSION['user']['id'],
+                'username' => $_SESSION['user']['lastname'] . ' ' . $_SESSION['user']['firstname'],
+                'is_admin' => $_SESSION['user']['is_admin'] ?? false
+            ] : null
+        ]);
+    }
 } 
