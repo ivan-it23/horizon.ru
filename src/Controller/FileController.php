@@ -71,6 +71,9 @@ class FileController extends BaseController
         $allowedExtensions = [
             // Офисные документы
             'pdf', 'doc', 'docx', 'xls', 'xlsx', 'txt', 'rtf',
+
+            // Архивы (разрешаем загрузку архивов с данными/отчетами)
+            'zip', 'rar', '7z', 'tar', 'gz', 'tgz', 'bz2', 'xz',
             
             // Изображения
             'jpg', 'jpeg', 'png', 'gif', 'bmp', 'tiff', 'tif',
@@ -126,6 +129,20 @@ class FileController extends BaseController
             'application/vnd.ms-excel',
             'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
             'application/rtf',
+
+            // Архивы
+            'application/zip',
+            'application/x-zip-compressed',
+            'multipart/x-zip',
+            'application/vnd.rar',
+            'application/x-rar-compressed',
+            'application/x-7z-compressed',
+            'application/x-tar',
+            'application/x-gtar',
+            'application/gzip',
+            'application/x-gzip',
+            'application/x-bzip2',
+            'application/x-xz',
             
             // Текстовые файлы
             'text/plain',
@@ -512,6 +529,9 @@ class FileController extends BaseController
         $allowedExtensions = [
             // Офисные документы
             'pdf', 'doc', 'docx', 'xls', 'xlsx', 'txt', 'rtf',
+
+            // Архивы
+            'zip', 'rar', '7z', 'tar', 'gz', 'tgz', 'bz2', 'xz',
             
             // Изображения
             'jpg', 'jpeg', 'png', 'gif', 'bmp', 'tiff', 'tif',
