@@ -135,6 +135,7 @@ class FileController extends BaseController
             'application/x-zip-compressed',
             'multipart/x-zip',
             'application/vnd.rar',
+            'application/x-rar',
             'application/x-rar-compressed',
             'application/x-7z-compressed',
             'application/x-tar',

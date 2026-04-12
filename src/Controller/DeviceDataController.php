@@ -42,29 +42,27 @@ class DeviceDataController extends BaseController
             $this->jsonResponse(['success' => false, 'error' => 'Тип прибора обязателен.'], 400);
         }
 
-        // Duplicate check
+        // Проверка уникальности серийного номера
         try {
-            $stmt = $conn->prepare('SELECT id FROM device_identification WHERE serial_number = ? OR case_number = ?');
-            $stmt->bind_param('ss', $serial_number, $case_number);
+            $stmt = $conn->prepare('SELECT id FROM device_identification WHERE serial_number = ?');
+            $stmt->bind_param('s', $serial_number);
             $stmt->execute();
             $stmt->store_result();
             if ($stmt->num_rows > 0) {
-                $this->logSecurityEvent('device_duplicate_attempt', [
+                $this->logSecurityEvent('device_duplicate_serial_attempt', [
                     'user_id' => $_SESSION['user']['id'],
-                    'serial_number' => $serial_number,
-                    'case_number' => $case_number
+                    'serial_number' => $serial_number
                 ]);
-                $this->jsonResponse(['success' => false, 'error' => 'Прибор уже существует в базе данных.'], 409);
+                $this->jsonResponse(['success' => false, 'error' => 'Прибор с таким серийным номером уже существует в базе данных. Серийный номер должен быть уникальным.'], 409);
             }
             $stmt->close();
         } catch (\Exception $e) {
             $this->logSecurityEvent('device_duplicate_check_error', [
                 'user_id' => $_SESSION['user']['id'],
                 'error' => $e->getMessage(),
-                'serial_number' => $serial_number,
-                'case_number' => $case_number
+                'serial_number' => $serial_number
             ]);
-            $this->handleError('Ошибка проверки дублирования: ' . $e->getMessage(), [], 500);
+            $this->handleError('Ошибка проверки уникальности серийного номера: ' . $e->getMessage(), [], 500);
         }
 
         // Additional fields - безопасная очистка
@@ -315,6 +313,39 @@ class DeviceDataController extends BaseController
                 echo json_encode(['success' => false, 'message' => "Прибор с ID $id не найден."]);
                 $conn->close();
                 exit;
+            }
+
+            // --- Проверка уникальности serial_number при изменении ---
+            if (isset($data['serial_number']) && $data['serial_number'] !== $old_data['serial_number']) {
+                $new_serial_number = $this->sanitizeString($data['serial_number']);
+                try {
+                    $stmt_check = $conn->prepare('SELECT id FROM device_identification WHERE serial_number = ? AND id != ?');
+                    $stmt_check->bind_param('si', $new_serial_number, $id);
+                    $stmt_check->execute();
+                    $stmt_check->store_result();
+                    if ($stmt_check->num_rows > 0) {
+                        $this->logSecurityEvent('device_update_duplicate_serial', [
+                            'user_id' => $_SESSION['user']['id'],
+                            'device_id' => $id,
+                            'old_serial' => $old_data['serial_number'],
+                            'new_serial' => $new_serial_number
+                        ]);
+                        echo json_encode(['success' => false, 'message' => 'Прибор с таким серийным номером уже существует. Серийный номер должен быть уникальным.']);
+                        $conn->close();
+                        exit;
+                    }
+                    $stmt_check->close();
+                } catch (\Exception $e) {
+                    $this->logSecurityEvent('device_update_serial_check_error', [
+                        'user_id' => $_SESSION['user']['id'],
+                        'device_id' => $id,
+                        'error' => $e->getMessage(),
+                        'new_serial' => $new_serial_number
+                    ]);
+                    echo json_encode(['success' => false, 'message' => 'Ошибка проверки уникальности серийного номера: ' . $e->getMessage()]);
+                    $conn->close();
+                    exit;
+                }
             }
 
             // --- Обновление основной таблицы device_identification ---
