@@ -51,8 +51,36 @@ class DatabaseQueryHandler
             case 'count_repairs':
             case 'list_devices_by_type':
             case 'recent_repairs':
+            case 'last_repair':
+            case 'devices_in_repair':
+            case 'devices_in_testing':
             case 'device_statistics':
                 return $this->queryExecutor->executeQuery($queryAnalysis);
+
+            // Диалоговые запросы — возвращаем специальный тип для обработки в контроллере
+            case 'about_agent':
+                return [
+                    'success' => true,
+                    'type' => 'dialog',
+                    'dialog_type' => 'about',
+                    'message' => 'AI_AGENT_ABOUT'
+                ];
+
+            case 'greeting':
+                return [
+                    'success' => true,
+                    'type' => 'dialog',
+                    'dialog_type' => 'greeting',
+                    'message' => 'AI_AGENT_GREETING'
+                ];
+
+            case 'farewell':
+                return [
+                    'success' => true,
+                    'type' => 'dialog',
+                    'dialog_type' => 'farewell',
+                    'message' => 'AI_AGENT_FAREWELL'
+                ];
 
             case 'device_info_by_serial':
                 $result = $this->deviceInfoManager->getDeviceInfoBySerial($queryAnalysis['serial_number']);
@@ -90,10 +118,21 @@ class DatabaseQueryHandler
                 }
                 return $result;
 
-            default:
+            case 'flexible_device_search':
+                // Для гибких запросов возвращаем специальный тип
                 return [
                     'success' => false,
-                    'message' => 'Извините, я не понял ваш запрос. Пожалуйста, уточните, какую информацию вы ищете. Например: "Выдай информацию о приборе с серийным номером 123" или "Покажи полную информацию о приборе с номером корпуса ABC-123".'
+                    'type' => 'needs_llm',
+                    'query' => $queryAnalysis['query'] ?? '',
+                    'message' => 'FLEXIBLE_QUERY'
+                ];
+
+            default:
+                // Для нераспознанных запросов возвращаем специальный тип для обработки через LLM
+                return [
+                    'success' => false,
+                    'type' => 'needs_llm',
+                    'message' => 'UNKNOWN_QUERY'
                 ];
         }
     }
@@ -188,4 +227,22 @@ class DatabaseQueryHandler
     {
         $this->contextManager->clearContext();
     }
-} 
+
+    /**
+     * Получает контекст базы данных для LLM
+     */
+    public function getDatabaseContextForLLM(): string
+    {
+        $schemaService = new DatabaseSchemaService($this->conn);
+        return $schemaService->getDatabaseContextForLLM();
+    }
+
+    /**
+     * Выполняет SQL запрос для LLM и возвращает результат
+     */
+    public function executeQueryForLLM(string $sql): array
+    {
+        $schemaService = new DatabaseSchemaService($this->conn);
+        return $schemaService->executeQueryForLLM($sql);
+    }
+}

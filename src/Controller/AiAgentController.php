@@ -93,15 +93,25 @@ class AiAgentController extends BaseController
             $logLink = '';
 
             // Формируем ответ
-            if (!empty($dbResult['success'])) {
-                // Подготовка контекста метаданных
+            $responseText = '';
+            $isDbQuery = false;
+            $isDialog = false;
+
+            // 1. Обработка диалоговых запросов (about, greeting, farewell)
+            if (!empty($dbResult['type']) && $dbResult['type'] === 'dialog') {
+                $isDialog = true;
+                $responseText = $this->getDialogResponse($dbResult['dialog_type'] ?? 'unknown');
+            }
+            // 2. Обработка успешных DB-запросов
+            elseif (!empty($dbResult['success']) && empty($dbResult['type'])) {
+                $isDbQuery = true;
                 $context = [
                     'timestamp' => $timestamp,
                     'user_name' => $userName,
                     'log_link'  => $logLink
                 ];
-                $templateKey = null;
-                // Маппинг типов DB-запросов на шаблоны
+                $templateKey = 'generic';
+                
                 switch ($analysis['type']) {
                     case 'count_devices_by_type':
                         $templateKey = 'count_devices_by_type';
@@ -116,52 +126,24 @@ class AiAgentController extends BaseController
                         $templateKey = 'count_repairs';
                         $context['count'] = $dbResult['count'] ?? 0;
                         break;
+                    case 'last_repair':
+                    case 'devices_in_repair':
+                    case 'devices_in_testing':
+                        // Для этих типов используем message напрямую
+                        $responseText = $dbResult['message'] ?? '';
+                        break;
                     default:
-                        // По умолчанию обёртка generic
-                        $templateKey = 'generic';
                         $context['message'] = $dbResult['message'] ?? '';
                 }
-                $responseText = $templateManager->render($templateKey, $context);
-                $isDbQuery = true;
-            } else {
-                // Запрос не к БД или ошибка – обращаемся к LLM
-                // Загружаем инструкции для ИИ
-                $instructions = '';
-                $instrPath = ROOT_PATH . '/ai_agent/ai_agent_instructions.md';
-                if (file_exists($instrPath)) {
-                    $instructions = file_get_contents($instrPath);
+                
+                // Используем шаблонизатор только если ответ еще не сформирован
+                if (empty($responseText)) {
+                    $responseText = $templateManager->render($templateKey, $context);
                 }
-                // Формируем системное сообщение
-                $systemContext = "Ты ИИ-агент корпоративной системы учета приборов компании АМК ГОРИЗОНТ.\n\nВАЖНЫЕ ИНСТРУКЦИИ:\n{$instructions}";
-                // Собираем историю беседы и текущее сообщение
-                $messages = [];
-                $messages[] = ['role' => 'system', 'content' => $systemContext];
-                $history = $_SESSION['conversation_history'] ?? [];
-                $recentHistory = array_slice($history, -10);
-                foreach ($recentHistory as $entry) {
-                    $messages[] = ['role' => 'user',      'content' => $entry['user']];
-                    $messages[] = ['role' => 'assistant', 'content' => $entry['assistant']];
-                }
-                $messages[] = ['role' => 'user', 'content' => $userMessage];
-                // Подготавливаем и отправляем запрос к OpenRouter
-                $payload = ['model' => 'deepseek/deepseek-chat-v3-0324:free', 'messages' => $messages];
-                $ch = curl_init('https://openrouter.ai/api/v1/chat/completions');
-                curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-                curl_setopt($ch, CURLOPT_POST, true);
-                curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
-                curl_setopt($ch, CURLOPT_HTTPHEADER, [
-                    'Content-Type: application/json',
-                    'Authorization: Bearer ' . OPENROUTER_API_KEY
-                ]);
-                $apiResponse = curl_exec($ch);
-                curl_close($ch);
-                $decoded = json_decode($apiResponse, true);
-                if (isset($decoded['choices'][0]['message']['content'])) {
-                    $responseText = $decoded['choices'][0]['message']['content'];
-                } else {
-                    $responseText = $dbResult['message'] ?? 'Извините, не удалось получить ответ от ИИ-агента.';
-                }
-                $isDbQuery = false;
+            }
+            // 3. Обработка нераспознанных запросов через LLM с контекстом БД
+            else {
+                $responseText = $this->callLLMWithDatabaseContext($userMessage, $dbHandler, $dbResult);
             }
 
             // Генерация лога диалога
@@ -210,4 +192,135 @@ class AiAgentController extends BaseController
             echo json_encode(['error' => 'Internal Server Error: ' . $e->getMessage()]);
         }
     }
-} 
+
+    /**
+     * Возвращает ответ на диалоговый запрос
+     */
+    private function getDialogResponse(string $dialogType): string
+    {
+        $responses = [
+            'about' => "# 🤖 Я — ИИ-агент системы учёта приборов АМК «Горизонт»\n\n" .
+                "Я помогаю работать с базой данных геофизических приборов индукционного каротажа.\n\n" .
+                "## 📊 Что я умею:\n\n" .
+                "• **Поиск приборов** — по серийному номеру или номеру корпуса\n" .
+                "• **Статистика** — количество приборов, ремонтов, типы\n" .
+                "• **Информация о ремонтах** — последние ремонты, приборы в ремонте\n" .
+                "• **История приборов** — полная информация из всех таблиц\n" .
+                "• **Контекстные диалоги** — помню о каком приборе мы говорим\n\n" .
+                "## 💡 Примеры вопросов:\n\n" .
+                "• «Сколько приборов типа LWD?»\n" .
+                "• «Покажи информацию о приборе 109»\n" .
+                "• «Какой был последний ремонт?»\n" .
+                "• «Какие приборы сейчас в ремонте?»\n" .
+                "• «Полная информация о приборе с корпусом 008-2024»\n\n" .
+                "Просто спросите меня о приборах естественным языком!",
+
+            'greeting' => "# 👋 Привет!\n\n" .
+                "Я ИИ-агент системы учёта приборов АМК «Горизонт». Готов помочь вам с:\n\n" .
+                "• Поиском приборов по серийным номерам\n" .
+                "• Получением статистики и аналитики\n" .
+                "• Информацией о ремонтах и испытаниях\n" .
+                "• Ответами на вопросы о базе данных\n\n" .
+                "**Чем могу помочь?**",
+
+            'farewell' => "# 👋 До свидания!\n\n" .
+                "Был рад помочь! Если понадобится информация о приборах — я всегда здесь.\n" .
+                "Хорошего дня! 🌟",
+
+            'unknown' => "Я готов помочь! Задайте вопрос о приборах или спросите «кто ты», чтобы узнать больше о моих возможностях."
+        ];
+
+        return $responses[$dialogType] ?? $responses['unknown'];
+    }
+
+    /**
+     * Вызывает LLM с контекстом базы данных для нераспознанных запросов
+     */
+    private function callLLMWithDatabaseContext(string $userMessage, \App\Service\DatabaseQueryHandler $dbHandler, array $dbResult): string
+    {
+        // Получаем контекст базы данных для LLM
+        $dbContext = $dbHandler->getDatabaseContextForLLM();
+        
+        // Получаем текущий контекст устройства (если есть)
+        $deviceContext = $dbHandler->getCurrentContext();
+        $deviceContextStr = '';
+        if ($deviceContext) {
+            $deviceContextStr = "\n\n=== ТЕКУЩИЙ КОНТЕКСТ ===\n";
+            $deviceContextStr .= "Сейчас мы обсуждаем прибор с серийным номером: {$deviceContext['serial_number']}\n";
+            if ($deviceContext['case_number']) {
+                $deviceContextStr .= "Номер корпуса: {$deviceContext['case_number']}\n";
+            }
+        }
+
+        // Загружаем инструкции для ИИ
+        $instructions = '';
+        $instrPath = ROOT_PATH . '/ai_agent/ai_agent_instructions.md';
+        if (file_exists($instrPath)) {
+            $instructions = file_get_contents($instrPath);
+        }
+
+        // Формируем расширенное системное сообщение с контекстом БД
+        $systemContext = "Ты ИИ-агент корпоративной системы учета приборов компании АМК ГОРИЗОНТ.\n\n" .
+            "У тебя есть прямой доступ к базе данных. Вот структура базы данных:\n\n{$dbContext}{$deviceContextStr}\n\n" .
+            "ВАЖНЫЕ ИНСТРУКЦИИ:\n{$instructions}\n\n" .
+            "Дополнительные инструкции:\n" .
+            "1. Если пользователь спрашивает что-то, что можно найти в БД — используй SQL-запросы.\n" .
+            "2. Если запрос неясен — вежливо переспроси уточняющий вопрос.\n" .
+            "3. Если данных нет в БД — честно скажи об этом.\n" .
+            "4. Для диалогов используй дружелюбный, профессиональный тон.\n" .
+            "5. НЕ ПРИДУМЫВАЙ данные — используй только информацию из БД.\n" .
+            "6. Для сложных запросов можешь составить SQL и описать, что бы ты искал.";
+
+        // Собираем историю беседы и текущее сообщение
+        $messages = [];
+        $messages[] = ['role' => 'system', 'content' => $systemContext];
+        
+        $history = $_SESSION['conversation_history'] ?? [];
+        $recentHistory = array_slice($history, -10);
+        foreach ($recentHistory as $entry) {
+            $messages[] = ['role' => 'user', 'content' => $entry['user']];
+            $messages[] = ['role' => 'assistant', 'content' => $entry['assistant']];
+        }
+        $messages[] = ['role' => 'user', 'content' => $userMessage];
+
+        // Отправляем запрос к polza.ai
+        $payload = [
+            'model' => 'qwen/qwen3.5-9b',
+            'messages' => $messages,
+            'temperature' => 0.7,
+            'max_tokens' => 2000
+        ];
+
+        $ch = curl_init('https://polza.ai/api/v1/chat/completions');
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload, JSON_UNESCAPED_UNICODE));
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            'Content-Type: application/json',
+            'Authorization: Bearer ' . POLZA_AI_API_KEY
+        ]);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+
+        $apiResponse = curl_exec($ch);
+        $curlError = curl_error($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        if ($curlError) {
+            error_log("[AI Agent] cURL Error: " . $curlError);
+            return 'Извините, произошла ошибка связи с ИИ-сервисом. Детали: ' . $curlError . ' (HTTP Code: ' . $httpCode . ')';
+        }
+
+        $decoded = json_decode($apiResponse, true);
+
+        if (isset($decoded['choices'][0]['message']['content'])) {
+            return $decoded['choices'][0]['message']['content'];
+        } elseif (isset($decoded['error'])) {
+            error_log("[AI Agent] OpenRouter Error: " . json_encode($decoded['error'], JSON_UNESCAPED_UNICODE));
+            return 'Извините, ИИ-сервис временно недоступен. Попробуйте позже. (Error: ' . ($decoded['error']['message'] ?? 'Unknown') . ')';
+        } else {
+            error_log("[AI Agent] Unexpected Response: " . $apiResponse);
+            return 'Извините, не удалось получить ответ от ИИ-агента. Попробуйте переформулировать вопрос.';
+        }
+    }
+}

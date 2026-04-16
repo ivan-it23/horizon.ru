@@ -124,6 +124,41 @@ class QueryAnalyzer
             return ['type' => 'recent_repairs'];
         }
 
+        // Самый последний ремонт (единственное число)
+        if (preg_match("/(?:самый\s+)?последний.*ремонт/ui", $query)) {
+            return ['type' => 'last_repair'];
+        }
+
+        // Приборы в ремонте (без release_date)
+        if (preg_match("/прибор.*в\s+ремонте|в\s+ремонте.*прибор/ui", $query)) {
+            return ['type' => 'devices_in_repair'];
+        }
+
+        // Приборы на испытаниях
+        if (preg_match("/прибор.*на\s+испытаниях|на\s+испытаниях.*прибор/ui", $query)) {
+            return ['type' => 'devices_in_testing'];
+        }
+
+        // Диалоговые/общие запросы о системе
+        if (preg_match("/(?:кто\s+ты|ты\s+кто|расскажи\s+о\s+себе|что\s+ты\s+умеешь|какие\s+возможности|помощь|help)/ui", $query)) {
+            return ['type' => 'about_agent'];
+        }
+
+        // Приветствия
+        if (preg_match("/^(?:привет|здравствуй|добрый\s+день|доброе\s+утро|добрый\s+вечер|hello|hi)$/ui", trim($query))) {
+            return ['type' => 'greeting'];
+        }
+
+        // Прощания
+        if (preg_match("/^(?:пока|до\s+свидания|спасибо|благодарю|спс)$/ui", trim($query))) {
+            return ['type' => 'farewell'];
+        }
+
+        // Запросы о наличии приборов с определенными характеристиками
+        if (preg_match("/есть\s+ли.*прибор.*с\s+(?:частотой|диаметром|базой|длиной)/ui", $query)) {
+            return ['type' => 'flexible_device_search', 'query' => $query];
+        }
+
         if (preg_match("/статистика.*приборов?/ui", $query)) {
             return ['type' => 'device_statistics'];
         }

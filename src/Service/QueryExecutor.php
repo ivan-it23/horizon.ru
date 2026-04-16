@@ -46,6 +46,15 @@ class QueryExecutor
             case 'recent_repairs':
                 return $this->getRecentRepairs();
 
+            case 'last_repair':
+                return $this->getLastRepair();
+
+            case 'devices_in_repair':
+                return $this->getDevicesInRepair();
+
+            case 'devices_in_testing':
+                return $this->getDevicesInTesting();
+
             case 'device_statistics':
                 return $this->getDeviceStatistics();
 
@@ -314,4 +323,169 @@ class QueryExecutor
             ];
         }
     }
-} 
+
+    /**
+     * Получает самый последний ремонт
+     */
+    private function getLastRepair(): array
+    {
+        try {
+            $sql = "SELECT serial_number, case_number, repair_reason, failure_reason, admission_date, release_date, actions_description, repair_creator 
+                    FROM repair_data 
+                    ORDER BY admission_date DESC 
+                    LIMIT 1";
+            $stmt = $this->conn->prepare($sql);
+            if (!$stmt) {
+                return [
+                    'success' => false,
+                    'message' => 'Ошибка подготовки запроса: ' . $this->conn->error
+                ];
+            }
+
+            $stmt->execute();
+            $result = $stmt->get_result();
+            $repair = $result->fetch_assoc();
+            $stmt->close();
+
+            if (!$repair) {
+                return [
+                    'success' => false,
+                    'message' => "В базе данных нет записей о ремонтах."
+                ];
+            }
+
+            $admissionDate = $repair['admission_date'] ? date('d.m.Y', strtotime($repair['admission_date'])) : 'Не указана';
+            $releaseDate = $repair['release_date'] ? date('d.m.Y', strtotime($repair['release_date'])) : 'Ещё в ремонте';
+
+            $message = "🔧 **Последний ремонт в системе:**\n\n";
+            $message .= "**Прибор:** серийный номер {$repair['serial_number']}, корпус {$repair['case_number']}\n";
+            $message .= "**Причина ремонта:** {$repair['repair_reason']}\n";
+            $message .= "**Причина неисправности:** {$repair['failure_reason']}\n";
+            $message .= "**Дата поступления:** {$admissionDate}\n";
+            $message .= "**Дата выпуска:** {$releaseDate}\n";
+            $message .= "**Выполненные действия:** {$repair['actions_description']}\n";
+            $message .= "**Ответственный:** {$repair['repair_creator']}";
+
+            return [
+                'success' => true,
+                'repair' => $repair,
+                'message' => $message
+            ];
+        } catch (\Exception $e) {
+            return [
+                'success' => false,
+                'message' => 'Ошибка при выполнении запроса: ' . $e->getMessage()
+            ];
+        }
+    }
+
+    /**
+     * Получает приборы, находящиеся в ремонте (без даты выпуска)
+     */
+    private function getDevicesInRepair(): array
+    {
+        try {
+            $sql = "SELECT serial_number, case_number, repair_reason, admission_date, repair_creator 
+                    FROM repair_data 
+                    WHERE release_date IS NULL OR release_date = ''
+                    ORDER BY admission_date DESC";
+            $stmt = $this->conn->prepare($sql);
+            if (!$stmt) {
+                return [
+                    'success' => false,
+                    'message' => 'Ошибка подготовки запроса: ' . $this->conn->error
+                ];
+            }
+
+            $stmt->execute();
+            $result = $stmt->get_result();
+            $repairs = $result->fetch_all(MYSQLI_ASSOC);
+            $stmt->close();
+
+            if (empty($repairs)) {
+                return [
+                    'success' => true,
+                    'count' => 0,
+                    'message' => "✅ Сейчас нет приборов в ремонте. Все приборы выпущены!"
+                ];
+            }
+
+            $message = "🔧 **Приборы в ремонте (всего " . count($repairs) . "):**\n\n";
+            foreach ($repairs as $repair) {
+                $admissionDate = $repair['admission_date'] ? date('d.m.Y', strtotime($repair['admission_date'])) : 'Не указана';
+                $message .= "• Прибор {$repair['serial_number']} (корпус {$repair['case_number']})\n";
+                $message .= "  Причина: {$repair['repair_reason']}\n";
+                $message .= "  Поступил: {$admissionDate}\n";
+                $message .= "  Ответственный: {$repair['repair_creator']}\n\n";
+            }
+
+            return [
+                'success' => true,
+                'count' => count($repairs),
+                'repairs' => $repairs,
+                'message' => $message
+            ];
+        } catch (\Exception $e) {
+            return [
+                'success' => false,
+                'message' => 'Ошибка при выполнении запроса: ' . $e->getMessage()
+            ];
+        }
+    }
+
+    /**
+     * Получает приборы на испытаниях (последние записи без результата)
+     */
+    private function getDevicesInTesting(): array
+    {
+        try {
+            $sql = "SELECT t.serial_number, t.case_number, t.test_date, t.test_result, t.creator_surname,
+                           d.device_type
+                    FROM testing_data t
+                    LEFT JOIN device_identification d ON t.serial_number = d.serial_number
+                    ORDER BY t.test_date DESC
+                    LIMIT 10";
+            $stmt = $this->conn->prepare($sql);
+            if (!$stmt) {
+                return [
+                    'success' => false,
+                    'message' => 'Ошибка подготовки запроса: ' . $this->conn->error
+                ];
+            }
+
+            $stmt->execute();
+            $result = $stmt->get_result();
+            $tests = $result->fetch_all(MYSQLI_ASSOC);
+            $stmt->close();
+
+            if (empty($tests)) {
+                return [
+                    'success' => false,
+                    'message' => "В базе данных нет записей об испытаниях."
+                ];
+            }
+
+            $message = "🧪 **Последние испытания приборов:**\n\n";
+            foreach ($tests as $test) {
+                $testDate = $test['test_date'] ? date('d.m.Y', strtotime($test['test_date'])) : 'Не указана';
+                $result = $test['test_result'] ?: 'Результат не указан';
+                $message .= "• Прибор {$test['serial_number']} ({$test['device_type']}, корпус {$test['case_number']})\n";
+                $message .= "  Дата испытания: {$testDate}\n";
+                $message .= "  Результат: {$result}\n";
+                $message .= "  Ответственный: {$test['creator_surname']}\n\n";
+            }
+
+            return [
+                'success' => true,
+                'count' => count($tests),
+                'tests' => $tests,
+                'message' => $message
+            ];
+        } catch (\Exception $e) {
+            return [
+                'success' => false,
+                'message' => 'Ошибка при выполнении запроса: ' . $e->getMessage()
+            ];
+        }
+    }
+}

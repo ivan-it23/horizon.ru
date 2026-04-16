@@ -46,9 +46,8 @@ define('SESSION_TIMEOUT', 3600); // 1 час
 define('MAX_FILE_SIZE', 10 * 1024 * 1024); // 10 MB
 define('UPLOAD_DIR', __DIR__ . '/uploads/');
 
-// API key для OpenRouter AI-агента
-// Замените на ваш собственный ключ или настройте через переменные окружения
-define('OPENROUTER_API_KEY', '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');
+// API key для polza.ai AI-агента
+define('POLZA_AI_API_KEY', 'pza_gPz7Y5ou1MB_6c25f-_pd5-_Fvo_cAoK');
 
 // Функция для логирования ошибок
 function logError($message, $file = '', $line = '') {

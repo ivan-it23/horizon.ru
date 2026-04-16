@@ -2,12 +2,6 @@
 <div id="ai-agent-sidebar" class="ai-sidebar">
     <div class="ai-sidebar-header">
         <h3>AI Ассистент</h3>
-        <div class="ai-model-selector">
-            <select id="ai-model-select" class="ai-model-select">
-                <option value="deepseek/deepseek-chat-v3-0324:free">DeepSeek</option>
-                <option value="minimax/minimax-m1:extended">Minimax M1</option>
-            </select>
-        </div>
         <button id="ai-sidebar-close" class="ai-sidebar-close" title="Закрыть">
             <i class="fas fa-times"></i>
         </button>
