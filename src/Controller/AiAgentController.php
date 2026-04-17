@@ -6,10 +6,18 @@ use App\Service\ResponseTemplateManager;
 class AiAgentController extends BaseController
 {
     /**
+     * Дебаг-информация о вызовах LLM для логирования
+     */
+    private array $llmDebug = [];
+
+    /**
      * Обрабатывает AJAX-запросы к ИИ-агенту
      */
     public function chat(): void
     {
+        // Увеличиваем лимит времени выполнения для двух последовательных вызовов LLM
+        set_time_limit(300);
+        
         // Начинаем буферизацию и подавляем отображение ошибок
         ini_set('display_errors', '0');
         ob_start();
@@ -161,9 +169,8 @@ class AiAgentController extends BaseController
                 'dbResult'  => $dbResult,
                 'response'  => $responseText
             ];
-            if (!$isDbQuery) {
-                $logData['llm_request']  = $payload;
-                $logData['llm_response'] = $decoded ?? null;
+            if (!$isDbQuery && !empty($this->llmDebug)) {
+                $logData['llm_calls'] = $this->llmDebug;
             }
             file_put_contents($logFile, json_encode($logData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
             $logLink = '/logs/ai/' . $logId . '.log';
@@ -235,6 +242,7 @@ class AiAgentController extends BaseController
 
     /**
      * Вызывает LLM с контекстом базы данных для нераспознанных запросов
+     * Двухступенчатая обработка: 1) Генерация SQL, 2) Выполнение и форматирование
      */
     private function callLLMWithDatabaseContext(string $userMessage, \App\Service\DatabaseQueryHandler $dbHandler, array $dbResult): string
     {
@@ -252,43 +260,89 @@ class AiAgentController extends BaseController
             }
         }
 
-        // Загружаем инструкции для ИИ
-        $instructions = '';
-        $instrPath = ROOT_PATH . '/ai_agent/ai_agent_instructions.md';
-        if (file_exists($instrPath)) {
-            $instructions = file_get_contents($instrPath);
+        // ШАГ 1: Просим LLM сгенерировать SQL-запросы (короткий промпт, низкая температура)
+        $step1SystemContext = "Ты составляешь SQL-запросы для БД АМК ГОРИЗОНТ.\n\n" .
+            "Структура БД:\n{$dbContext}{$deviceContextStr}\n\n" .
+            "ПРАВИЛА:\n" .
+            "1. Каждый запрос оберни в тег: <sql>ЗАПРОС</sql>\n" .
+            "2. ТОЛЬКО SELECT-запросы.\n" .
+            "3. Минимум текста до/после запросов.\n" .
+            "4. Если вопрос не требует БД — ответь кратко без SQL.\n\n" .
+            "Пример:\n<sql>SELECT device_type, COUNT(*) FROM device_identification GROUP BY device_type</sql>";
+
+        $step1Messages = [
+            ['role' => 'system', 'content' => $step1SystemContext],
+            ['role' => 'user', 'content' => $userMessage]
+        ];
+
+        // Step 1: короткий ответ (только SQL), низкая температура для стабильности
+        $step1Response = $this->callLLM($step1Messages, 800, 0.1);
+
+        // Проверяем, есть ли в ответе SQL-запросы
+        $sqlQueries = $this->extractSQLQueries($step1Response);
+
+        if (empty($sqlQueries)) {
+            // SQL не найден — возвращаем ответ как есть (диалоговый или уточняющий)
+            return $step1Response;
         }
 
-        // Формируем расширенное системное сообщение с контекстом БД
-        $systemContext = "Ты ИИ-агент корпоративной системы учета приборов компании АМК ГОРИЗОНТ.\n\n" .
-            "У тебя есть прямой доступ к базе данных. Вот структура базы данных:\n\n{$dbContext}{$deviceContextStr}\n\n" .
-            "ВАЖНЫЕ ИНСТРУКЦИИ:\n{$instructions}\n\n" .
-            "Дополнительные инструкции:\n" .
-            "1. Если пользователь спрашивает что-то, что можно найти в БД — используй SQL-запросы.\n" .
-            "2. Если запрос неясен — вежливо переспроси уточняющий вопрос.\n" .
-            "3. Если данных нет в БД — честно скажи об этом.\n" .
-            "4. Для диалогов используй дружелюбный, профессиональный тон.\n" .
-            "5. НЕ ПРИДУМЫВАЙ данные — используй только информацию из БД.\n" .
-            "6. Для сложных запросов можешь составить SQL и описать, что бы ты искал.";
-
-        // Собираем историю беседы и текущее сообщение
-        $messages = [];
-        $messages[] = ['role' => 'system', 'content' => $systemContext];
-        
-        $history = $_SESSION['conversation_history'] ?? [];
-        $recentHistory = array_slice($history, -10);
-        foreach ($recentHistory as $entry) {
-            $messages[] = ['role' => 'user', 'content' => $entry['user']];
-            $messages[] = ['role' => 'assistant', 'content' => $entry['assistant']];
+        // ШАГ 2: Выполняем SQL-запросы и собираем результаты
+        $executionResults = [];
+        foreach ($sqlQueries as $sql) {
+            $result = $dbHandler->executeQueryForLLM($sql);
+            $executionResults[] = [
+                'sql' => $sql,
+                'result' => $result
+            ];
         }
-        $messages[] = ['role' => 'user', 'content' => $userMessage];
 
-        // Отправляем запрос к polza.ai
+        // ШАГ 3: Отправляем результаты обратно к LLM для форматирования
+        $resultsContext = "РЕЗУЛЬТАТЫ SQL-ЗАПРОСОВ:\n\n";
+        foreach ($executionResults as $idx => $item) {
+            $resultsContext .= "Запрос " . ($idx + 1) . ": " . $item['sql'] . "\n";
+            if ($item['result']['success']) {
+                $resultsContext .= "Результат:\n";
+                if (!empty($item['result']['data'])) {
+                    $resultsContext .= json_encode($item['result']['data'], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+                } else {
+                    $resultsContext .= "Нет данных (пустой результат)";
+                }
+                $resultsContext .= "\nКоличество записей: " . $item['result']['count'] . "\n";
+            } else {
+                $resultsContext .= "ОШИБКА: " . ($item['result']['error'] ?? 'Неизвестная ошибка') . "\n";
+            }
+            $resultsContext .= "\n";
+        }
+
+        $step2SystemContext = "Ты ИИ-агент АМК ГОРИЗОНТ. Отвечай коротко и по делу на основе данных из БД.\n" .
+            "ПРАВИЛА:\n" .
+            "1. Используй Markdown (заголовки, списки, таблицы).\n" .
+            "2. НЕ ПРИДУМЫВАЙ данные.\n" .
+            "3. Не дублируй SQL-запросы в ответе.\n" .
+            "4. Будь лаконичен: только нужные данные и краткий вывод.";
+
+        $step2Messages = [
+            ['role' => 'system', 'content' => $step2SystemContext],
+            ['role' => 'user', 'content' => "Вопрос: {$userMessage}\n\n{$resultsContext}"]
+        ];
+
+        // Step 2: финальный ответ с форматированием
+        return $this->callLLM($step2Messages, 3000, 0.5);
+    }
+
+    /**
+     * Выполняет прямой вызов к LLM (polza.ai)
+     * @param array $messages Сообщения для LLM
+     * @param int $maxTokens Максимальное количество токенов в ответе
+     * @param float $temperature Температура генерации (0.0-1.0)
+     */
+    private function callLLM(array $messages, int $maxTokens = 4000, float $temperature = 0.7): string
+    {
         $payload = [
             'model' => 'qwen/qwen3.5-9b',
             'messages' => $messages,
-            'temperature' => 0.7,
-            'max_tokens' => 2000
+            'temperature' => $temperature,
+            'max_tokens' => $maxTokens
         ];
 
         $ch = curl_init('https://polza.ai/api/v1/chat/completions');
@@ -299,28 +353,432 @@ class AiAgentController extends BaseController
             'Content-Type: application/json',
             'Authorization: Bearer ' . POLZA_AI_API_KEY
         ]);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 90);
 
+        $startTime = microtime(true);
         $apiResponse = curl_exec($ch);
         $curlError = curl_error($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $duration = round(microtime(true) - $startTime, 2);
         curl_close($ch);
+
+        // Сохраняем debug-информацию для лога
+        $debugEntry = [
+            'request' => $payload,
+            'http_code' => $httpCode,
+            'duration_sec' => $duration,
+            'curl_error' => $curlError ?: null,
+            'raw_response' => $apiResponse
+        ];
 
         if ($curlError) {
             error_log("[AI Agent] cURL Error: " . $curlError);
-            return 'Извините, произошла ошибка связи с ИИ-сервисом. Детали: ' . $curlError . ' (HTTP Code: ' . $httpCode . ')';
+            $this->llmDebug[] = $debugEntry;
+            return 'Ошибка связи с ИИ-сервисом: ' . $curlError;
         }
 
         $decoded = json_decode($apiResponse, true);
+        $debugEntry['decoded_response'] = $decoded;
+        $this->llmDebug[] = $debugEntry;
 
         if (isset($decoded['choices'][0]['message']['content'])) {
-            return $decoded['choices'][0]['message']['content'];
+            $content = $decoded['choices'][0]['message']['content'];
+            // Проверяем, не оборвался ли ответ по лимиту
+            $finishReason = $decoded['choices'][0]['finish_reason'] ?? '';
+            if ($finishReason === 'length') {
+                error_log("[AI Agent] Response truncated by max_tokens limit");
+            }
+            return $content;
         } elseif (isset($decoded['error'])) {
-            error_log("[AI Agent] OpenRouter Error: " . json_encode($decoded['error'], JSON_UNESCAPED_UNICODE));
-            return 'Извините, ИИ-сервис временно недоступен. Попробуйте позже. (Error: ' . ($decoded['error']['message'] ?? 'Unknown') . ')';
+            error_log("[AI Agent] LLM Error: " . json_encode($decoded['error'], JSON_UNESCAPED_UNICODE));
+            return 'Ошибка ИИ-сервиса: ' . ($decoded['error']['message'] ?? 'Unknown');
         } else {
             error_log("[AI Agent] Unexpected Response: " . $apiResponse);
-            return 'Извините, не удалось получить ответ от ИИ-агента. Попробуйте переформулировать вопрос.';
+            return 'Не удалось получить ответ от ИИ-агента.';
         }
+    }
+
+    /**
+     * Извлекает SQL-запросы из текста ответа LLM
+     */
+    private function extractSQLQueries(string $text): array
+    {
+        $queries = [];
+        
+        // Ищем запросы в тегах <sql>...</sql>
+        if (preg_match_all('/<sql>(.*?)<\/sql>/is', $text, $matches)) {
+            foreach ($matches[1] as $sql) {
+                $sql = trim($sql);
+                // Проверяем, что это SELECT-запрос
+                if (preg_match('/^\s*SELECT/i', $sql)) {
+                    $queries[] = $sql;
+                }
+            }
+        }
+        
+        // Если тегов нет, ищем запросы в markdown code blocks ```sql
+        if (empty($queries)) {
+            if (preg_match_all('/```sql\s*(.*?)```/is', $text, $matches)) {
+                foreach ($matches[1] as $sql) {
+                    $sql = trim($sql);
+                    if (preg_match('/^\s*SELECT/i', $sql)) {
+                        $queries[] = $sql;
+                    }
+                }
+            }
+        }
+        
+        // Если и code blocks нет, ищем строки начинающиеся с SELECT
+        if (empty($queries)) {
+            if (preg_match_all('/SELECT\s+.*?;/is', $text, $matches)) {
+                foreach ($matches[0] as $sql) {
+                    $sql = trim($sql);
+                    // Убираем точку с запятой в конце если есть
+                    $sql = rtrim($sql, ';');
+                    $queries[] = $sql;
+                }
+            }
+        }
+        
+        return $queries;
+    }
+
+    /**
+     * Streaming-версия chat() с поддержкой Server-Sent Events (SSE)
+     * Клиент получает ответ по частям в реальном времени (ChatGPT-подобный опыт)
+     */
+    public function chatStream(): void
+    {
+        // Снимаем все ограничения времени и буферизации для стриминга
+        set_time_limit(300);
+        ini_set('display_errors', '0');
+        ini_set('output_buffering', '0');
+        ini_set('zlib.output_compression', '0');
+        
+        // Отключаем все уровни буферизации
+        while (ob_get_level() > 0) {
+            ob_end_clean();
+        }
+
+        // Проверка авторизации ДО отправки SSE-заголовков
+        try {
+            $this->requireAuth();
+        } catch (\Throwable $e) {
+            http_response_code(401);
+            header('Content-Type: application/json');
+            echo json_encode(['error' => 'Unauthorized']);
+            return;
+        }
+
+        // Rate limiting
+        if (!$this->checkRateLimit($this->getClientIP(), 'ai_chat', 20, 60)) {
+            http_response_code(429);
+            header('Content-Type: application/json');
+            echo json_encode(['error' => 'Слишком много запросов. Попробуйте через минуту.']);
+            return;
+        }
+
+        // Устанавливаем SSE-заголовки
+        header('Content-Type: text/event-stream; charset=utf-8');
+        header('Cache-Control: no-cache, no-store, must-revalidate');
+        header('X-Accel-Buffering: no');
+        header('Connection: keep-alive');
+
+        // Освобождаем сессию, чтобы не блокировать другие запросы пользователя
+        session_write_close();
+
+        try {
+            $input = file_get_contents('php://input');
+            $data = json_decode($input, true) ?: [];
+
+            $userMessage = $this->sanitizeString($data['message'] ?? '', 2000);
+            if (empty($userMessage)) {
+                $this->sseEmit('error', ['message' => 'No message provided']);
+                return;
+            }
+
+            // Переоткрываем сессию на чтение для получения user info
+            session_start();
+            $userName = $_SESSION['user']['lastname'] ?? ($_SESSION['user']['username'] ?? 'Guest');
+            session_write_close();
+
+            require_once __DIR__ . '/../../db_connection.php';
+            if (!isset($conn)) {
+                $this->sseEmit('error', ['message' => 'Database connection failed']);
+                return;
+            }
+
+            $dbHandler = new \App\Service\DatabaseQueryHandler($conn);
+            $analysis = $dbHandler->analyzeQuery($userMessage);
+            $dbResult = $dbHandler->executeQuery($analysis);
+
+            $timestamp = date('Y-m-d H:i:s');
+            $fullResponse = '';
+            $isDbQuery = false;
+
+            // 1. Диалоговые запросы
+            if (!empty($dbResult['type']) && $dbResult['type'] === 'dialog') {
+                $fullResponse = $this->getDialogResponse($dbResult['dialog_type'] ?? 'unknown');
+                $this->sseEmit('content', ['delta' => $fullResponse]);
+            }
+            // 2. Распознанные БД-запросы
+            elseif (!empty($dbResult['success']) && empty($dbResult['type'])) {
+                $isDbQuery = true;
+                $templateManager = new ResponseTemplateManager();
+                $context = ['timestamp' => $timestamp, 'user_name' => $userName, 'log_link' => ''];
+                $templateKey = 'generic';
+                
+                switch ($analysis['type']) {
+                    case 'count_devices_by_type':
+                        $templateKey = 'count_devices_by_type';
+                        $context['count'] = $dbResult['count'] ?? 0;
+                        $context['device_type'] = $dbResult['device_type'] ?? '';
+                        break;
+                    case 'count_all_devices':
+                        $templateKey = 'count_all_devices';
+                        $context['count'] = $dbResult['count'] ?? 0;
+                        break;
+                    case 'count_repairs':
+                        $templateKey = 'count_repairs';
+                        $context['count'] = $dbResult['count'] ?? 0;
+                        break;
+                    case 'last_repair':
+                    case 'devices_in_repair':
+                    case 'devices_in_testing':
+                        $fullResponse = $dbResult['message'] ?? '';
+                        break;
+                    default:
+                        $context['message'] = $dbResult['message'] ?? '';
+                }
+                
+                if (empty($fullResponse)) {
+                    $fullResponse = $templateManager->render($templateKey, $context);
+                }
+                $this->sseEmit('content', ['delta' => $fullResponse]);
+            }
+            // 3. Нераспознанные запросы — стриминг через LLM
+            else {
+                $fullResponse = $this->streamLLMWithDatabaseContext($userMessage, $dbHandler);
+            }
+
+            $this->saveStreamLog($userMessage, $userName, $analysis, $dbResult, $fullResponse, $isDbQuery);
+            $this->sseEmit('done', ['total_length' => strlen($fullResponse)]);
+        } catch (\Throwable $e) {
+            error_log("[AI Agent Stream] Error: " . $e->getMessage());
+            $this->sseEmit('error', ['message' => 'Internal error: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Отправляет SSE-событие клиенту
+     */
+    private function sseEmit(string $event, array $data): void
+    {
+        echo "event: {$event}\n";
+        echo "data: " . json_encode($data, JSON_UNESCAPED_UNICODE) . "\n\n";
+        @ob_flush();
+        @flush();
+    }
+
+    /**
+     * Стримит ответ LLM с двухступенчатой обработкой:
+     * Step1 — синхронная генерация SQL, Step2 — стрим ответа пользователю
+     */
+    private function streamLLMWithDatabaseContext(string $userMessage, \App\Service\DatabaseQueryHandler $dbHandler): string
+    {
+        $dbContext = $dbHandler->getDatabaseContextForLLM();
+        
+        $deviceContext = $dbHandler->getCurrentContext();
+        $deviceContextStr = '';
+        if ($deviceContext) {
+            $deviceContextStr = "\n\n=== ТЕКУЩИЙ КОНТЕКСТ ===\n";
+            $deviceContextStr .= "Сейчас мы обсуждаем прибор с серийным номером: {$deviceContext['serial_number']}\n";
+            if ($deviceContext['case_number']) {
+                $deviceContextStr .= "Номер корпуса: {$deviceContext['case_number']}\n";
+            }
+        }
+
+        $this->sseEmit('status', ['message' => 'Анализирую запрос...']);
+
+        // ШАГ 1: Генерация SQL
+        $step1SystemContext = "Ты составляешь SQL-запросы для БД АМК ГОРИЗОНТ.\n\n" .
+            "Структура БД:\n{$dbContext}{$deviceContextStr}\n\n" .
+            "ПРАВИЛА:\n" .
+            "1. Каждый запрос оберни в тег: <sql>ЗАПРОС</sql>\n" .
+            "2. ТОЛЬКО SELECT-запросы.\n" .
+            "3. Минимум текста до/после запросов.\n" .
+            "4. Если вопрос не требует БД — ответь кратко без SQL.\n\n" .
+            "Пример:\n<sql>SELECT device_type, COUNT(*) FROM device_identification GROUP BY device_type</sql>";
+
+        $step1Messages = [
+            ['role' => 'system', 'content' => $step1SystemContext],
+            ['role' => 'user', 'content' => $userMessage]
+        ];
+
+        $step1Response = $this->callLLM($step1Messages, 800, 0.1);
+        $sqlQueries = $this->extractSQLQueries($step1Response);
+
+        if (empty($sqlQueries)) {
+            $this->sseEmit('content', ['delta' => $step1Response]);
+            return $step1Response;
+        }
+
+        $this->sseEmit('status', ['message' => 'Получаю данные из базы...']);
+
+        // ШАГ 2: Выполнение SQL
+        $executionResults = [];
+        foreach ($sqlQueries as $sql) {
+            $result = $dbHandler->executeQueryForLLM($sql);
+            $executionResults[] = ['sql' => $sql, 'result' => $result];
+        }
+
+        $resultsContext = "РЕЗУЛЬТАТЫ SQL-ЗАПРОСОВ:\n\n";
+        foreach ($executionResults as $idx => $item) {
+            $resultsContext .= "Запрос " . ($idx + 1) . ": " . $item['sql'] . "\n";
+            if ($item['result']['success']) {
+                $resultsContext .= "Результат:\n";
+                if (!empty($item['result']['data'])) {
+                    $resultsContext .= json_encode($item['result']['data'], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+                } else {
+                    $resultsContext .= "Нет данных (пустой результат)";
+                }
+                $resultsContext .= "\nКоличество записей: " . $item['result']['count'] . "\n";
+            } else {
+                $resultsContext .= "ОШИБКА: " . ($item['result']['error'] ?? 'Неизвестная ошибка') . "\n";
+            }
+            $resultsContext .= "\n";
+        }
+
+        $step2SystemContext = "Ты ИИ-агент АМК ГОРИЗОНТ. Отвечай коротко и по делу на основе данных из БД.\n" .
+            "ПРАВИЛА:\n" .
+            "1. Используй Markdown (заголовки, списки, таблицы).\n" .
+            "2. НЕ ПРИДУМЫВАЙ данные.\n" .
+            "3. Не дублируй SQL-запросы в ответе.\n" .
+            "4. Будь лаконичен: только нужные данные и краткий вывод.";
+
+        $step2Messages = [
+            ['role' => 'system', 'content' => $step2SystemContext],
+            ['role' => 'user', 'content' => "Вопрос: {$userMessage}\n\n{$resultsContext}"]
+        ];
+
+        $this->sseEmit('status', ['message' => 'Формирую ответ...']);
+
+        // ШАГ 3: Стримим ответ пользователю
+        $accumulated = '';
+        $this->callLLMStream($step2Messages, 3000, 0.5, function(string $delta) use (&$accumulated) {
+            $accumulated .= $delta;
+            $this->sseEmit('content', ['delta' => $delta]);
+        });
+
+        return $accumulated;
+    }
+
+    /**
+     * Стриминговый вызов LLM (polza.ai) через CURLOPT_WRITEFUNCTION
+     * @param callable $onDelta Колбэк, вызывается для каждого нового куска текста
+     */
+    private function callLLMStream(array $messages, int $maxTokens, float $temperature, callable $onDelta): void
+    {
+        $payload = [
+            'model' => 'qwen/qwen3.5-9b',
+            'messages' => $messages,
+            'temperature' => $temperature,
+            'max_tokens' => $maxTokens,
+            'stream' => true
+        ];
+
+        $buffer = '';
+        $ch = curl_init('https://polza.ai/api/v1/chat/completions');
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload, JSON_UNESCAPED_UNICODE));
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            'Content-Type: application/json',
+            'Authorization: Bearer ' . POLZA_AI_API_KEY,
+            'Accept: text/event-stream'
+        ]);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 120);
+        curl_setopt($ch, CURLOPT_WRITEFUNCTION, function($ch, $chunk) use (&$buffer, $onDelta) {
+            $buffer .= $chunk;
+            while (($pos = strpos($buffer, "\n\n")) !== false) {
+                $event = substr($buffer, 0, $pos);
+                $buffer = substr($buffer, $pos + 2);
+                
+                foreach (explode("\n", $event) as $line) {
+                    if (strncmp($line, 'data: ', 6) === 0) {
+                        $jsonData = substr($line, 6);
+                        if ($jsonData === '[DONE]') {
+                            return strlen($chunk);
+                        }
+                        $decoded = json_decode($jsonData, true);
+                        if (isset($decoded['choices'][0]['delta']['content'])) {
+                            $delta = $decoded['choices'][0]['delta']['content'];
+                            if ($delta !== '') {
+                                $onDelta($delta);
+                            }
+                        }
+                    }
+                }
+            }
+            return strlen($chunk);
+        });
+
+        $startTime = microtime(true);
+        curl_exec($ch);
+        $curlError = curl_error($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $duration = round(microtime(true) - $startTime, 2);
+        curl_close($ch);
+
+        $this->llmDebug[] = [
+            'streaming' => true,
+            'request' => $payload,
+            'http_code' => $httpCode,
+            'duration_sec' => $duration,
+            'curl_error' => $curlError ?: null
+        ];
+
+        if ($curlError) {
+            error_log("[AI Agent Stream] cURL Error: " . $curlError);
+            $onDelta("\n\nОшибка связи с ИИ-сервисом: " . $curlError);
+        }
+    }
+
+    /**
+     * Сохраняет лог и историю для streaming-запроса
+     */
+    private function saveStreamLog(string $userMessage, string $userName, array $analysis, array $dbResult, string $responseText, bool $isDbQuery): void
+    {
+        $timestamp = date('Y-m-d H:i:s');
+        $logDir = ROOT_PATH . '/logs/ai';
+        if (!is_dir($logDir)) {
+            mkdir($logDir, 0755, true);
+        }
+        $logId = uniqid('', true);
+        $logFile = "{$logDir}/{$logId}.log";
+        $logData = [
+            'timestamp' => $timestamp,
+            'user' => $userName,
+            'message' => $userMessage,
+            'analysis' => $analysis,
+            'dbResult' => $dbResult,
+            'response' => $responseText,
+            'streaming' => true
+        ];
+        if (!$isDbQuery && !empty($this->llmDebug)) {
+            $logData['llm_calls'] = $this->llmDebug;
+        }
+        file_put_contents($logFile, json_encode($logData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+
+        session_start();
+        $_SESSION['conversation_history'][] = [
+            'user' => $userMessage,
+            'assistant' => $responseText,
+            'timestamp' => $timestamp,
+            'is_database_query' => $isDbQuery
+        ];
+        if (count($_SESSION['conversation_history']) > 50) {
+            $_SESSION['conversation_history'] = array_slice($_SESSION['conversation_history'], -50);
+        }
+        session_write_close();
     }
 }

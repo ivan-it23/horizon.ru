@@ -14,15 +14,28 @@ document.addEventListener('DOMContentLoaded', function() {
     // Хранилище истории чата для ИИ-агента
     let aiChatHistory = [];
 
-    // Функция для постепенного вывода текста (typewriter effect)
-    function typewriterEffect(element, text, callback, speed = 18) {
+    // Функция для постепенного вывода текста с markdown-форматированием в реальном времени
+    function typewriterEffect(element, text, callback, speed = 8, charsPerTick = 3) {
         let i = 0;
+        const useMarkdown = window.marked ? true : false;
         function type() {
             if (i <= text.length) {
-                element.textContent = text.slice(0, i);
-                i++;
+                const currentText = text.slice(0, i);
+                if (useMarkdown) {
+                    // Рендерим markdown на каждом шаге для live-форматирования
+                    element.innerHTML = marked.parse(currentText);
+                    // Прокручиваем чат вниз по мере печати
+                    aiChatBox.scrollTop = aiChatBox.scrollHeight;
+                } else {
+                    element.textContent = currentText;
+                }
+                i += charsPerTick;
                 setTimeout(type, speed);
             } else {
+                // Финальный рендер с полным текстом
+                if (useMarkdown) {
+                    element.innerHTML = marked.parse(text);
+                }
                 if (callback) callback();
             }
         }
@@ -46,9 +59,8 @@ document.addEventListener('DOMContentLoaded', function() {
             if (instant) {
                 messageBubble.innerHTML = marked.parse(formattedMessage);
             } else {
-                typewriterEffect(messageBubble, formattedMessage, function() {
-                    messageBubble.innerHTML = marked.parse(formattedMessage);
-                });
+                // typewriter уже сам применяет markdown-форматирование в реальном времени
+                typewriterEffect(messageBubble, formattedMessage);
             }
         } else {
             messageBubble.innerHTML = message.replace(/\n/g, '<br>');
@@ -118,20 +130,43 @@ document.addEventListener('DOMContentLoaded', function() {
     // Никаких первоначальных действий — экран чата появляется по клику или по кнопке свернуть
 
 
-    // Функция для отправки сообщения ИИ-агенту
+    // Создаёт пустой bubble для AI-ответа и возвращает элементы для потокового обновления
+    function createStreamingAiBubble() {
+        const messageDiv = document.createElement('div');
+        messageDiv.classList.add('ai-message', 'ai-message-ai');
+
+        const messageBubble = document.createElement('div');
+        messageBubble.classList.add('ai-message-bubble', 'ai-message-bubble-ai');
+
+        // Индикатор статуса (показывается до первого delta)
+        const statusEl = document.createElement('div');
+        statusEl.classList.add('ai-status-indicator');
+        statusEl.textContent = 'Думаю...';
+        messageBubble.appendChild(statusEl);
+
+        messageDiv.appendChild(messageBubble);
+        aiChatBox.appendChild(messageDiv);
+        aiChatBox.scrollTop = aiChatBox.scrollHeight;
+
+        return { messageBubble, statusEl };
+    }
+
+    // Функция для отправки сообщения ИИ-агенту со стримингом (SSE)
     async function sendAiMessage() {
         const message = aiUserInput.value.trim();
         if (!message) return;
 
-        // Отображаем сообщение пользователя
         displayAiMessage('user', message);
-        aiUserInput.value = ''; // Очистить поле
-
-        if (aiChatLoading) aiChatLoading.style.display = 'flex';
+        aiUserInput.value = '';
         aiSendButton.disabled = true;
 
+        // Создаём пустой bubble для потокового ответа
+        const { messageBubble, statusEl } = createStreamingAiBubble();
+        let accumulatedText = '';
+        let firstContentReceived = false;
+
         try {
-            const response = await fetch('front.php?c=aiAgent&a=chat', {
+            const response = await fetch('front.php?c=aiAgent&a=chatStream', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ message: message })
@@ -139,29 +174,94 @@ document.addEventListener('DOMContentLoaded', function() {
 
             if (!response.ok) {
                 const errorText = await response.text();
-                throw new Error(`Ошибка сети или сервера: ${response.status} - ${errorText}`);
+                throw new Error(`Ошибка ${response.status}: ${errorText}`);
             }
 
-            const data = await response.json();
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let buffer = '';
 
-            // Обрабатываем ответ от сервера
-            if (data.error) {
-                displayAiMessage('ai', `Произошла ошибка: ${data.error}`);
-            } else if (data.choices && data.choices.length > 0) {
-                const aiText = data.choices[0].message.content;
-                displayAiMessage('ai', aiText);
-            } else {
-                displayAiMessage('ai', 'Получен неожиданный ответ от ИИ-агента.');
-                console.error('Неожиданная структура данных:', data);
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                buffer += decoder.decode(value, { stream: true });
+
+                // SSE-события разделены двойным \n\n
+                const events = buffer.split('\n\n');
+                buffer = events.pop(); // последний может быть неполным
+
+                for (const rawEvent of events) {
+                    if (!rawEvent.trim()) continue;
+
+                    let eventType = 'message';
+                    let eventData = '';
+                    for (const line of rawEvent.split('\n')) {
+                        if (line.startsWith('event: ')) {
+                            eventType = line.slice(7).trim();
+                        } else if (line.startsWith('data: ')) {
+                            eventData += line.slice(6);
+                        }
+                    }
+
+                    if (!eventData) continue;
+
+                    let parsed;
+                    try {
+                        parsed = JSON.parse(eventData);
+                    } catch (e) {
+                        console.warn('Не удалось распарсить SSE data:', eventData);
+                        continue;
+                    }
+
+                    if (eventType === 'status') {
+                        if (!firstContentReceived) {
+                            statusEl.textContent = parsed.message || '...';
+                        }
+                    } else if (eventType === 'content') {
+                        // Убираем индикатор статуса при первом куске контента
+                        if (!firstContentReceived) {
+                            statusEl.remove();
+                            firstContentReceived = true;
+                        }
+                        accumulatedText += parsed.delta || '';
+                        // Live-рендер markdown
+                        if (window.marked) {
+                            messageBubble.innerHTML = marked.parse(accumulatedText);
+                        } else {
+                            messageBubble.textContent = accumulatedText;
+                        }
+                        aiChatBox.scrollTop = aiChatBox.scrollHeight;
+                    } else if (eventType === 'error') {
+                        if (!firstContentReceived) statusEl.remove();
+                        const errMsg = parsed.message || 'Неизвестная ошибка';
+                        accumulatedText += `\n\n**Ошибка:** ${errMsg}`;
+                        if (window.marked) {
+                            messageBubble.innerHTML = marked.parse(accumulatedText);
+                        } else {
+                            messageBubble.textContent = accumulatedText;
+                        }
+                    } else if (eventType === 'done') {
+                        // Финальный рендер (на случай, если markdown не полностью отрендерился)
+                        if (window.marked && accumulatedText) {
+                            messageBubble.innerHTML = marked.parse(accumulatedText);
+                        }
+                    }
+                }
             }
 
+            // Если ничего не пришло
+            if (!firstContentReceived && !accumulatedText) {
+                statusEl.textContent = 'Получен пустой ответ от ИИ-агента.';
+            }
         } catch (error) {
-            console.error('Ошибка при получении ответа от ИИ-агента:', error);
-            displayAiMessage('ai', 'Извините, произошла ошибка при общении с ИИ-агентом. Пожалуйста, попробуйте еще раз.');
+            console.error('Ошибка при стриминге ответа:', error);
+            statusEl.remove();
+            messageBubble.textContent = 'Извините, произошла ошибка при общении с ИИ-агентом: ' + error.message;
         } finally {
-            if (aiChatLoading) aiChatLoading.style.display = 'none';
             aiSendButton.disabled = false;
             aiUserInput.focus();
+            aiChatBox.scrollTop = aiChatBox.scrollHeight;
         }
     }
 

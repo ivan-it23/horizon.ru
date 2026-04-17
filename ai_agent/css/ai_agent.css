@@ -251,3 +251,30 @@
     color: #2D7EFF;
     text-align: center;
 } 
+
+/* Индикатор статуса стриминга (отображается до получения первого delta) */
+.ai-status-indicator {
+    display: inline-block;
+    color: #888;
+    font-style: italic;
+    font-size: 0.95rem;
+    position: relative;
+    padding-right: 24px;
+}
+.ai-status-indicator::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 18px;
+    height: 4px;
+    background-image: radial-gradient(circle, #2D7EFF 2px, transparent 2px);
+    background-size: 6px 6px;
+    background-repeat: repeat-x;
+    animation: ai-dots-pulse 1.2s infinite ease-in-out;
+}
+@keyframes ai-dots-pulse {
+    0%, 100% { opacity: 0.3; }
+    50% { opacity: 1; }
+}
