@@ -600,27 +600,34 @@ class AiAgentController extends BaseController
 
         $this->sseEmit('status', ['message' => 'Анализирую запрос...']);
 
-        // ШАГ 1: Генерация SQL
-        $step1SystemContext = "Ты составляешь SQL-запросы для БД АМК ГОРИЗОНТ.\n\n" .
+        // ШАГ 1: Роутер запросов — определяем, нужна ли БД для ответа
+        $step1SystemContext = "Ты роутер запросов для ИИ-ассистента системы АМК ГОРИЗОНТ (БД приборов учёта).\n\n" .
             "Структура БД:\n{$dbContext}{$deviceContextStr}\n\n" .
+            "ТВОЯ ЗАДАЧА: решить, нужна ли БД для ответа.\n\n" .
             "ПРАВИЛА:\n" .
-            "1. Каждый запрос оберни в тег: <sql>ЗАПРОС</sql>\n" .
-            "2. ТОЛЬКО SELECT-запросы.\n" .
-            "3. Минимум текста до/после запросов.\n" .
-            "4. Если вопрос не требует БД — ответь кратко без SQL.\n\n" .
-            "Пример:\n<sql>SELECT device_type, COUNT(*) FROM device_identification GROUP BY device_type</sql>";
+            "1. Если вопрос ТРЕБУЕТ данных из БД (приборы, ремонты, статистика, поиск) — выдай SQL в тегах: <sql>ЗАПРОС</sql>\n" .
+            "2. Если вопрос НЕ требует БД (программирование, общие вопросы, разговор, математика) — выдай ТОЛЬКО тег: <no_sql/>\n" .
+            "3. ТОЛЬКО SELECT-запросы.\n" .
+            "4. НЕ размышляй долго. Отвечай СРАЗУ одним-двумя тегами.\n" .
+            "5. Никакого текста вне тегов.\n\n" .
+            "Примеры:\n" .
+            "«Сколько приборов LWD?» → <sql>SELECT COUNT(*) FROM device_identification WHERE device_type='LWD'</sql>\n" .
+            "«Напиши функцию факториала» → <no_sql/>\n" .
+            "«Привет, как дела?» → <no_sql/>\n" .
+            "«Как работает рекурсия?» → <no_sql/>";
 
         $step1Messages = [
             ['role' => 'system', 'content' => $step1SystemContext],
             ['role' => 'user', 'content' => $userMessage]
         ];
 
-        $step1Response = $this->callLLM($step1Messages, 800, 0.1);
+        // max_tokens с запасом на reasoning (qwen3.5-9b тратит до ~1000 токенов на размышления)
+        $step1Response = $this->callLLM($step1Messages, 2500, 0.1);
         $sqlQueries = $this->extractSQLQueries($step1Response);
 
         if (empty($sqlQueries)) {
-            $this->sseEmit('content', ['delta' => $step1Response]);
-            return $step1Response;
+            // SQL не нужен — вопрос не про БД. Переходим к универсальному стримингу.
+            return $this->streamGeneralAnswer($userMessage);
         }
 
         $this->sseEmit('status', ['message' => 'Получаю данные из базы...']);
@@ -780,5 +787,42 @@ class AiAgentController extends BaseController
             $_SESSION['conversation_history'] = array_slice($_SESSION['conversation_history'], -50);
         }
         session_write_close();
+    }
+
+    /**
+     * Стрим ответа на общий вопрос, не связанный с БД
+     * (программирование, математика, общие темы и т.п.)
+     */
+    private function streamGeneralAnswer(string $userMessage): string
+    {
+        $this->sseEmit('status', ['message' => 'Формирую ответ...']);
+
+        $systemPrompt = "Ты дружелюбный и полезный ИИ-ассистент системы АМК ГОРИЗОНТ.\n" .
+            "Отвечай на любые вопросы пользователя — по программированию, математике, общим темам, справке по системе.\n" .
+            "ПРАВИЛА:\n" .
+            "1. Используй Markdown для форматирования (заголовки, списки, блоки кода).\n" .
+            "2. Код оборачивай в блоки ```язык ... ```.\n" .
+            "3. Отвечай кратко и по делу, без лишних предисловий.\n" .
+            "4. НЕ размышляй долго — сразу давай готовый ответ.";
+
+        $messages = [
+            ['role' => 'system', 'content' => $systemPrompt],
+            ['role' => 'user', 'content' => $userMessage]
+        ];
+
+        $accumulated = '';
+        $this->callLLMStream($messages, 3000, 0.7, function(string $delta) use (&$accumulated) {
+            $accumulated .= $delta;
+            $this->sseEmit('content', ['delta' => $delta]);
+        });
+
+        // Если модель ничего не вернула (reasoning съел токены) — аварийный ответ
+        if (trim($accumulated) === '') {
+            $fallback = "Извините, не удалось сформировать ответ. Попробуйте переформулировать вопрос.";
+            $this->sseEmit('content', ['delta' => $fallback]);
+            return $fallback;
+        }
+
+        return $accumulated;
     }
 }
