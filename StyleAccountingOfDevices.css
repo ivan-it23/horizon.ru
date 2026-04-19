@@ -1,439 +1,903 @@
-/* ==========================================================================
-   StyleAccountingOfDevices.css
-   Стили для корпоративного веб-приложения учёта приборов.
-   ========================================================================== */
+/* ================================================================
+   StyleAccountingOfDevices.css — v2 (индустриальный техно)
+   Рефакторинг: убраны дубликаты (было 3661 строк),
+   внедрена дизайн-система токенов (совпадает с corporate_style.css),
+   сохранены все class/id/data-атрибуты для совместимости с JS.
+   ================================================================ */
 
-/* ==========================================================================
-   1. CSS Переменные (Variables)
-   ========================================================================== */
+/* ================================================================
+   1. Дизайн-токены
+   ================================================================ */
 :root {
-  --primary-color: #2c3e50; /* Темно-синий */
-  --secondary-color: #6c757d; /* Средне-серый */
-  --accent-color: #0D6EFD; /* Синий акцент (из Page1.css для совместимости) */
-  --hover-color: #34495e; /* Темно-синий при наведении */
-  --hover-accent-color: #0B5ED7; /* Синий акцент при наведении */
+    /* ---- Brand palette ---- */
+    --color-primary-900: #001A2E;
+    --color-primary-800: #002440;
+    --color-primary-700: #003F6E;
+    --color-primary-600: #004B80;
+    --color-primary:     #005A9C;
+    --color-primary-500: #0A72BA;
+    --color-primary-100: #E6F0F9;
 
-  --bg-body: #f8f9fa; /* Очень светло-серый */
-  --bg-container: #ffffff; /* Белый */
-  --bg-header-footer: #ffffff; /* Белый для хедера/футера */
-  --bg-table-header: #f8fafc; /* Фон заголовков таблиц */
-  --bg-table-stripe: #f8fafc; /* Фон четных строк таблицы */
-  --bg-input: #ffffff; /* Фон полей ввода */
-  --bg-button-secondary-hover: #e9ecef; /* Фон вторичной кнопки при наведении */
+    /* ---- Accent (teal) ---- */
+    --color-accent:      #00B8C4;
+    --color-accent-600:  #008E98;
+    --color-accent-100:  #D6F5F7;
 
-  --text-primary: #212529; /* Почти черный */
-  --text-secondary: #495057; /* Темно-серый */
-  --text-light: #ffffff; /* Белый текст (на темном фоне) */
-  --text-placeholder: #6c757d; /* Цвет плейсхолдера */
-  --text-link: var(--accent-color); /* Цвет ссылок */
+    /* ---- Neutrals ---- */
+    --color-bg:          #F3F6F9;
+    --color-surface:     #FFFFFF;
+    --color-surface-2:   #F8FAFC;
+    --color-text:        #0B1E2D;
+    --color-text-muted:  #5A6B7B;
+    --color-text-invert: #FFFFFF;
+    --color-border:      #DCE4EC;
+    --color-border-strong: #BFCAD6;
 
-  --border-color: #dee2e6; /* Светло-серый */
-  --border-color-input: #ced4da; /* Серый для полей ввода */
-  --border-color-focus: #80BDFF; /* Голубой при фокусе */
-  --border-width: 1px;
-  --border-radius: 6px; /* Скругление углов */
+    /* ---- Semantic ---- */
+    --color-danger:       #D9534F;
+    --color-danger-100:   #FBEBEA;
+    --color-warning:      #E8A33D;
+    --color-warning-100:  #FCEFD8;
+    --color-success:      #29A35A;
+    --color-success-100:  #DDF3E3;
+    --color-info:         #0CB4D9;
+    --color-info-100:     #D8F2F9;
 
-  --danger-color: #dc3545; /* Красный */
-  --success-color: #198754; /* Зеленый */
-  --warning-color: #ffc107; /* Желтый */
-  --info-color: #0dcaf0; /* Бирюзовый */
+    /* ---- Алиасы обратной совместимости (старые имена) ---- */
+    --primary-color:          var(--color-primary);
+    --secondary-color:        var(--color-text-muted);
+    --accent-color:           var(--color-accent);
+    --hover-color:            var(--color-primary-600);
+    --hover-accent-color:     var(--color-accent-600);
+    --bg-body:                var(--color-bg);
+    --bg-container:           var(--color-surface);
+    --bg-header-footer:       var(--color-surface);
+    --bg-table-header:        var(--color-surface-2);
+    --bg-table-stripe:        var(--color-surface-2);
+    --bg-input:               var(--color-surface);
+    --bg-button-secondary-hover: var(--color-primary-100);
+    --text-primary:           var(--color-text);
+    --text-secondary:         var(--color-text-muted);
+    --text-light:             var(--color-text-invert);
+    --text-placeholder:       var(--color-text-muted);
+    --text-link:              var(--color-primary);
+    --border-color:           var(--color-border);
+    --border-color-input:     var(--color-border);
+    --border-color-focus:     var(--color-accent);
+    --danger-color:           var(--color-danger);
+    --success-color:          var(--color-success);
+    --warning-color:          var(--color-warning);
+    --info-color:             var(--color-info);
+    --disabled-bg:            #EEF2F6;
+    --disabled-border:        var(--color-border);
+    --disabled-text:          var(--color-text-muted);
+    --corporate-yellow:       var(--color-warning);
+    --corporate-orange:       #E07D2A;
+    --corporate-yellow-light: var(--color-warning-100);
+    --corporate-yellow-dark:  #BE8224;
+    --corporate-orange-light: #FCE3D0;
+    --modal-overlay-bg:       rgba(11, 30, 45, 0.55);
 
-  --corporate-yellow: #FFC107; /* Корпоративный желтый (измененный warning-color) */
-  --corporate-orange: #fd7e14; /* Корпоративный оранжевый */
-  --corporate-yellow-light: #fff8e1; /* Светлый оттенок желтого для фона */
-  --corporate-orange-light: #ffe8d4; /* Светлый оттенок оранжевого для фона */
+    /* ---- Radii ---- */
+    --radius-sm:   6px;
+    --radius-md:   10px;
+    --radius-lg:   16px;
+    --radius-xl:   24px;
+    --radius-full: 9999px;
+    --border-radius: var(--radius-md); /* алиас */
+    --border-width: 1px;
 
+    /* ---- Shadows ---- */
+    --shadow-xs:    0 1px 2px rgba(11, 30, 45, 0.04);
+    --shadow-sm:    0 2px 6px rgba(11, 30, 45, 0.06);
+    --shadow-md:    0 6px 16px rgba(11, 30, 45, 0.08);
+    --shadow-lg:    0 16px 40px rgba(11, 30, 45, 0.12);
+    --shadow-focus: 0 0 0 3px rgba(0, 184, 196, 0.35);
 
-  --disabled-bg: #e9ecef; /* Фон отключенных элементов */
-  --disabled-border: #ced4da; /* Граница отключенных элементов */
-  --disabled-text: #6c757d; /* Текст отключенных элементов */
+    /* ---- Spacing ---- */
+    --space-1:  4px;
+    --space-2:  8px;
+    --space-3:  12px;
+    --space-4:  16px;
+    --space-5:  24px;
+    --space-6:  32px;
+    --space-7:  40px;
+    --space-8:  48px;
+    --space-10: 72px;
+    --space-12: 96px;
 
-  --font-family-base: 'Open Sans', system-ui, -apple-system, BlinkMacMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --font-size-base: 16px;
-  --line-height-base: 1.6;
+    /* ---- Typography ---- */
+    --font-family-base: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    --font-family-mono: 'JetBrains Mono', 'Fira Code', ui-monospace, SFMono-Regular, Consolas, monospace;
+    --font-size-base:   15px;
+    --line-height-base: 1.55;
+    --fs-h1:    clamp(1.6rem, 1.2rem + 1.3vw, 2rem);
+    --fs-h2:    clamp(1.3rem, 1rem + 0.9vw, 1.65rem);
+    --fs-h3:    clamp(1.1rem, 1rem + 0.35vw, 1.3rem);
+    --fs-body:  0.9375rem;
+    --fs-small: 0.875rem;
+    --fs-xs:    0.75rem;
 
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.07);
-  --shadow-lg: 0 10px 20px rgba(0, 0, 0, 0.1);
+    /* ---- Motion ---- */
+    --ease-out:    cubic-bezier(0.2, 0.8, 0.2, 1);
+    --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+    --t-fast: 120ms;
+    --t-base: 200ms;
+    --t-slow: 360ms;
 
-  --modal-overlay-bg: rgba(0, 0, 0, 0.5);
+    /* ---- Layout ---- */
+    --container-max:     1400px;
+    --container-pad:     clamp(16px, 3vw, 32px);
+    --header-height:     64px;
 }
 
-/* ==========================================================================
-   2. Глобальные стили и сброс (Global Styles & Reset)
-   ========================================================================== */
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+/* ================================================================
+   2. Reset + базовые стили
+   ================================================================ */
+*,
+*::before,
+*::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
 }
 
-html {
-  scroll-behavior: smooth;
+*:focus { outline: none; }
+
+*:focus-visible {
+    outline: none;
+    box-shadow: var(--shadow-focus);
+    border-radius: var(--radius-sm);
 }
+
+html { scroll-behavior: smooth; }
 
 body {
-  font-family: var(--font-family-base);
-  line-height: var(--line-height-base);
-  font-size: var(--font-size-base);
-  background-color: var(--bg-body);
-  color: var(--text-primary);
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
+    font-family: var(--font-family-base);
+    line-height: var(--line-height-base);
+    font-size: var(--font-size-base);
+    background-color: var(--color-bg);
+    color: var(--color-text);
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 
-body.menu-open {
-  overflow: hidden; /* Блокировка прокрутки при открытом мобильном меню */
+body.menu-open,
+body.modal-open {
+    overflow: hidden;
 }
 
 a {
-  color: var(--text-link);
-  text-decoration: none;
-  transition: color 0.2s ease;
+    color: var(--color-primary);
+    text-decoration: none;
+    transition: color var(--t-fast) var(--ease-out);
 }
-
-a:hover {
-  color: var(--hover-accent-color);
-  text-decoration: none;
-}
+a:hover { color: var(--color-primary-600); }
 
 img {
-  max-width: 100%;
-  height: auto;
-  display: block;
+    max-width: 100%;
+    height: auto;
+    display: block;
 }
 
 h1, h2, h3, h4, h5, h6 {
-  margin-bottom: 0.8rem;
-  font-weight: 600;
-  line-height: 1.3;
-  color: var(--primary-color); /* Заголовки темно-синие */
+    margin-bottom: var(--space-3);
+    font-weight: 600;
+    line-height: 1.25;
+    color: var(--color-text);
+    letter-spacing: -0.01em;
 }
+h1 { font-size: var(--fs-h1); font-weight: 700; }
+h2 { font-size: var(--fs-h2); font-weight: 700; }
+h3 { font-size: var(--fs-h3); }
+h4 { font-size: 1.05rem; }
+h5 { font-size: 1rem; }
+h6 { font-size: 0.95rem; }
 
-h1 { font-size: 2rem; } /* 32px */
-h2 { font-size: 1.75rem; } /* 28px */
-h3 { font-size: 1.5rem; } /* 24px */
-h4 { font-size: 1.25rem; } /* 20px */
-h5 { font-size: 1.1rem; } /* 17.6px */
-h6 { font-size: 1rem; } /* 16px */
+p { margin-bottom: var(--space-4); }
 
-p {
-  margin-bottom: 1rem;
-}
-
-/* ==========================================================================
-   3. Стили Header и Footer (унаследовано из Page1.css)
-   ========================================================================== */
-
-/* --- Контейнеры --- */
+/* ================================================================
+   3. Контейнеры
+   ================================================================ */
 .header-container,
-.main-container, /* Добавлен для единообразия */
-.footer-container {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 0 24px;
-  width: 100%;
+.main-container,
+.footer-container,
+.accounting-container {
+    max-width: var(--container-max);
+    margin: 0 auto;
+    padding: 0 var(--container-pad);
+    width: 100%;
 }
 
-/* --- Header --- */
+/* ================================================================
+   4. Header (стиль совпадает с corporate_style.css)
+   ================================================================ */
 .site-header {
-  background-color: var(--bg-header-footer);
-  border-bottom: var(--border-width) solid var(--border-color);
-  padding: 12px 0;
-  position: sticky;
-  top: 0;
-  z-index: 1000;
-  box-shadow: var(--shadow-sm);
+    background-color: var(--color-surface);
+    border-bottom: 1px solid var(--color-border);
+    padding: var(--space-3) 0;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    box-shadow: var(--shadow-xs);
+    backdrop-filter: saturate(150%) blur(8px);
+    -webkit-backdrop-filter: saturate(150%) blur(8px);
 }
 
 .header-container {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  min-height: 40px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--space-5);
+    min-height: 56px;
 }
 
-.header-left {
-  flex-shrink: 0;
-}
+.header-left { flex-shrink: 0; }
 
 .logo-link {
-  display: inline-block;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-3);
+    border-radius: var(--radius-sm);
 }
 
 .logo-img {
-  height: 36px;
-  width: auto;
+    height: 40px;
+    width: auto;
 }
 
 .header-nav {
-  flex-grow: 1;
-  display: flex;
-  justify-content: center;
+    flex-grow: 1;
+    display: flex;
+    justify-content: center;
 }
 
 .header-nav ul {
-  display: flex;
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.header-nav ul li {
-  margin: 0 12px;
+    display: flex;
+    list-style: none;
+    gap: var(--space-4);
 }
 
 .header-nav ul li a {
-  color: var(--text-secondary);
-  font-weight: 600;
-  font-size: 1rem;
-  padding: 8px 12px;
-  border-radius: 4px; /* Небольшое скругление */
-  transition: color 0.2s ease, background-color 0.2s ease;
-  position: relative;
-  display: inline-block;
+    display: inline-block;
+    padding: 8px 14px;
+    border-radius: var(--radius-md);
+    color: var(--color-text-muted);
+    font-weight: 600;
+    font-size: var(--fs-small);
+    position: relative;
+    transition: color var(--t-fast) var(--ease-out),
+                background-color var(--t-fast) var(--ease-out);
 }
 
 .header-nav ul li a:hover {
-  color: var(--accent-color);
-  background-color: rgba(13, 110, 253, 0.05);
+    color: var(--color-primary);
+    background-color: var(--color-primary-100);
 }
 
 .header-nav ul li a.active {
-  color: var(--accent-color);
-  font-weight: 700;
+    color: var(--color-primary);
+    background-color: var(--color-primary-100);
+    font-weight: 700;
 }
 
 .header-nav ul li a.active::after {
-  content: '';
-  position: absolute;
-  bottom: -2px;
-  left: 12px;
-  right: 12px;
-  height: 2px;
-  background-color: var(--accent-color);
+    content: '';
+    position: absolute;
+    left: 14px;
+    right: 14px;
+    bottom: 3px;
+    height: 2px;
+    border-radius: var(--radius-full);
+    background: linear-gradient(90deg, var(--color-primary) 0%, var(--color-accent) 100%);
 }
 
 .header-right {
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  gap: 16px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
 }
 
-/* Стили для авторизованного пользователя */
+/* ---- Пользователь ---- */
 .user-info {
-  display: flex;
-  align-items: center;
-  gap: 16px;
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
 }
 
 .user-link-container {
-  position: relative;
-  display: flex;
+    position: relative;
+    display: flex;
 }
 
 .user-profile-link {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-weight: 400;
-  font-size: 0.9rem;
-  padding: 6px 8px;
-  border-radius: 4px;
-  transition: background-color 0.2s ease, color 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: 6px 14px 6px 6px;
+    border-radius: var(--radius-full);
+    font-size: var(--fs-small);
+    transition: background-color var(--t-fast) var(--ease-out);
 }
+
 .user-profile-link:hover {
-  background-color: var(--bg-button-secondary-hover);
+    background-color: var(--color-primary-100);
 }
 
 .user-icon {
-  font-size: 1.4rem;
-  line-height: 1;
-  color: var(--secondary-color);
-  transition: color 0.2s ease;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-accent) 100%);
+    color: #fff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    flex-shrink: 0;
+    box-shadow: var(--shadow-sm);
+    text-transform: uppercase;
 }
-.user-profile-link:hover .user-icon {
-  color: var(--text-secondary);
+
+.user-icon > i {
+    font-size: 1.5rem;
+    color: var(--color-text-muted);
+}
+
+.user-icon:has(> i) {
+    background: transparent;
+    box-shadow: none;
 }
 
 .user-name {
-  color: var(--text-primary);
-  white-space: nowrap;
-  font-size: 1rem;
+    color: var(--color-text);
+    font-weight: 500;
+    white-space: nowrap;
+    font-size: var(--fs-small);
 }
 
-.logout-form {
-  margin: 0;
-}
+.logout-form { margin: 0; }
 
 .logout-link {
-  color: var(--secondary-color);
-  font-size: 0.9rem;
-  background: none;
-  border: none;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 8px;
-  border-radius: 4px;
-  transition: color 0.2s ease, background-color 0.2s ease;
+    color: var(--color-text-muted);
+    background: none;
+    border: none;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: 8px 12px;
+    border-radius: var(--radius-md);
+    font-family: inherit;
+    font-size: var(--fs-small);
+    transition: color var(--t-fast) var(--ease-out),
+                background-color var(--t-fast) var(--ease-out);
 }
 
 .logout-link:hover {
-  color: var(--danger-color);
-  background-color: rgba(220, 53, 69, 0.05);
-}
-.logout-link i {
-  font-size: 1rem;
+    color: var(--color-danger);
+    background-color: rgba(217, 83, 79, 0.08);
 }
 
-/* Стили для формы авторизации */
+.logout-link i { font-size: 0.95rem; }
+
+/* ---- Бейдж непрочитанных ---- */
+.unread-badge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    background-color: var(--color-danger);
+    color: #fff;
+    border-radius: var(--radius-full);
+    padding: 2px 6px;
+    font-size: var(--fs-xs);
+    font-weight: 700;
+    min-width: 20px;
+    height: 20px;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0 0 2px var(--color-surface);
+    opacity: 0;
+    transform: scale(0.8);
+    transition: opacity var(--t-slow) var(--ease-out),
+                transform var(--t-slow) var(--ease-out);
+    z-index: 1;
+    pointer-events: none;
+}
+
+.unread-badge.visible {
+    display: inline-flex;
+    opacity: 1;
+    transform: scale(1);
+}
+
+/* ---- Форма входа ---- */
 .auth-form {
-  display: flex;
-  align-items: center;
-  gap: 10px;
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
 }
 
-.input-wrapper {
-  position: relative;
+.auth-form .input-wrapper {
+    position: relative;
+    display: block;
+}
+
+.auth-form .input-icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--color-text-muted);
+    font-size: 0.85rem;
+    pointer-events: none;
 }
 
 .auth-form input[type="text"],
 .auth-form input[type="password"] {
-  padding: 8px 12px;
-  font-size: 0.9rem;
-  border: var(--border-width) solid var(--border-color-input);
-  border-radius: var(--border-radius);
-  width: 160px;
-  background-color: var(--bg-input);
-  color: var(--text-primary);
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    padding: 9px 12px 9px 34px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
+    color: var(--color-text);
+    font-family: inherit;
+    font-size: var(--fs-small);
+    width: 180px;
+    transition: border-color var(--t-base) var(--ease-out),
+                box-shadow var(--t-base) var(--ease-out);
 }
 
-.auth-form input[type="text"]:focus,
-.auth-form input[type="password"]:focus {
-  border-color: var(--border-color-focus);
-  box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.15);
-  outline: none;
+.auth-form input::placeholder { color: var(--color-text-muted); }
+
+.auth-form input:focus-visible {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: var(--shadow-focus);
 }
 
-.login-button { /* Стили для кнопки Войти в хедере */
-  padding: 8px 16px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: var(--text-light);
-  background-color: var(--accent-color);
-  border: var(--border-width) solid var(--accent-color);
-  border-radius: var(--border-radius);
-  cursor: pointer;
-  transition: background-color 0.2s ease, border-color 0.2s ease;
-  white-space: nowrap;
+.auth-form .input-wrapper:focus-within .input-icon { color: var(--color-primary); }
+
+.login-button {
+    padding: 9px 20px;
+    border-radius: var(--radius-md);
+    border: none;
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-600) 100%);
+    color: #fff;
+    font-family: inherit;
+    font-size: var(--fs-small);
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: var(--shadow-xs);
+    white-space: nowrap;
+    transition: transform var(--t-fast) var(--ease-out),
+                box-shadow var(--t-base) var(--ease-out),
+                filter var(--t-base) var(--ease-out);
 }
 
 .login-button:hover {
-  background-color: var(--hover-accent-color);
-  border-color: #0A58CA;
+    transform: translateY(-1px);
+    filter: brightness(1.06);
+    box-shadow: var(--shadow-md);
 }
 
-/* Бейдж непрочитанных сообщений */
-.unread-badge {
-  position: absolute;
-  top: -6px;
-  right: -8px;
-  background-color: var(--danger-color);
-  color: white;
-  border-radius: 50%;
-  padding: 1px 5px;
-  font-size: 10px;
-  font-weight: bold;
-  line-height: 1.4;
-  min-width: 16px;
-  height: 16px;
-  display: none;
-  box-sizing: border-box;
-  text-align: center;
-  box-shadow: 0 0 0 2px var(--bg-header-footer); /* Обводка цветом фона хедера */
-  transition: opacity 0.3s ease, transform 0.3s ease;
-  opacity: 0;
-  transform: scale(0.8);
-  z-index: 1;
-  pointer-events: none;
+.login-button:active { transform: translateY(0); }
+
+/* ---- Мобильный тоггл меню ---- */
+.mobile-menu-toggle {
+    display: none;
+    background: none;
+    border: none;
+    font-size: 1.6rem;
+    cursor: pointer;
+    color: var(--color-text);
+    padding: 6px;
+    border-radius: var(--radius-md);
+    transition: background-color var(--t-fast) var(--ease-out);
 }
 
-.unread-badge.visible {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  opacity: 1;
-  transform: scale(1);
+.mobile-menu-toggle:hover {
+    background-color: var(--color-primary-100);
 }
 
-/* --- Footer --- */
+/* ================================================================
+   5. Footer
+   ================================================================ */
 .site-footer {
-  background-color: var(--bg-header-footer);
-  border-top: var(--border-width) solid var(--border-color);
-  padding: 24px 0;
-  margin-top: auto; /* Прижимает футер к низу */
+    background-color: var(--color-surface);
+    border-top: 1px solid var(--color-border);
+    padding: var(--space-6) 0;
+    margin-top: auto;
 }
 
 .footer-container p {
-  font-size: 0.875rem; /* ~14px */
-  color: var(--secondary-color);
-  text-align: center;
-  margin: 0;
+    font-size: var(--fs-small);
+    color: var(--color-text-muted);
+    text-align: center;
+    margin: 0;
 }
 
 .footer-container a {
-  color: var(--text-secondary);
-  font-weight: 500;
+    color: var(--color-primary);
+    font-weight: 500;
 }
-.footer-container a:hover {
-  color: var(--accent-color);
-}
+.footer-container a:hover { text-decoration: underline; }
 
-/* --- Мобильное меню (из Page1.css) --- */
-.mobile-menu-toggle {
-  display: none;
-  background: none;
-  border: none;
-  font-size: 1.5rem;
-  color: var(--text-secondary);
-  cursor: pointer;
-  padding: 8px;
-  line-height: 1;
+/* ================================================================
+   6. Main content
+   ================================================================ */
+main,
+.main-content {
+    flex: 1;
+    padding: var(--space-6) 0;
+    width: 100%;
 }
 
-/* ==========================================================================
-   4. Основной контент (Main Content Area)
-   ========================================================================== */
-main {
-  flex: 1; /* Занимает оставшееся пространство */
-  padding: 32px 0; /* Вертикальные отступы */
-  width: 100%;
+/* ---- Breadcrumb ---- */
+.breadcrumb {
+    font-size: var(--fs-small);
+    color: var(--color-text-muted);
+    margin-bottom: var(--space-5);
+    padding: 6px 0;
 }
 
-/* Контейнер для основного контента страницы учёта */
-.accounting-container { /* Используйте этот класс для обертки контента на странице учёта */
-  max-width: 1400px; /* Можно сделать шире для таблиц */
-  margin: 0 auto;
-  padding: 0 24px;
-  width: 100%;
+.breadcrumb-list {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    list-style: none;
+    margin: 0;
+    padding: 0;
 }
 
-/* ==========================================================================
-   5. Компоненты интерфейса (UI Components)
-   ========================================================================== */
+.breadcrumb-item {
+    display: inline-flex;
+    align-items: center;
+    color: var(--color-text-muted);
+}
 
-/* --- Формы --- */
+.breadcrumb-item + .breadcrumb-item::before {
+    content: '\f105'; /* fa-chevron-right */
+    font-family: 'Font Awesome 5 Free';
+    font-weight: 900;
+    color: var(--color-border-strong);
+    font-size: 0.7rem;
+    margin-right: var(--space-2);
+}
+
+.breadcrumb a,
+.breadcrumb-item a {
+    color: var(--color-text-muted);
+    padding: 4px 8px;
+    border-radius: var(--radius-sm);
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: background-color var(--t-fast) var(--ease-out),
+                color var(--t-fast) var(--ease-out);
+}
+
+.breadcrumb a:hover,
+.breadcrumb-item a:hover {
+    color: var(--color-primary);
+    background-color: var(--color-primary-100);
+}
+
+.breadcrumb a:focus-visible,
+.breadcrumb-item a:focus-visible {
+    outline: 3px solid var(--color-focus-ring);
+    outline-offset: 2px;
+}
+
+.breadcrumb-item[aria-current="page"] {
+    color: var(--color-text);
+    font-weight: 600;
+    padding: 4px 8px;
+}
+
+.breadcrumb .separator {
+    color: var(--color-border-strong);
+    font-size: 0.75rem;
+}
+
+.breadcrumb .current {
+    color: var(--color-text);
+    font-weight: 600;
+    padding: 4px 8px;
+}
+
+/* ================================================================
+   7. Вкладки (Tabs) — новый pill-стиль
+   ================================================================ */
+.tabs {
+    margin-bottom: var(--space-6);
+}
+
+.tab-list {
+    display: flex;
+    flex-wrap: wrap;
+    list-style: none;
+    padding: 4px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-xs);
+    gap: 2px;
+}
+
+.tab-item {
+    cursor: pointer;
+    padding: 10px 18px;
+    background: transparent;
+    border: none;
+    border-radius: var(--radius-md);
+    color: var(--color-text-muted);
+    font-weight: 600;
+    font-size: var(--fs-small);
+    position: relative;
+    white-space: nowrap;
+    transition: color var(--t-fast) var(--ease-out),
+                background-color var(--t-fast) var(--ease-out);
+}
+
+.tab-item:hover {
+    color: var(--color-primary);
+    background-color: var(--color-primary-100);
+}
+
+.tab-item.active:not(.parent-tab) {
+    color: var(--color-primary);
+    background: linear-gradient(180deg, var(--color-primary-100) 0%, #D5E8F6 100%);
+    font-weight: 700;
+    box-shadow: inset 0 0 0 1px rgba(0, 90, 156, 0.12);
+}
+
+.tab-item.active:not(.parent-tab)::after {
+    content: '';
+    position: absolute;
+    bottom: 2px;
+    left: 18px;
+    right: 18px;
+    height: 2px;
+    border-radius: var(--radius-full);
+    background: linear-gradient(90deg, var(--color-primary) 0%, var(--color-accent) 100%);
+}
+
+.tab-item.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+/* ---- Родительская вкладка ---- */
+.parent-tab {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.sub-tab-icon {
+    font-size: 0.65rem;
+    transition: transform var(--t-base) var(--ease-out);
+    color: var(--color-text-muted);
+}
+
+.parent-tab.active > .sub-tab-icon { transform: rotate(180deg); }
+
+/* При раскрытой родительской вкладке подсвечиваем её */
+.parent-tab.active {
+    color: var(--color-primary);
+    background-color: var(--color-primary-100);
+}
+
+/* ---- Подвкладки (dropdown) ---- */
+.sub-tabs {
+    position: absolute;
+    /* top: 100% БЕЗ разрыва: hover-зона родитель→подменю непрерывна,
+       поэтому курсор не теряется при переходе на подпункты.
+       Визуальный отступ даёт внутренний padding снизу. */
+    top: 100%;
+    left: 0;
+    min-width: 260px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lg);
+    z-index: 100;
+    padding: 6px;
+    list-style: none;
+    opacity: 0;
+    transform: translateY(-4px);
+    pointer-events: none;
+    transition: opacity var(--t-base) var(--ease-out),
+                transform var(--t-base) var(--ease-out);
+    display: block;
+}
+
+/* Раскрываем по клику (JS тогглит .active), hover — fallback для мыши */
+.parent-tab.active > .sub-tabs,
+.parent-tab:hover > .sub-tabs {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+}
+
+.sub-tabs .tab-item {
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: 9px 14px;
+    border-radius: var(--radius-sm);
+    font-weight: 500;
+    white-space: normal;
+    font-size: var(--fs-small);
+}
+
+.sub-tabs .tab-item:hover {
+    background-color: var(--color-primary-100);
+    color: var(--color-primary);
+}
+
+.sub-tabs .tab-item.active {
+    background: linear-gradient(180deg, var(--color-accent-100) 0%, #C0ECEF 100%);
+    color: var(--color-accent-600);
+    font-weight: 700;
+    box-shadow: none;
+}
+.sub-tabs .tab-item.active::after { display: none; }
+
+.tab-content { padding-top: var(--space-5); }
+.tab-pane { display: none; }
+.tab-pane.active { display: block; }
+
+/* Sticky-подзаголовок вкладки при прокрутке длинных форм */
+.tab-header-container {
+    position: sticky;
+    top: calc(var(--header-height) + 8px);
+    z-index: 10;
+    background: var(--color-bg);
+    padding: var(--space-3) 0;
+    margin-bottom: var(--space-4);
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-4);
+    align-items: flex-start;
+    justify-content: space-between;
+}
+
+.tab-title {
+    margin: 0;
+    font-size: var(--fs-h2);
+    color: var(--color-text);
+    font-weight: 700;
+}
+
+/* ================================================================
+   8. Action cards (вкладка 1: Получить / Создать / Найти)
+   ================================================================ */
+.action-selector-container {
+    margin-bottom: var(--space-6);
+}
+
+.action-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: var(--space-4);
+    margin-bottom: var(--space-5);
+}
+
+.action-card {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    padding: var(--space-5);
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-xs);
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+    transition: transform var(--t-base) var(--ease-out),
+                box-shadow var(--t-base) var(--ease-out),
+                border-color var(--t-base) var(--ease-out);
+}
+
+/* Градиентная рамка при hover (тот же приём, что на лэндинге) */
+.action-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-accent) 100%);
+    -webkit-mask:
+        linear-gradient(#000 0 0) content-box,
+        linear-gradient(#000 0 0);
+            mask:
+        linear-gradient(#000 0 0) content-box,
+        linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+            mask-composite: exclude;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity var(--t-base) var(--ease-out);
+    z-index: 1;
+}
+
+.action-card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-md);
+    border-color: transparent;
+}
+.action-card:hover::before { opacity: 1; }
+
+.action-card.active {
+    border-color: transparent;
+    background: linear-gradient(180deg, var(--color-surface) 0%, var(--color-primary-100) 100%);
+    box-shadow: var(--shadow-md);
+}
+.action-card.active::before { opacity: 1; }
+
+.action-card-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 56px;
+    height: 56px;
+    background: var(--color-primary-100);
+    color: var(--color-primary);
+    border-radius: var(--radius-md);
+    flex-shrink: 0;
+    transition: background var(--t-base) var(--ease-out),
+                color var(--t-base) var(--ease-out),
+                transform var(--t-base) var(--ease-out);
+}
+
+.action-card:hover .action-card-icon,
+.action-card.active .action-card-icon {
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-accent) 100%);
+    color: #fff;
+    transform: scale(1.05);
+}
+
+.action-card-icon i { font-size: 1.35rem; }
+
+.action-card-content { flex-grow: 1; min-width: 0; }
+
+.action-card h3 {
+    margin: 0 0 4px;
+    font-size: 1rem;
+    color: var(--color-text);
+    transition: color var(--t-base) var(--ease-out);
+}
+
+.action-card p {
+    margin: 0;
+    font-size: var(--fs-small);
+    color: var(--color-text-muted);
+    line-height: 1.45;
+}
+
+/* ================================================================
+   9. Формы и параметры
+   ================================================================ */
 label {
-  display: block;
-  margin-bottom: 6px;
-  font-weight: 600;
-  font-size: 14px;
-  color: var(--text-secondary);
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 600;
+    font-size: var(--fs-small);
+    color: var(--color-text-muted);
 }
 
 input[type="text"],
@@ -443,3218 +907,1968 @@ input[type="number"],
 input[type="date"],
 input[type="search"],
 select,
-textarea {
-  display: block;
-  width: 100%;
-  padding: 10px 12px;
-  font-size: 14px;
-  line-height: 1.5;
-  color: var(--text-primary);
-  background-color: var(--bg-input);
-  background-clip: padding-box;
-  border: var(--border-width) solid var(--border-color-input);
-  appearance: none; /* Убирает стандартный вид для select */
-  border-radius: var(--border-radius);
-  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+textarea,
+.input-field {
+    display: block;
+    width: 100%;
+    padding: 10px 12px;
+    font-size: var(--fs-small);
+    line-height: 1.5;
+    color: var(--color-text);
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    font-family: inherit;
+    appearance: none;
+    -webkit-appearance: none;
+    transition: border-color var(--t-base) var(--ease-out),
+                box-shadow var(--t-base) var(--ease-out),
+                background-color var(--t-base) var(--ease-out);
 }
 
 input::placeholder,
 textarea::placeholder {
-  color: var(--text-placeholder);
-  opacity: 1;
+    color: var(--color-text-muted);
+    opacity: 1;
 }
 
-input:focus,
-select:focus,
-textarea:focus {
-  color: var(--text-primary);
-  background-color: var(--bg-input);
-  border-color: var(--border-color-focus);
-  outline: 0;
-  box-shadow: 0 0 0 3px rgba(44, 62, 80, 0.15); /* Тень фокуса */
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+.input-field:focus-visible {
+    border-color: var(--color-primary);
+    box-shadow: var(--shadow-focus);
+    outline: none;
 }
 
 textarea {
-  resize: vertical;
-  min-height: 80px;
+    resize: vertical;
+    min-height: 88px;
 }
 
-select {
-  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
-  background-repeat: no-repeat;
-  background-position: right 0.75rem center;
-  background-size: 16px 12px;
+select,
+.param-select {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%235A6B7B' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 14px 12px;
+    padding-right: 36px;
 }
 
-/* Стили для отключенных полей */
 input:disabled,
 select:disabled,
-textarea:disabled {
-  background-color: var(--disabled-bg);
-  border-color: var(--disabled-border);
-  opacity: 0.7;
-  cursor: not-allowed;
+textarea:disabled,
+.input-field:disabled,
+.input-field.readonly-field,
+input[readonly] {
+    background-color: var(--disabled-bg);
+    border-color: var(--disabled-border);
+    color: var(--color-text-muted);
+    cursor: not-allowed;
 }
 
-/* Группировка элементов формы */
+.input-field.readonly-field:focus-visible,
+input[readonly]:focus-visible {
+    box-shadow: none;
+    border-color: var(--color-border);
+}
+
 .form-group {
-  margin-bottom: 1.2rem;
+    margin-bottom: var(--space-4);
 }
 
-/* --- Кнопки --- */
-.button {
-  display: inline-flex; /* Используем inline-flex для выравнивания иконки и текста */
-  align-items: center;
-  justify-content: center;
-  gap: 8px; /* Расстояние между иконкой и текстом */
-  padding: 10px 20px;
-  font-family: var(--font-family-base);
-  font-size: 15px;
-  font-weight: 600;
-  line-height: 1.5;
-  text-align: center;
-  text-decoration: none;
-  vertical-align: middle;
-  cursor: pointer;
-  user-select: none;
-  border: var(--border-width) solid transparent;
-  border-radius: var(--border-radius);
-  transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out, border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
-}
-
-.button i, .button .fas, .button .far, .button .fal, .button .fab {
-  /* Стили для иконок внутри кнопок */
-  line-height: 1; /* Для лучшего выравнивания */
-}
-
-/* Основная кнопка */
-.button-primary {
-  color: var(--text-light);
-  background-color: var(--primary-color);
-  border-color: var(--primary-color);
-}
-.button-primary:hover {
-  color: var(--text-light);
-  background-color: var(--hover-color);
-  border-color: var(--hover-color);
-}
-.button-primary:focus {
-  box-shadow: 0 0 0 3px rgba(44, 62, 80, 0.3);
-}
-
-/* Вторичная кнопка */
-.button-secondary {
-  color: var(--text-secondary);
-  background-color: var(--bg-container);
-  border-color: var(--border-color-input);
-}
-.button-secondary:hover {
-  color: var(--text-primary);
-  background-color: var(--bg-button-secondary-hover);
-  border-color: #adb5bd;
-}
-.button-secondary:focus {
-  box-shadow: 0 0 0 3px rgba(108, 117, 125, 0.2);
-}
-
-/* Кнопка Danger */
-.button-danger {
-  color: var(--text-light);
-  background-color: var(--danger-color);
-  border-color: var(--danger-color);
-}
-.button-danger:hover {
-  color: var(--text-light);
-  background-color: #bb2d3b; /* Темнее красный */
-  border-color: #b02a37;
-}
-.button-danger:focus {
-   box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.3);
-}
-
-/* Отключенная кнопка */
-.button:disabled,
-button:disabled {
-  color: var(--disabled-text);
-  background-color: var(--disabled-bg);
-  border-color: var(--disabled-border);
-  cursor: not-allowed;
-  opacity: 0.7;
-  pointer-events: none; /* Отключаем события мыши */
-}
-
-/* --- Таблицы --- */
-.data-table {
-  width: 100%;
-  margin-bottom: 1.5rem;
-  color: var(--text-primary);
-  vertical-align: top;
-  border-collapse: separate; /* Используем separate для border-radius */
-  border-spacing: 0;
-  border: var(--border-width) solid var(--border-color);
-  border-radius: var(--border-radius);
-  overflow: hidden; /* Чтобы border-radius работал */
-  box-shadow: var(--shadow-sm);
-  background-color: var(--bg-container);
-}
-
-.data-table > thead {
-  vertical-align: bottom;
-}
-
-.data-table th {
-  background-color: var(--bg-table-header);
-  padding: 14px 16px;
-  font-weight: 600;
-  text-align: inherit; /* Наследует text-align */
-  text-align: -webkit-match-parent;
-  border-bottom: 2px solid var(--border-color);
-  color: var(--text-secondary);
-}
-
-.data-table td {
-  padding: 12px 16px;
-  border-bottom: var(--border-width) solid var(--border-color);
-  line-height: 1.5;
-  font-size: 14px;
-}
-
-/* Чередование строк */
-.data-table > tbody > tr:nth-of-type(even) > * {
-  background-color: var(--bg-table-stripe);
-}
-
-/* Наведение на строки */
-.data-table > tbody > tr:hover > * {
-  background-color: var(--bg-button-secondary-hover);
-  color: var(--text-primary);
-}
-
-/* Убираем нижнюю границу у последней строки */
-.data-table > tbody > tr:last-of-type > td {
-  border-bottom: 0;
-}
-
-/* Заголовок таблицы */
-.data-table caption {
-  caption-side: top;
-  padding: 12px 16px;
-  text-align: left;
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: var(--primary-color);
-  background-color: var(--bg-table-header);
-  border-bottom: 2px solid var(--border-color);
-}
-
-/* Адаптивность таблицы: горизонтальный скролл на малых экранах */
-.table-responsive {
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-}
-.table-responsive > .data-table {
-  margin-bottom: 0; /* Убираем отступ у таблицы внутри обертки */
-}
-
-/* --- Вкладки (Tabs) --- */
-.tabs {
-  margin-bottom: 1.5rem;
-}
-
-.tab-list {
-  display: flex;
-  flex-wrap: wrap;
-  list-style: none;
-  padding-left: 0;
-  margin-bottom: 0;
-  border-bottom: 2px solid var(--border-color);
-}
-
-.tab-item {
-  cursor: pointer;
-  padding: 14px 24px;
-  margin-bottom: -2px; /* Перекрывает нижнюю границу .tab-list */
-  background: none;
-  border: 1px solid transparent;
-  border-top-left-radius: var(--border-radius);
-  border-top-right-radius: var(--border-radius);
-  color: var(--text-secondary);
-  font-weight: 600;
-  transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out, border-color 0.15s ease-in-out;
-  position: relative; /* Для псевдоэлементов */
-}
-
-.tab-item:hover {
-  color: var(--primary-color);
-  background-color: var(--bg-button-secondary-hover);
-  border-color: transparent; /* Убираем рамку при наведении, если не активна */
-}
-
-.tab-item.active {
-  color: var(--primary-color);
-  background-color: var(--bg-container);
-  border-color: var(--border-color) var(--border-color) var(--bg-container); /* Рамка совпадает с фоном снизу */
-  border-bottom-color: var(--bg-container); /* Явно указываем цвет нижней границы */
-  font-weight: 700;
-}
-
-/* Подчеркивание активной вкладки */
-.tab-item.active::after {
-  content: '';
-  position: absolute;
-  bottom: -2px; /* Располагается на месте границы tab-list */
-  left: 0;
-  right: 0;
-  height: 2px;
-  background-color: var(--primary-color); /* Цвет подчеркивания */
-}
-
-.tab-content {
-  padding-top: 1.5rem;
-}
-
-.tab-pane {
-  display: none;
-}
-
-.tab-pane.active {
-  display: block;
-}
-
-/* Стили для родительских вкладок и подвкладок */
-.parent-tab {
-  position: relative;
-}
-
-.sub-tabs {
-  display: none; /* Скрыты по умолчанию */
-  position: absolute;
-  top: 100%;
-  left: 0;
-  background-color: var(--bg-container);
-  border: 1px solid var(--border-color);
-  border-top: none; /* Убираем верхнюю границу */
-  border-radius: 0 0 var(--border-radius) var(--border-radius);
-  box-shadow: var(--shadow-md);
-  z-index: 100;
-  min-width: 200px; /* Минимальная ширина выпадающего списка */
-  padding: 5px 0; /* Небольшие отступы сверху/снизу */
-  list-style: none;
-}
-
-.parent-tab:hover .sub-tabs { /* Показываем только при наведении */
-  display: block;
-}
-
-.sub-tabs .tab-item {
-  display: block; /* Элементы списка вертикально */
-  padding: 10px 20px;
-  margin-bottom: 0; /* Убираем нижний отступ */
-  border: none; /* Убираем рамки */
-  border-radius: 0; /* Убираем скругление */
-  white-space: nowrap; /* Запрещаем перенос текста */
-  color: var(--text-secondary);
-  font-weight: 400;
-}
-
-.sub-tabs .tab-item:hover {
-  background-color: var(--bg-button-secondary-hover);
-  color: var(--primary-color);
-}
-
-.sub-tabs .tab-item.active {
-  background-color: rgba(44, 62, 80, 0.1); /* Легкий фон для активной подвкладки */
-  color: var(--primary-color);
-  font-weight: 600;
-}
-.sub-tabs .tab-item.active::after {
-  display: none; /* Убираем подчеркивание у подвкладок */
-}
-
-
-/* --- Модальные окна --- */
-.modal {
-  position: fixed;
-  top: 0;
-  left: 0;
-  z-index: 1050; /* Выше большинства элементов */
-  display: none; /* Скрыто по умолчанию */
-  width: 100%;
-  height: 100%;
-  overflow-x: hidden;
-  overflow-y: auto;
-  outline: 0;
-  background-color: var(--modal-overlay-bg); /* Полупрозрачный фон */
-}
-
-.modal.show { /* Класс для показа модального окна */
-  display: block;
-}
-
-.modal-dialog {
-  position: relative;
-  width: auto;
-  margin: 1.75rem auto; /* Отступы сверху/снизу и центрирование */
-  max-width: 600px; /* Максимальная ширина */
-  pointer-events: none; /* Позволяет кликать "сквозь" диалог на оверлей */
-}
-
-.modal-content {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  pointer-events: auto; /* Восстанавливаем события для контента */
-  background-color: var(--bg-container);
-  background-clip: padding-box;
-  border: var(--border-width) solid rgba(0, 0, 0, 0.2);
-  border-radius: calc(var(--border-radius) + 2px); /* Немного большее скругление */
-  box-shadow: var(--shadow-lg);
-  outline: 0;
-}
-
-.modal-header {
-  display: flex;
-  flex-shrink: 0;
-  align-items: center;
-  justify-content: space-between;
-  padding: 1rem 1.5rem;
-  border-bottom: var(--border-width) solid var(--border-color);
-  border-top-left-radius: var(--border-radius);
-  border-top-right-radius: var(--border-radius);
-}
-
-.modal-title {
-  margin-bottom: 0;
-  line-height: 1.5;
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: var(--primary-color);
-}
-
-.modal-close-button { /* Стили для кнопки закрытия (если используется <button>) */
-  padding: 0.5rem;
-  margin: -0.5rem -0.5rem -0.5rem auto;
-  background-color: transparent;
-  border: 0;
-  font-size: 1.5rem;
-  font-weight: 700;
-  line-height: 1;
-  color: #000;
-  text-shadow: 0 1px 0 #fff;
-  opacity: 0.5;
-  cursor: pointer;
-}
-.modal-close-button:hover {
-  opacity: 0.75;
-}
-
-.modal-body {
-  position: relative;
-  flex: 1 1 auto;
-  padding: 1.5rem;
-}
-
-.modal-footer {
-  display: flex;
-  flex-wrap: wrap;
-  flex-shrink: 0;
-  align-items: center;
-  justify-content: flex-end; /* Кнопки справа */
-  padding: 1rem 1.5rem;
-  border-top: var(--border-width) solid var(--border-color);
-  border-bottom-right-radius: var(--border-radius);
-  border-bottom-left-radius: var(--border-radius);
-}
-
-.modal-footer > * { /* Отступы между элементами в футере */
-  margin: 0.25rem;
-}
-
-/* ==========================================================================
-   6. Стили для блока выбора действий (Action Selector)
-   ========================================================================== */
-.action-selector-container {
-  margin-bottom: 2rem;
-}
-
-.action-cards {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 1.5rem;
-  margin-bottom: 1.5rem;
-}
-
-.action-card {
-  display: flex;
-  align-items: center;
-  padding: 1.5rem;
-  background-color: var(--bg-container);
-  border: var(--border-width) solid var(--border-color);
-  border-radius: var(--border-radius);
-  box-shadow: var(--shadow-sm);
-  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
-  cursor: pointer;
-  position: relative;
-  overflow: hidden;
-}
-
-.action-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 4px;
-  height: 100%;
-  background-color: var(--primary-color);
-  opacity: 0;
-  transition: opacity 0.2s ease;
-}
-
-.action-card:hover {
-  transform: translateY(-3px);
-  box-shadow: var(--shadow-md);
-  border-color: var(--border-color-focus);
-}
-
-.action-card:hover::before {
-  opacity: 1;
-}
-
-.action-card-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 60px;
-  height: 60px;
-  background-color: rgba(44, 62, 80, 0.05);
-  border-radius: 50%;
-  margin-right: 1.25rem;
-  flex-shrink: 0;
-  color: var(--primary-color);
-  transition: background-color 0.2s ease, color 0.2s ease;
-}
-
-.action-card:hover .action-card-icon {
-  background-color: var(--primary-color);
-  color: var(--text-light);
-}
-
-.action-card-icon i {
-  font-size: 1.5rem;
-}
-
-.action-card-content {
-  flex-grow: 1;
-}
-
-.action-card h3 {
-  margin-bottom: 0.5rem;
-  font-size: 1.1rem;
-  color: var(--primary-color);
-  transition: color 0.2s ease;
-}
-
-.action-card:hover h3 {
-  color: var(--hover-color);
-}
-
-.action-card p {
-  margin-bottom: 0;
-  font-size: 0.9rem;
-  color: var(--text-secondary);
-}
-
-/* ==========================================================================
-   7. Стили для блока параметров поиска (Device Params)
-   ========================================================================== */
 .device-params-section {
-  background-color: var(--bg-container);
-  border-radius: var(--border-radius);
-  border: var(--border-width) solid var(--border-color);
-  padding: 1.5rem;
-  box-shadow: var(--shadow-sm);
-  margin-bottom: 2rem;
+    background-color: var(--color-surface);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--color-border);
+    padding: var(--space-5);
+    box-shadow: var(--shadow-xs);
+    margin-bottom: var(--space-6);
 }
 
 .section-title {
-  font-size: 1.25rem;
-  color: var(--primary-color);
-  margin-bottom: 1.25rem;
-  padding-bottom: 0.75rem;
-  border-bottom: 1px solid var(--border-color);
+    font-size: 1.15rem;
+    color: var(--color-text);
+    margin: 0 0 var(--space-4);
+    padding-bottom: var(--space-3);
+    border-bottom: 1px solid var(--color-border);
+    font-weight: 700;
 }
 
 .params-container {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 1.25rem;
-  margin-bottom: 1.5rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: var(--space-4);
+    margin-bottom: var(--space-5);
 }
 
-.param-group {
-  margin-bottom: 0;
-}
+.param-group { margin-bottom: 0; }
 
 .param-label {
-  display: flex;
-  align-items: center;
-  margin-bottom: 0.5rem;
-  font-weight: 600;
-  color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin-bottom: 6px;
+    font-weight: 600;
+    font-size: var(--fs-small);
+    color: var(--color-text-muted);
 }
 
-.param-icon {
-  color: var(--primary-color);
-  margin-right: 0.5rem;
-  font-size: 1rem;
+.param-icon,
+.param-label i {
+    color: var(--color-primary);
+    font-size: 0.95rem;
+    width: 18px;
+    text-align: center;
 }
 
-.param-input-wrapper {
-  position: relative;
+.param-input-wrapper { position: relative; }
+
+.param-textarea {
+    width: 100%;
+    padding: 10px 12px;
+    font-size: var(--fs-small);
+    line-height: 1.5;
+    color: var(--color-text);
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    resize: vertical;
+    min-height: 110px;
+    font-family: inherit;
+    transition: border-color var(--t-base) var(--ease-out),
+                box-shadow var(--t-base) var(--ease-out);
 }
 
-.param-select {
-  width: 100%;
-  padding: 0.625rem 0.75rem;
-  font-size: 0.9375rem;
-  border: var(--border-width) solid var(--border-color-input);
-  border-radius: var(--border-radius);
-  background-color: var(--bg-input);
-  color: var(--text-primary);
-  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
-  appearance: none;
-  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e" );
-  background-repeat: no-repeat;
-  background-position: right 0.75rem center;
-  background-size: 16px 12px;
-}
-
-.param-select:focus {
-  border-color: var(--border-color-focus);
-  box-shadow: 0 0 0 3px rgba(44, 62, 80, 0.15);
-  outline: none;
+.param-textarea:focus-visible {
+    border-color: var(--color-primary);
+    box-shadow: var(--shadow-focus);
+    outline: none;
 }
 
 .action-buttons {
-  display: flex;
-  justify-content: flex-start;
-  gap: 1rem;
+    display: flex;
+    gap: var(--space-3);
+    flex-wrap: wrap;
 }
 
-.action-buttons .button {
-  min-width: 160px;
+.action-buttons .button { min-width: 160px; }
+
+/* ---- mode-buttons: ряд режимных кнопок над формой прибора ---- */
+/* Используется: "Сохранить изменения" / "История" / "Скачать" на tab-1,
+   "Создать" / "История" / мессенджер на tab-2..7, и т.п.            */
+.mode-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+    align-items: center;
+    margin: var(--space-4) 0;
 }
 
-/* Адаптивность для мобильных устройств */
-@media (max-width: 768px) {
-  .params-container {
-    grid-template-columns: 1fr;
-  }
+.mode-buttons .button,
+.mode-buttons > .msgr-open-icon { flex: 0 0 auto; }
 
-  .action-cards {
-    grid-template-columns: 1fr;
-  }
-
-  .action-buttons .button {
-    width: 100%;
-  }
+/* ================================================================
+   10. Кнопки
+   ================================================================ */
+.button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    padding: 10px 18px;
+    font-family: inherit;
+    font-size: var(--fs-small);
+    font-weight: 600;
+    line-height: 1.4;
+    text-align: center;
+    text-decoration: none;
+    vertical-align: middle;
+    cursor: pointer;
+    user-select: none;
+    border: 1px solid transparent;
+    border-radius: var(--radius-md);
+    transition: transform var(--t-fast) var(--ease-out),
+                box-shadow var(--t-base) var(--ease-out),
+                filter var(--t-base) var(--ease-out),
+                color var(--t-base) var(--ease-out),
+                background var(--t-base) var(--ease-out),
+                border-color var(--t-base) var(--ease-out);
 }
 
-/* --- Блок Информации о Приборе --- */
+.button i { line-height: 1; }
+
+.button-primary {
+    color: #fff;
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-600) 100%);
+    box-shadow: var(--shadow-xs);
+}
+.button-primary:hover {
+    color: #fff;
+    transform: translateY(-1px);
+    filter: brightness(1.06);
+    box-shadow: var(--shadow-md);
+}
+.button-primary:active { transform: translateY(0); }
+
+.button-secondary {
+    color: var(--color-text);
+    background: var(--color-surface);
+    border-color: var(--color-border);
+}
+.button-secondary:hover {
+    color: var(--color-primary);
+    background: var(--color-primary-100);
+    border-color: var(--color-primary-100);
+}
+.button-secondary:active { transform: translateY(0); }
+
+.button-danger {
+    color: #fff;
+    background: linear-gradient(135deg, var(--color-danger) 0%, #BE3A37 100%);
+    box-shadow: var(--shadow-xs);
+}
+.button-danger:hover {
+    color: #fff;
+    transform: translateY(-1px);
+    filter: brightness(1.06);
+    box-shadow: var(--shadow-md);
+}
+
+.button-small {
+    padding: 6px 12px;
+    font-size: var(--fs-xs);
+}
+
+.button-icon {
+    padding: 8px 10px;
+    font-size: 0.95rem;
+    min-width: auto;
+    background: transparent;
+    border-color: transparent;
+    color: var(--color-text-muted);
+}
+.button-icon:hover {
+    background-color: var(--color-primary-100);
+    border-color: transparent;
+    color: var(--color-primary);
+}
+.button-icon i { margin: 0; }
+
+.button:disabled,
+button:disabled {
+    color: var(--color-text-muted);
+    background: var(--disabled-bg);
+    border-color: var(--disabled-border);
+    cursor: not-allowed;
+    opacity: 0.75;
+    pointer-events: none;
+    filter: none;
+    transform: none;
+    box-shadow: none;
+}
+
+/* ---- tab-buttons (переключатель внутри формы создания) ---- */
+.tab-buttons {
+    display: flex;
+    gap: var(--space-3);
+    margin-bottom: var(--space-5);
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.tab-button {
+    padding: 8px 18px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
+    color: var(--color-text);
+    font-weight: 600;
+    font-size: var(--fs-small);
+    cursor: pointer;
+    transition: all var(--t-base) var(--ease-out);
+}
+
+.tab-button:hover:not(.active) {
+    background: var(--color-primary-100);
+    border-color: var(--color-primary-100);
+}
+
+.tab-button.active {
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-600) 100%);
+    color: #fff;
+    border-color: transparent;
+    box-shadow: var(--shadow-xs);
+}
+
+.tab-content-section { display: none; }
+.tab-content-section.active { display: block; }
+
+/* ================================================================
+   11. Device info box (заголовок выбранного прибора)
+   ================================================================ */
 .device-info-box {
-  background: var(--bg-container);
-  border: var(--border-width) solid var(--border-color);
-  border-radius: var(--border-radius);
-  padding: 1.2rem;
-  margin-bottom: 1.5rem;
-  box-shadow: var(--shadow-sm);
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 1rem;
+    background: linear-gradient(180deg, var(--color-surface) 0%, var(--color-surface-2) 100%);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-4) var(--space-5);
+    margin-bottom: var(--space-5);
+    box-shadow: var(--shadow-xs);
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: var(--space-3);
+    position: relative;
+    overflow: hidden;
+}
+
+.device-info-box::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: linear-gradient(180deg, var(--color-primary) 0%, var(--color-accent) 100%);
 }
 
 .device-info-item {
-  display: flex;
-  align-items: center;
-  padding: 0.6rem 1rem;
-  background: var(--bg-table-header);
-  border-radius: 4px;
-  border: var(--border-width) solid #edf2f7;
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: 6px 4px;
+    font-size: var(--fs-small);
+    min-width: 0;
 }
 
 .device-info-label {
-  font-size: 0.95rem;
-  color: var(--secondary-color);
-  font-weight: 500;
-  min-width: 120px;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
+    color: var(--color-text-muted);
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
 }
 
 .device-info-label i {
-  color: var(--primary-color);
-  font-size: 1.1rem;
-  width: 20px;
+    color: var(--color-primary);
+    font-size: 0.95rem;
+    width: 18px;
+    text-align: center;
 }
 
 .device-info-value {
-  font-size: 1.1rem;
-  color: var(--text-primary);
-  font-weight: 600;
-  margin-left: auto;
-  padding-left: 1rem;
-  word-break: break-all; /* Перенос длинных значений */
+    color: var(--color-text);
+    font-weight: 700;
+    margin-left: auto;
+    padding-left: var(--space-3);
+    font-family: var(--font-family-mono);
+    word-break: break-all;
+    font-size: var(--fs-small);
 }
 
-/* --- Стили для отображения истории --- */
-.history-section {
-  background-color: var(--bg-container);
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius);
-  margin-bottom: 1.5rem;
-  padding: 0;
-  box-shadow: var(--shadow-sm);
-  overflow: hidden;
-}
-
-.history-header {
-  background-color: var(--bg-table-header);
-  padding: 12px 20px;
-  border-bottom: 1px solid var(--border-color);
-  color: var(--text-primary);
-  font-weight: 600;
-  font-size: 1.1em;
-  margin: 0;
-  display: flex;
-  justify-content: space-between; /* Разносим дату и автора */
-  flex-wrap: wrap; /* Перенос на мобильных */
-  gap: 10px;
-}
-
-.history-header p {
-  margin: 0;
-  font-size: 0.9em;
-  color: var(--secondary-color);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.history-header p strong {
-  color: var(--text-secondary);
-  font-weight: 600;
-}
-.history-header p span {
-  color: var(--text-primary);
-  font-weight: 500;
-}
-
-.history-main-info, .history-details {
-  padding: 15px 20px;
-}
-
-.history-subtable {
-  width: calc(100% - 40px);
-  margin: 0 20px 20px 20px;
-  border-collapse: collapse;
-  border: 1px solid var(--border-color);
-  font-size: 0.95em;
-  background-color: var(--bg-container);
-}
-.history-subtable th,
-.history-subtable td {
-  border: 1px solid var(--border-color);
-  padding: 10px 12px;
-  text-align: left;
-  vertical-align: top;
-  color: var(--text-primary);
-}
-.history-subtable th {
-  background-color: var(--bg-table-header);
-  font-weight: 600;
-  color: var(--text-secondary);
-  width: 30%; /* Ширина колонки заголовка */
-}
-.history-subtable td {
-   width: 70%; /* Ширина колонки значения */
-}
-
-/* Подсветка измененных полей в истории */
-.history-subtable td.changed {
-    background-color: #fff3cd !important;
-    position: relative;
-    font-weight: 500;
-}
-.history-subtable td.changed::before { /* Маркер изменения */
-    content: '*';
-    color: #856404;
-    font-weight: bold;
-    margin-right: 5px;
-}
-
-/* Стили для вложенных таблиц в истории */
-.history-subtable .nested-table {
-    margin: 5px 0;
-    border: 1px solid #e9ecef;
-    background: #f8fafc;
+/* ================================================================
+   12. Таблицы
+   ================================================================ */
+.data-table {
     width: 100%;
-    font-size: 0.9em;
+    margin-bottom: var(--space-5);
+    color: var(--color-text);
+    vertical-align: top;
+    border-collapse: separate;
+    border-spacing: 0;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    box-shadow: var(--shadow-xs);
+    background-color: var(--color-surface);
 }
-.history-subtable .nested-table th,
-.history-subtable .nested-table td {
+
+.data-table thead { vertical-align: middle; }
+
+.data-table th {
+    background-color: var(--color-surface-2);
+    padding: 12px 16px;
+    font-weight: 700;
+    font-size: var(--fs-xs);
+    text-align: left;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom: 1px solid var(--color-border);
+    color: var(--color-text-muted);
+}
+
+.data-table td {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--color-border);
+    line-height: 1.5;
+    font-size: var(--fs-small);
+    vertical-align: top;
+}
+
+.data-table > tbody > tr:last-of-type > td { border-bottom: 0; }
+
+.data-table > tbody > tr:hover > * {
+    background-color: var(--color-primary-100);
+}
+
+.data-table td input[type="text"],
+.data-table td input[type="number"],
+.data-table td input[type="date"],
+.data-table td textarea {
+    width: 100%;
+    padding: 8px 10px;
+    font-size: var(--fs-small);
+    margin: 0;
+}
+
+.data-table caption {
+    caption-side: top;
+    padding: var(--space-3) var(--space-4);
+    text-align: left;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--color-text);
+    background-color: var(--color-surface-2);
+    border-bottom: 1px solid var(--color-border);
+}
+
+.table-section-header {
+    font-size: 1rem;
+    font-weight: 700;
+    margin: var(--space-5) 0 var(--space-3);
+    color: var(--color-text);
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--color-border);
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    margin-bottom: var(--space-5);
+    border-radius: var(--radius-lg);
+}
+
+.table-responsive > .data-table { margin-bottom: 0; }
+
+/* ---- Nested таблица (СКО/МДС/гармоники) ---- */
+.nested-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--fs-xs);
+    background: var(--color-surface);
+    font-family: var(--font-family-mono);
+}
+
+.nested-table th,
+.nested-table td {
     padding: 6px 8px;
-    border-color: #e9ecef;
-}
-.history-subtable .nested-table th {
-    background-color: #e9ecef;
-    font-weight: 500;
-}
-
-/* --- Вспомогательные классы --- */
-.text-danger { color: var(--danger-color) !important; }
-.text-success { color: var(--success-color) !important; }
-.text-warning { color: var(--warning-color) !important; }
-.text-info { color: var(--info-color) !important; }
-.text-muted { color: var(--secondary-color) !important; }
-
-.bg-danger-light { background-color: rgba(220, 53, 69, 0.1); }
-.bg-success-light { background-color: rgba(25, 135, 84, 0.1); }
-
-.d-none { display: none !important; }
-.d-block { display: block !important; }
-.d-flex { display: flex !important; }
-.d-inline-block { display: inline-block !important; }
-
-.mt-1 { margin-top: 0.25rem !important; }
-.mt-2 { margin-top: 0.5rem !important; }
-.mt-3 { margin-top: 1rem !important; }
-.mt-4 { margin-top: 1.5rem !important; }
-.mt-5 { margin-top: 3rem !important; }
-.mb-1 { margin-bottom: 0.25rem !important; }
-.mb-2 { margin-bottom: 0.5rem !important; }
-.mb-3 { margin-bottom: 1rem !important; }
-.mb-4 { margin-bottom: 1.5rem !important; }
-.mb-5 { margin-bottom: 3rem !important; }
-.ms-2 { margin-left: 0.5rem !important; }
-.me-2 { margin-right: 0.5rem !important; }
-
-/* ==========================================================================
-   6. Адаптивность (Responsiveness)
-   ========================================================================== */
-
-/* Планшеты и небольшие десктопы */
-@media (max-width: 1024px) {
-  .header-container,
-  .main-container,
-  .accounting-container,
-  .footer-container {
-    padding: 0 20px;
-  }
-
-  h1 { font-size: 1.8rem; }
-  h2 { font-size: 1.6rem; }
-
-  .action-cards {
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  }
-
-  .tab-item {
-    padding: 12px 18px;
-    font-size: 14px;
-  }
-}
-
-/* Мобильные устройства */
-@media (max-width: 768px) {
-  body {
-    font-size: 15px;
-  }
-
-  .header-container {
-    position: relative;
-  }
-
-  .mobile-menu-toggle {
-    display: block;
-    order: 3;
-  }
-
-  .header-nav,
-  .header-right {
-    display: none; /* Скрыты по умолчанию */
-    position: absolute;
-    top: 100%;
-    left: 0;
-    width: 100%;
-    background-color: var(--bg-header-footer);
-    flex-direction: column;
-    align-items: stretch;
-    padding: 16px 0;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    border-top: 1px solid var(--border-color);
-    z-index: 999;
-  }
-
-  .header-nav.mobile-active,
-  .header-right.mobile-active {
-    display: flex; /* Показываем при активации */
-  }
-
-  .header-nav ul {
-    flex-direction: column;
-    width: 100%;
-  }
-
-  .header-nav ul li {
-    margin: 0;
+    border: 1px solid var(--color-border);
     text-align: center;
-    border-bottom: 1px solid #EFF2F5;
-  }
-   .header-nav ul li:last-child {
-    border-bottom: none;
-   }
+}
 
-  .header-nav ul li a {
-    padding: 12px 20px;
-    display: block;
-    width: 100%;
-    border-radius: 0;
-  }
-   .header-nav ul li a.active::after {
-     display: none;
-   }
-   .header-nav ul li a:hover {
-     background-color: rgba(13, 110, 253, 0.05);
-   }
+.nested-table th {
+    background: var(--color-surface-2);
+    color: var(--color-text-muted);
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 0.65rem;
+    letter-spacing: 0.06em;
+}
 
-  .header-right {
-    padding: 16px 20px;
-    gap: 15px;
-    border-top: 1px solid var(--border-color);
-  }
-
-   .auth-form {
-      flex-direction: column;
-      align-items: stretch;
-      width: 100%;
-   }
-    .auth-form input[type="text"],
-    .auth-form input[type="password"] {
-        width: 100%;
-    }
-    .login-button {
-        width: 100%;
-    }
-
-   .user-info {
-       flex-direction: column;
-       align-items: center;
-       gap: 10px;
-       width: 100%;
-   }
-   .logout-link {
-       padding: 10px 15px;
-       justify-content: center; /* Центрируем кнопку выхода */
-   }
-
-  main {
-    padding: 24px 0;
-  }
-  .accounting-container {
-     padding: 0 15px;
-  }
-
-  h1 { font-size: 1.6rem; }
-  h2 { font-size: 1.4rem; }
-  h3 { font-size: 1.2rem; }
-
-  .action-cards {
-    grid-template-columns: 1fr; /* Одна колонка на мобильных */
-  }
-
-  .button {
-    padding: 10px 16px;
-    font-size: 14px;
-  }
-
-  .data-table th, .data-table td {
-      padding: 10px 12px;
-      font-size: 13px;
-  }
-
-  .tab-item {
-    flex-grow: 1; /* Занимают всю ширину */
+.nested-table td input[type="number"] {
+    padding: 4px 6px;
+    font-size: var(--fs-xs);
+    font-family: var(--font-family-mono);
     text-align: center;
-    padding: 12px 10px;
-  }
-
-  .modal-dialog {
-    margin: 10px;
-    max-width: calc(100% - 20px);
-  }
-  .modal-header, .modal-body, .modal-footer {
-    padding: 1rem;
-  }
-  .modal-title {
-    font-size: 1.1rem;
-  }
-
-  .device-info-box {
-      grid-template-columns: 1fr;
-      padding: 1rem;
-  }
-  .device-info-item {
-      padding: 0.5rem 0.8rem;
-  }
-  .device-info-label {
-      min-width: 100px;
-      font-size: 0.9rem;
-  }
-  .device-info-value {
-      font-size: 1rem;
-  }
-
-  .history-header {
-      padding: 10px 15px;
-      font-size: 1em;
-  }
-  .history-main-info, .history-details {
-      padding: 10px 15px;
-  }
-  .history-subtable {
-      width: calc(100% - 30px);
-      margin: 0 15px 15px 15px;
-      font-size: 0.9em;
-  }
-  .history-subtable th, .history-subtable td {
-      padding: 8px 10px;
-  }
+    width: 100%;
+    min-width: 64px;
 }
 
-/* Стили для мессенджера (из Page1.css, адаптированные) */
-.mode-buttons {
-    position: relative;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5em;
-    margin-bottom: 20px;
+/* Подсветка допусков */
+.nested-table td.tolerance-valid {
+    background-color: var(--color-success-100) !important;
+}
+.nested-table td.tolerance-invalid {
+    background-color: var(--color-danger-100) !important;
+}
+.nested-table td.no-highlight {
+    background-color: transparent !important;
 }
 
-.mode-buttons .msgr-open-icon {
-    font-size: 1.5rem; /* Размер иконки */
-    color: var(--secondary-color);
+/* ================================================================
+   13. Список приборов (device-list)
+   ================================================================ */
+.device-list-container {
+    margin-top: var(--space-4);
+}
+
+.device-list-items-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: var(--space-3);
+    margin-top: var(--space-3);
+}
+
+.device-list-item {
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-4);
     cursor: pointer;
-    transition: color 0.2s;
-    padding: 5px; /* Область клика */
-}
-.mode-buttons .msgr-open-icon:hover {
-    color: var(--primary-color);
+    box-shadow: var(--shadow-xs);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    position: relative;
+    isolation: isolate;
+    transition: transform var(--t-base) var(--ease-out),
+                box-shadow var(--t-base) var(--ease-out),
+                border-color var(--t-base) var(--ease-out);
 }
 
-.mode-buttons .msgr-dropdown {
+.device-list-item::before {
+    content: '';
     position: absolute;
-    top: calc(100% + 5px); /* Ниже иконки */
-    right: 0;
-    width: 250px; /* Ширина списка */
-    background: var(--bg-container);
-    border: 1px solid var(--border-color);
-    border-radius: var(--border-radius);
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-accent) 100%);
+    -webkit-mask:
+        linear-gradient(#000 0 0) content-box,
+        linear-gradient(#000 0 0);
+            mask:
+        linear-gradient(#000 0 0) content-box,
+        linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+            mask-composite: exclude;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity var(--t-base) var(--ease-out);
+    z-index: 1;
+}
+
+.device-list-item:hover {
+    transform: translateY(-2px);
     box-shadow: var(--shadow-md);
-    z-index: 1010; /* Выше табов */
-    overflow: hidden;
-    display: none;
+    border-color: transparent;
 }
+.device-list-item:hover::before { opacity: 1; }
 
-.mode-buttons .msgr-dropdown ul {
-    list-style: none;
-    margin: 0;
-    padding: 5px 0;
-    max-height: 200px; /* Ограничение высоты списка */
-    overflow-y: auto; /* Прокрутка, если много пользователей */
+.device-list-item.selected {
+    background: linear-gradient(180deg, var(--color-surface) 0%, var(--color-accent-100) 100%);
+    border-color: transparent;
+    box-shadow: var(--shadow-md);
 }
-.mode-buttons .msgr-dropdown li {
-    padding: 8px 15px;
-    font-size: 14px;
-    color: var(--text-primary);
-    cursor: pointer;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-.mode-buttons .msgr-dropdown li + li {
-    border-top: 1px solid #f1f3f5;
-}
-.mode-buttons .msgr-dropdown li:hover {
-    background: var(--bg-button-secondary-hover);
-}
+.device-list-item.selected::before { opacity: 1; }
 
-.mode-buttons .msgr-modal {
-    position: fixed;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background: var(--modal-overlay-bg);
-    display: none; /* Изначально скрыто */
-    align-items: center;
-    justify-content: center;
-    z-index: 1051; /* Выше обычных модалок */
-}
-.mode-buttons .msgr-modal.show {
-    display: flex; /* Показываем с flex */
-}
-
-.mode-buttons .msgr-modal-content {
-    background: var(--bg-container);
-    padding: 20px;
-    border-radius: var(--border-radius);
-    width: 90%;
-    max-width: 400px; /* Ширина модалки сообщения */
-    position: relative;
-    box-shadow: var(--shadow-lg);
-}
-.mode-buttons .msgr-modal-content h3 {
-    font-size: 1.1rem;
-    margin-top: 0;
-    margin-bottom: 15px;
-    color: var(--primary-color);
-}
-.mode-buttons .msgr-modal-content h3 span {
-    font-weight: normal;
-    color: var(--text-primary);
-}
-
-.mode-buttons .msgr-close {
-    position: absolute;
-    top: 10px; right: 15px;
-    cursor: pointer;
-    font-size: 1.5rem;
-    color: var(--secondary-color);
+.device-list-item .device-info-item {
+    padding: 2px 0;
     background: none;
     border: none;
-    padding: 0;
-    line-height: 1;
-}
-.mode-buttons .msgr-close:hover {
-    color: var(--text-primary);
+    box-shadow: none;
 }
 
-.mode-buttons .msgr-text { /* Textarea */
+.device-list-item .device-info-label {
+    min-width: 110px;
+    color: var(--color-text-muted);
+}
+
+.device-list-item .device-info-value {
+    text-align: right;
+    flex-grow: 1;
+    font-size: var(--fs-small);
+}
+
+/* ---- Result container (результат поиска) ---- */
+.result-container {
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-5);
+    box-shadow: var(--shadow-xs);
+    margin-top: var(--space-5);
+}
+
+/* ================================================================
+   14. Модальные окна (общая система)
+   ================================================================ */
+body.modal-open {
+    overflow: hidden;
+}
+
+.modal {
+    display: none;
+    position: fixed;
+    inset: 0;
     width: 100%;
-    min-height: 80px;
-    margin-bottom: 15px;
-    /* Стили наследуются от общих стилей textarea */
+    height: 100%;
+    z-index: 1000;
+    background-color: rgba(10, 15, 26, 0.55);
+    -webkit-backdrop-filter: blur(6px);
+            backdrop-filter: blur(6px);
+    padding: var(--space-4);
+    overflow-y: auto;
 }
 
-.mode-buttons .msgr-send-btn {
-    /* Используем стили .button и .button-primary */
+.modal.is-visible {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: modalFadeIn var(--t-base) var(--ease-out);
 }
 
-/* Стили для модального окна мессенджера (уже есть базовые, добавляем детали) */
+@keyframes modalFadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+.modal-dialog {
+    width: 100%;
+    max-width: 720px;
+    margin: auto;
+}
+
+.modal-content {
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-lg);
+    display: flex;
+    flex-direction: column;
+    max-height: calc(100vh - var(--space-8));
+    overflow: hidden;
+    animation: modalSlideUp var(--t-slow) var(--ease-out);
+}
+
+@keyframes modalSlideUp {
+    from { transform: translateY(24px); opacity: 0; }
+    to   { transform: translateY(0);    opacity: 1; }
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--space-4) var(--space-5);
+    border-bottom: 1px solid var(--color-border);
+    background-color: var(--color-surface-2);
+    gap: var(--space-3);
+}
+
+.modal-title {
+    font-size: 1.125rem;
+    font-weight: 700;
+    margin: 0;
+    color: var(--color-text);
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.modal-body {
+    padding: var(--space-5);
+    overflow-y: auto;
+    flex: 1 1 auto;
+}
+
+.modal-body p:last-child { margin-bottom: 0; }
+
+.modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--space-3);
+    padding: var(--space-4) var(--space-5);
+    border-top: 1px solid var(--color-border);
+    background-color: var(--color-surface-2);
+}
+
+/* ---- Кнопки закрытия ---- */
+.close-button,
+.modal-close-button {
+    background: transparent;
+    border: 0;
+    font-size: 1.75rem;
+    line-height: 1;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    padding: 4px 10px;
+    border-radius: var(--radius-sm);
+    transition: background-color var(--t-fast) var(--ease-out),
+                color var(--t-fast) var(--ease-out);
+}
+
+.close-button:hover,
+.close-button:focus-visible,
+.modal-close-button:hover,
+.modal-close-button:focus-visible {
+    background-color: var(--color-danger-100);
+    color: var(--color-danger);
+    outline: none;
+}
+
+/* ---- Модалка уведомлений (центрирование, иконка) ---- */
+#notificationModal .modal-content {
+    max-width: 460px;
+    padding: var(--space-6) var(--space-5);
+    align-items: center;
+    text-align: center;
+    position: relative;
+}
+
+#notificationModal .close-button {
+    position: absolute;
+    top: var(--space-2);
+    right: var(--space-3);
+}
+
+#notificationModal .modal-icon {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto var(--space-4);
+    background-color: var(--color-primary-100);
+    color: var(--color-primary);
+    transition: background-color var(--t-base), color var(--t-base);
+}
+
+#notificationModal .modal-icon i {
+    font-size: 2.25rem;
+}
+
+/* Семантические варианты иконки (заменяют inline-style цвета в JS) */
+#notificationModal .modal-icon--success {
+    background-color: var(--color-success-100);
+    color: var(--color-success);
+}
+
+#notificationModal .modal-icon--error {
+    background-color: var(--color-danger-100);
+    color: var(--color-danger);
+}
+
+#notificationModal .modal-icon--warning {
+    background-color: var(--color-warning-100);
+    color: var(--color-warning);
+}
+
+#notificationModal .modal-icon--info {
+    background-color: var(--color-primary-100);
+    color: var(--color-primary);
+}
+
+#notificationModal #notificationMessage {
+    font-size: 1.0625rem;
+    line-height: 1.55;
+    color: var(--color-text);
+    margin-bottom: var(--space-5);
+}
+
+#notificationModal .modal-ok-button {
+    min-width: 120px;
+    padding: 10px 22px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--color-primary);
+    background: linear-gradient(180deg, var(--color-primary) 0%, var(--color-primary-600) 100%);
+    color: #fff;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform var(--t-fast) var(--ease-out),
+                box-shadow var(--t-fast) var(--ease-out);
+}
+
+#notificationModal .modal-ok-button:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm);
+}
+
+#notificationModal .modal-ok-button:focus-visible {
+    outline: 3px solid var(--color-focus-ring);
+    outline-offset: 2px;
+}
+
+/* ---- Модалка допусков (tolerance) ---- */
+#toleranceModal .modal-dialog {
+    max-width: 960px;
+}
+
+#toleranceTablesContainer {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-5);
+}
+
+#toleranceTablesContainer .nested-table {
+    margin-top: var(--space-2);
+}
+
+#toleranceTablesContainer h4 {
+    font-size: 1rem;
+    font-weight: 700;
+    margin: 0 0 var(--space-2);
+    color: var(--color-text);
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+#toleranceTablesContainer h4::before {
+    content: '';
+    width: 4px;
+    height: 18px;
+    border-radius: 2px;
+    background: linear-gradient(180deg, var(--color-primary) 0%, var(--color-accent) 100%);
+}
+
+/* ---- Модалка переименования файла ---- */
+#renameFileModal .modal-dialog {
+    max-width: 520px;
+}
+
+#renameFileForm .form-group {
+    margin-bottom: 0;
+}
+
+/* ================================================================
+   15. Мессенджер (msgr-*)
+   ================================================================ */
+.msgr-open-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    margin-left: auto;
+    border-radius: 50%;
+    background-color: var(--color-surface-2);
+    color: var(--color-primary);
+    font-size: 1.1rem;
+    cursor: pointer;
+    border: 1px solid var(--color-border);
+    transition: background-color var(--t-fast) var(--ease-out),
+                color var(--t-fast) var(--ease-out),
+                transform var(--t-fast) var(--ease-out);
+}
+
+.msgr-open-icon:hover {
+    background-color: var(--color-primary);
+    color: #fff;
+    transform: translateY(-1px);
+    border-color: var(--color-primary);
+}
+
+.msgr-open-icon:focus-visible {
+    outline: 3px solid var(--color-focus-ring);
+    outline-offset: 2px;
+}
+
 .msgr-modal {
-    /* Базовые стили position, top, left, right, bottom, background, z-index уже должны быть */
-    display: none; /* Убедимся, что скрыто по умолчанию */
-    align-items: center; /* Центрирование содержимого по вертикали */
-    justify-content: center; /* Центрирование содержимого по горизонтали */
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 1100;
+    background-color: rgba(10, 15, 26, 0.55);
+    -webkit-backdrop-filter: blur(6px);
+            backdrop-filter: blur(6px);
+    padding: var(--space-4);
+    overflow-y: auto;
+}
+
+.msgr-modal.is-visible {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: modalFadeIn var(--t-base) var(--ease-out);
 }
 
 .msgr-modal-content {
-    /* Базовые стили background, padding, border-radius, width, max-width, position, box-shadow уже должны быть */
-    display: flex; /* Используем flexbox для расположения заголовка и тела */
-    flex-direction: column; /* Элементы располагаются вертикально */
-    max-height: 80vh; /* Ограничиваем максимальную высоту модалки */
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-lg);
+    width: 100%;
+    max-width: 560px;
+    padding: var(--space-5);
+    position: relative;
+    animation: modalSlideUp var(--t-slow) var(--ease-out);
+}
+
+.msgr-close {
+    position: absolute;
+    top: var(--space-2);
+    right: var(--space-3);
+    font-size: 1.75rem;
+    line-height: 1;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    padding: 4px 10px;
+    border-radius: var(--radius-sm);
+    transition: background-color var(--t-fast), color var(--t-fast);
+}
+
+.msgr-close:hover {
+    background-color: var(--color-danger-100);
+    color: var(--color-danger);
 }
 
 .msgr-modal-title {
-    /* Стили для заголовка модального окна */
-    font-size: 1.1rem;
-    margin-top: 0;
-    margin-bottom: 15px; /* Отступ снизу */
-    color: var(--primary-color);
-    padding: 0 10px; /* Небольшой внутренний отступ */
+    font-size: 1.125rem;
+    font-weight: 700;
+    margin: 0 0 var(--space-4);
+    color: var(--color-text);
+    padding-right: var(--space-6);
 }
 
 .msgr-modal-body-content {
-    /* Контейнер для переключаемых секций (список пользователей или форма сообщения) */
-    flex-grow: 1; /* Занимает все доступное пространство */
-    overflow-y: auto; /* Добавляем прокрутку, если контент превышает высоту */
-    padding: 0 10px; /* Небольшой внутренний отступ */
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
 }
 
-/* Стили для секции списка пользователей */
-.msgr-user-list-section h4 {
-    font-size: 1rem;
-    margin-top: 0;
-    margin-bottom: 10px;
-    color: var(--text-secondary);
+.msgr-user-list-section {
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background-color: var(--color-surface-2);
 }
 
 .msgr-user-list {
     list-style: none;
-    padding: 0;
     margin: 0;
+    padding: 0;
 }
 
-.msgr-user-list-item {
-    padding: 10px 15px;
-    font-size: 14px;
-    color: var(--text-primary);
+.msgr-user-list li {
+    padding: 10px var(--space-4);
+    border-bottom: 1px solid var(--color-border);
     cursor: pointer;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    border-bottom: 1px solid #f1f3f5; /* Разделитель между пользователями */
-    transition: background-color 0.2s ease;
+    transition: background-color var(--t-fast) var(--ease-out),
+                color var(--t-fast) var(--ease-out);
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: var(--fs-small);
 }
 
-.msgr-user-list-item:last-child {
-    border-bottom: none; /* Убираем нижний разделитель у последнего элемента */
+.msgr-user-list li:last-child {
+    border-bottom: 0;
 }
 
-.msgr-user-list-item:hover {
-    background: var(--bg-button-secondary-hover);
+.msgr-user-list li:hover {
+    background-color: var(--color-primary-100);
+    color: var(--color-primary-700);
 }
 
-/* Стили для секции формы сообщения */
+.msgr-user-list li.selected {
+    background-color: var(--color-primary);
+    color: #fff;
+    font-weight: 600;
+}
+
 .msgr-message-form-section h4 {
     font-size: 1rem;
-    margin-top: 0;
-    margin-bottom: 10px;
-    color: var(--text-secondary);
-}
-.msgr-message-form-section h4 span.msgr-recipient-name {
-     font-weight: 600;
-     color: var(--primary-color);
+    font-weight: 700;
+    margin: 0 0 var(--space-3);
+    color: var(--color-text);
 }
 
-
-/* Стили для textarea и кнопки отправки (наследуются от общих стилей .msgr-text и .msgr-send-btn,
-   но можно добавить специфические корректировки при необходимости) */
-.msgr-message-form-section .msgr-text {
-    margin-bottom: 15px; /* Отступ между textarea и кнопкой */
+.msgr-recipient-name {
+    color: var(--color-primary);
 }
 
-.msgr-message-form-section .msgr-send-btn {
-    /* Использует стили .button .button-primary */
-    width: 100%; /* Кнопка занимает всю ширину в модалке */
-}
-
-/* Стили для кнопки закрытия модального окна */
-.msgr-close {
-    position: absolute;
-    top: 10px;
-    right: 15px;
-    cursor: pointer;
-    font-size: 1.5rem;
-    color: var(--secondary-color);
-    background: none;
-    border: none;
-    padding: 0;
-    line-height: 1;
-    transition: color 0.2s ease;
-}
-.msgr-close:hover {
-    color: var(--danger-color); /* Красный цвет при наведении */
-}
-
-/* Стили для сообщений об ошибках в списке пользователей */
-.msgr-user-list li.error-message {
-    color: var(--danger-color);
-    font-weight: 500;
-    text-align: center;
-    padding: 15px;
-}
-
-/* Адаптивность для модального окна мессенджера */
-@media (max-width: 500px) {
-    .msgr-modal-content {
-        width: 95%; /* Увеличиваем ширину на очень маленьких экранах */
-        padding: 15px;
-    }
-    .msgr-modal-title {
-        font-size: 1rem;
-        margin-bottom: 10px;
-    }
-    .msgr-user-list-item {
-        padding: 8px 10px;
-        font-size: 13px;
-    }
-    .msgr-message-form-section h4 {
-        font-size: 0.95rem;
-    }
-}
-
-
-
-/* Стили для истории изменений (из Page1.css, адаптированные) */
-.history-record-item {
-    background-color: var(--bg-container);
-    border: 1px solid var(--border-color);
-    border-radius: var(--border-radius);
-    margin-bottom: 1.5rem;
-    padding: 0;
-    box-shadow: var(--shadow-sm);
-    overflow: hidden;
-}
-
-/* Стили для текущей (актуальной) записи */
-.history-record-item.is-current {
-    border: 2px solid var(--primary-color); /* Темно-синяя рамка, соответствующая корпоративному стилю */
-    box-shadow: 0 0 10px rgba(44, 62, 80, 0.1); /* Легкая тень */
-}
-
-.history-record-item .history-header {
-    background-color: var(--bg-table-header);
-    padding: 12px 20px;
-    border-bottom: 1px solid var(--border-color);
-    color: var(--text-primary);
-    font-weight: 600;
-    font-size: 1.1em;
-    margin: 0;
-    display: flex;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 10px;
-}
-
-/* Заголовок для текущей записи */
-.history-record-item.is-current .history-header {
-    background-color: var(--primary-color); /* Темно-синий фон */
-    color: var(--text-light); /* Белый текст */
-    border-bottom-color: var(--primary-color);
-}
-.history-record-item.is-current .history-header p,
-.history-record-item.is-current .history-header p strong,
-.history-record-item.is-current .history-header p span {
-    color: var(--text-light); /* Белый текст для всех элементов заголовка */
-}
-
-.history-record-item .history-table {
+.msgr-text {
     width: 100%;
-    margin-bottom: 0; /* Убираем отступ, т.к. контейнер уже имеет margin-bottom */
-    color: var(--text-primary);
-    vertical-align: top;
-    border-collapse: separate;
-    border-spacing: 0;
-    /* border: 1px solid var(--border-color); /* Таблица внутри уже имеет рамку */ */
-    border-radius: var(--border-radius);
-    overflow: hidden;
-    /* box-shadow: var(--shadow-sm); /* Тень на уровне элемента истории, не таблицы */ */
-    background-color: var(--bg-container);
+    min-height: 110px;
+    resize: vertical;
+    margin-bottom: var(--space-3);
 }
 
-.history-record-item .history-table th,
-.history-record-item .history-table td {
-    padding: 12px 16px;
-    border-bottom: var(--border-width) solid var(--border-color);
-    line-height: 1.5;
-    font-size: 14px;
-}
-
-.history-record-item .history-table th {
-    background-color: var(--bg-table-header);
-    font-weight: 600;
-    color: var(--text-secondary);
-}
-
-.history-record-item .history-table > tbody > tr:last-of-type > td {
-  border-bottom: 0;
-}
-
-/* Подсветка измененных полей в истории (желтый/оранжевый) */
-.history-table td.changed {
-    background-color: var(--corporate-yellow-light) !important; /* Светлый желтый */
-    position: relative;
-    font-weight: 500;
-}
-.history-table td.changed::before { /* Маркер изменения */
-    content: '→'; /* Измененный маркер */
-    color: var(--corporate-orange); /* Оранжевый цвет для маркера */
-    font-weight: bold;
-    margin-right: 5px;
-}
-
-.history-table td.added {
-    background-color: var(--corporate-yellow-light) !important; /* Светлый желтый для добавленных */
-    font-weight: 500;
-}
-.history-table td.removed {
-    background-color: var(--corporate-orange-light) !important; /* Светлый оранжевый для удаленных */
-    text-decoration: line-through; /* Зачеркнутый текст */
-    color: var(--text-secondary);
-    font-weight: 400;
-}
-
-/* Стили для отображения предыдущего значения */
-.history-old-value {
-    font-size: 0.85em;
-    color: var(--text-secondary); /* Серый цвет для старого значения */
-    margin-left: 8px;
-    white-space: nowrap; /* Предотвращает перенос скобок */
-}
-
-/* Стили для вложенных таблиц в истории */
-.history-table .nested-table {
-    margin: 5px 0;
-    border: 1px solid var(--border-color); /* Используем общую переменную */
-    background: var(--bg-table-stripe); /* Фон как у чередующихся строк */
+.msgr-send-btn {
     width: 100%;
-    font-size: 0.9em;
-}
-.history-table .nested-table th,
-.history-table .nested-table td {
-    padding: 6px 8px;
-    border-color: var(--border-color); /* Используем общую переменную */
-}
-.history-table .nested-table th {
-    background-color: var(--bg-table-header);
-    font-weight: 500;
 }
 
-/* Классы для цветов фона (обновленные) */
-.bg-danger-light { background-color: rgba(var(--danger-color-rgb), 0.1); }
-.bg-success-light { background-color: rgba(var(--success-color-rgb), 0.1); }
-.bg-warning-light { background-color: var(--corporate-yellow-light); } /* Обновлено для использования корпоративного желтого */
-.bg-info-light { background-color: rgba(var(--info-color-rgb), 0.1); }
-
-/* Дополнительные классы для истории */
-.history-section-container {
-    background-color: var(--bg-container);
-    border: 1px solid var(--border-color);
-    border-radius: var(--border-radius);
-    margin-bottom: 1.5rem;
-    padding: 1.5rem; /* Добавляем внутренний отступ для всего контейнера истории */
-    box-shadow: var(--shadow-sm);
-}
-
+/* ================================================================
+   16. История изменений (history-*)
+   ================================================================ */
 .history-toggle-buttons {
-    margin-bottom: 1rem;
     display: flex;
-    gap: 10px;
+    gap: var(--space-2);
     flex-wrap: wrap;
+    margin-bottom: var(--space-4);
+}
+
+.history-toggle-buttons .tab-button.active {
+    background: linear-gradient(180deg, var(--color-primary) 0%, var(--color-primary-600) 100%);
+    color: #fff;
+    border-color: var(--color-primary);
+}
+
+.history-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-4);
+    padding: var(--space-3) var(--space-4);
+    background-color: var(--color-surface-2);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    margin-bottom: var(--space-4);
 }
 
 .history-option-label {
     display: inline-flex;
     align-items: center;
-    gap: 5px;
-    font-size: 0.9rem;
-    color: var(--text-secondary);
+    gap: 8px;
     cursor: pointer;
+    font-size: var(--fs-small);
+    color: var(--color-text);
+    font-weight: 500;
+    user-select: none;
 }
 
 .history-option-radio {
-    margin-right: 5px;
+    accent-color: var(--color-primary);
+    cursor: pointer;
 }
 
 .history-content {
-    margin-top: 1.5rem;
-}
-
-/* Стили для отображения textarea в истории */
-.history-textarea-display {
-    background-color: var(--bg-table-stripe);
-    border: 1px solid var(--border-color);
-    border-radius: var(--border-radius);
-    padding: 10px;
-    margin-top: 5px;
-    white-space: pre-wrap; /* Сохраняет переносы строк */
-    word-wrap: break-word; /* Переносит длинные слова */
-    max-height: 150px; /* Ограничиваем высоту */
-    overflow-y: auto; /* Добавляем прокрутку */
-    font-size: 0.9em;
-    color: var(--text-primary);
-}
-
-.cell-valid {
-    background-color: var(--bg-success-light);
-}
-
-.cell-invalid {
-    background-color: var(--bg-danger-light);
-}
-
-.history-field-label {
-    font-weight: 600;
-    color: var(--primary-color);
-    margin-bottom: 5px;
-    margin-top: 10px;
-}
-
-.history-item {
-    margin-bottom: 1rem;
-    border: 1px solid var(--border-color);
-    border-radius: var(--border-radius);
-    background-color: var(--bg-container);
-    overflow: hidden; /* Для скругления */
-}
-
-.history-item h4 { /* Заголовок записи истории */
-    background-color: var(--bg-table-header);
-    padding: 10px 15px;
-    margin: 0;
-    font-size: 1rem;
-    border-bottom: 1px solid var(--border-color);
-}
-
-.history-item table.history-table {
-    margin: 0;
-    border: none;
-    border-radius: 0;
-    box-shadow: none;
-    width: 100%;
-}
-
-.history-item table.history-table th,
-.history-item table.history-table td {
-    padding: 10px 15px;
-    font-size: 14px;
-    border-right: none;
-    border-left: none;
-    border-top: none; /* Убираем лишние рамки */
-}
-.history-item table.history-table th {
-    width: 40%; /* Ширина колонки поля */
-    background-color: transparent; /* Убираем фон у th */
-    border-bottom: 1px solid #f1f3f5;
-}
-.history-item table.history-table td {
-     width: 60%; /* Ширина колонки значения */
-     border-bottom: 1px solid #f1f3f5;
-}
-.history-item table.history-table tr:last-child td,
-.history-item table.history-table tr:last-child th {
-    border-bottom: none;
-}
-.history-item table.history-table tr:nth-of-type(even) > * {
-    background-color: var(--bg-table-stripe); /* Чередование */
-}
-
-
-/* ==========================================================================
-   Стили для нового интерфейса удаления плат
-   ========================================================================== */
-
-/* Контейнер для выбора платы к удалению */
-.delete-board-selection-container {
-  display: flex; /* Используем flex для расположения элементов в строку и управления выравниванием */
-  flex-direction: column; /* Элементы располагаются вертикально */
-  gap: 10px; /* Пространство между элементами */
-  padding: 15px;
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius);
-  background-color: var(--bg-table-stripe); /* Слегка отличающийся фон для выделения */
-  margin-top: 15px; /* Отступ сверху от кнопок "Добавить/Удалить плату" */
-  max-width: 450px; /* Ограничиваем ширину для лучшего вида */
-  box-shadow: var(--shadow-sm);
-}
-
-/* Метка для выпадающего списка */
-.delete-board-selection-container .form-label {
-  font-weight: 600;
-  font-size: 14px;
-  color: var(--text-secondary);
-  margin-bottom: 0; /* Убираем стандартный отступ у label */
-}
-
-/* Выпадающий список для выбора платы */
-.delete-board-selection-container .delete-board-select {
-  width: 100%;
-  padding: 10px 12px;
-  font-size: 14px;
-  border: 1px solid var(--border-color-input);
-  border-radius: var(--border-radius);
-  background-color: var(--bg-input);
-  color: var(--text-primary);
-  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
-  appearance: none; /* Убираем стандартный вид */
-  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
-  background-repeat: no-repeat;
-  background-position: right 0.75rem center;
-  background-size: 16px 12px;
-}
-
-.delete-board-selection-container .delete-board-select:focus {
-  border-color: var(--border-color-focus);
-  box-shadow: 0 0 0 3px rgba(44, 62, 80, 0.15);
-  outline: none;
-}
-
-/* Контейнер для кнопок "Подтвердить" и "Отмена" */
-.delete-board-actions {
-  display: flex;
-  gap: 10px; /* Пространство между кнопками */
-  margin-top: 5px; /* Небольшой отступ сверху */
-  justify-content: flex-end; /* Кнопки справа */
-}
-
-/* Стили для кнопок внутри .delete-board-actions (используют общие классы .button) */
-.delete-board-actions .button {
-  padding: 8px 16px; /* Немного уменьшенный padding для кнопок в этом блоке */
-  font-size: 14px;
-}
-
-/* Класс для строк, помеченных к удалению (если еще не определен или требует корректировки) */
-.pending-deletion td { /* Применяем стили к ячейкам строки */
-  opacity: 0.6;
-  text-decoration: line-through;
-  background-color: #ffebee !important; /* Светло-красный фон, !important для переопределения чередующихся строк */
-  color: #c62828; /* Темно-красный текст */
-}
-
-.pending-deletion input {
-    pointer-events: none; /* Запрещаем взаимодействие с инпутами в помеченной строке */
-}
-
-/* Стили для контейнера кнопок "Добавить плату" / "Удалить плату" */
-.composition-actions.mode-buttons {
-    /* Стили уже должны быть определены в вашем файле, но можно добавить специфичные отступы, если нужно */
-    margin-bottom: 10px; /* Уменьшаем отступ, если deleteBoardSelectionContainer появляется сразу под ним */
-}
-
-
-
-/* Стили для измененных значений в истории */
-.changed-value {
-    background-color: #e9f7ef; /* Светло-зеленый, как системный цвет успеха */
-    font-weight: bold;
-}
-
-/* Стили для добавленных строк в истории состава */
-.added-row {
-    background-color: #e0f7fa; /* Светло-голубой, как системный цвет информации */
-}
-
-/* Стили для удаленных строк в истории состава */
-.removed-row {
-    background-color: #fce4ec; /* Светло-розовый, как системный цвет предупреждения */
-    text-decoration: line-through; /* Перечеркнутый текст */
-    opacity: 0.7; /* Сделать немного прозрачнее */
-}
-
-
-/* Стили для кнопок переключения между параметрами и составом */
-.tab-buttons {
-  display: flex;
-  gap: 12px;
-  margin-bottom: 1.5rem;
-}
-
-.tab-button {
-  padding: 8px 16px;
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius);
-  background: var(--bg-container);
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.tab-button.active {
-  background: var(--accent-color);
-  color: var(--text-light);
-  border-color: var(--accent-color);
-}
-
-.tab-button:hover:not(.active) {
-  background: var(--bg-button-secondary-hover);
-}
-
-/* Контейнер для элементов списка приборов */
-.device-list-items-container {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); /* Адаптивные колонки */
-    gap: 15px; /* Пространство между элементами */
-    margin-top: 15px; /* Отступ сверху после заголовка */
-}
-/* Стиль для отдельного элемента списка прибора */
-.device-list-item {
-    background-color: var(--bg-container); /* Белый фон */
-    border: 1px solid var(--border-color); /* Светлая рамка */
-    border-radius: var(--border-radius); /* Скругленные углы */
-    padding: 15px; /* Внутренние отступы */
-    cursor: pointer; /* Курсор при наведении */
-    transition: all 0.2s ease-in-out; /* Плавный переход при наведении/выборе */
-    box-shadow: var(--shadow-sm); /* Легкая тень */
-    display: flex; /* Используем flexbox для внутреннего содержимого */
-    flex-direction: column; /* Элементы внутри располагаются вертикально */
-    gap: 10px; /* Пространство между строками информации */
-}
-
-.device-list-item:hover {
-    border-color: var(--accent-color); /* Рамка акцентного цвета при наведении */
-    box-shadow: var(--shadow-md); /* Увеличенная тень при наведении */
-    transform: translateY(-2px); /* Небольшой подъем при наведении */
-}
-
-/* Стиль для выбранного элемента списка */
-.device-list-item.selected {
-    border-color: var(--primary-color); /* Рамка основного цвета при выборе */
-    background-color: var(--bg-table-stripe); /* Легкий фон при выборе */
-    box-shadow: var(--shadow-md); /* Увеличенная тень при выборе */
-}
-
-/* Стили для строк информации внутри элемента списка (используем существующие классы) */
-.device-list-item .device-info-item {
-    padding: 0; /* Убираем внутренние отступы, так как они уже есть в .device-list-item */
-    background: none; /* Убираем фон */
-    border: none; /* Убираем рамку */
-    box-shadow: none; /* Убираем тень */
-    display: flex; /* Flexbox для метки и значения */
-    align-items: center; /* Выравнивание по центру */
-    gap: 8px; /* Пространство между меткой и значением */
-}
-
-.device-list-item .device-info-label {
-    font-size: 0.9rem; /* Немного уменьшаем размер шрифта для меток в списке */
-    min-width: 100px; /* Минимальная ширина метки */
-    color: var(--text-secondary); /* Цвет текста метки */
-    font-weight: 500;
-}
-
-.device-list-item .device-info-label i {
-    color: var(--secondary-color); /* Цвет иконки */
-    font-size: 1rem;
-    width: auto; /* Убираем фиксированную ширину иконки */
-}
-
-
-.device-list-item .device-info-value {
-    font-size: 1rem; /* Размер шрифта для значения */
-    color: var(--text-primary); /* Цвет текста значения */
-    font-weight: 600;
-    margin-left: auto; /* Прижимает значение к правому краю */
-    padding-left: 8px; /* Небольшой отступ слева от значения */
-    word-break: break-word; /* Перенос слов */
-    text-align: right; /* Выравнивание значения по правому краю */
-    flex-grow: 1; /* Значение может занимать оставшееся пространство */
-}
-
-/* Адаптивность для мобильных устройств */
-@media (max-width: 768px) {
-    .device-list-items-container {
-        grid-template-columns: 1fr; /* Одна колонка на мобильных */
-        gap: 10px;
-    }
-
-    .device-list-item {
-        padding: 12px;
-        gap: 8px;
-    }
-
-    .device-list-item .device-info-label {
-        font-size: 0.85rem;
-        min-width: 90px;
-    }
-
-    .device-list-item .device-info-value {
-        font-size: 0.95rem;
-        padding-left: 6px;
-    }
-}
-
-.history-textarea-display {
-  background-color: var(--bg-table-stripe, #f8fafc); /* Subtle background, fallback if var is not defined */
-  border: 1px solid var(--border-color, #dee2e6);    /* Consistent border */
-  border-radius: var(--border-radius, 6px);         /* Consistent border radius */
-  padding: 10px;                                   /* Inner padding */
-  min-height: 60px;                                /* Minimum height for a few lines */
-  max-height: 200px;                               /* Maximum height before scrolling */
-  overflow-y: auto;                                /* Enable vertical scrollbar when needed */
-  white-space: pre-wrap;                           /* Preserve line breaks and spaces */
-  word-break: break-word;                          /* Break long words to prevent overflow */
-  font-size: 14px;                                 /* Consistent font size */
-  line-height: 1.5;                                /* Standard line height */
-  color: var(--text-primary, #212529);             /* Primary text color */
-  box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);    /* Subtle inner shadow for depth */
-  width: 100%;                                     /* Take full width of the cell */
-  box-sizing: border-box;                          /* Ensure padding and border are included in width/height */
-}
-
-/* Стили для контейнера списка файлов */
-.file-list-container {
-    margin-top: 20px;
-    background-color: var(--bg-container);
-    border: 1px solid var(--border-color);
-    border-radius: var(--border-radius);
-    padding: 15px;
-    box-shadow: var(--shadow-sm);
-}
-
-/* Стили для списка файлов */
-.file-list {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-}
-
-/* Стили для отдельного элемента файла в списке */
-.file-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 12px 0;
-    border-bottom: 1px solid var(--border-color);
-}
-
-.file-item:last-child {
-    border-bottom: none; /* Убираем границу у последнего элемента */
-}
-
-/* Контейнер для названия файла и даты */
-.file-info {
-    flex-grow: 1;
-    margin-right: 15px;
-    word-break: break-word; /* Перенос длинных названий файлов */
-}
-
-.file-name {
-    font-size: 1rem;
-    color: var(--text-primary);
-    font-weight: 500;
-}
-
-.file-date {
-    font-size: 0.85rem;
-    color: var(--secondary-color);
-    margin-top: 4px;
-}
-
-/* Стили для ссылки "Скачать" */
-.download-link {
-    /* Используем классы button и button-secondary из корпоративных стилей */
-    flex-shrink: 0; /* Запрещаем ссылке сжиматься */
-    padding: 8px 16px; /* Меньший padding для кнопки в списке */
-    font-size: 0.9rem; /* Меньший шрифт */
-}
-
-/* Заголовок страницы файлов */
-.file-header {
-    margin-bottom: 1.5rem;
-    text-align: center;
-    color: var(--primary-color);
-}
-
-/* Дополнительные стили, необходимые для интегрированного хедера и улучшенного макета */
-
-/* Стиль для основного контейнера содержимого */
-.accounting-container {
-  max-width: 1400px; /* Может быть шире для таблиц */
-  margin: 0 auto;
-  padding: 0 24px;
-  width: 100%;
-}
-
-/* Стиль для групп формы для добавления отступов */
-.form-group {
-  margin-bottom: 1.2rem;
-}
-
-/* Стиль для полей ввода, чтобы соответствовать корпоративному стилю */
-.input-field {
-  display: block;
-  width: 100%;
-  padding: 10px 12px;
-  font-size: 14px;
-  line-height: 1.5;
-  color: var(--text-primary);
-  background-color: var(--bg-input);
-  background-clip: padding-box;
-  border: var(--border-width) solid var(--border-color-input);
-  appearance: none;
-  border-radius: var(--border-radius);
-  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
-}
-
-.input-field:focus {
-  border-color: var(--border-color-focus);
-  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25); /* Скорректированная тень для согласованности */
-  outline: none;
-}
-
-/* Стиль для текстового поля SQL запроса */
-.sql-textarea {
-    min-height: 150px; /* Увеличиваем пространство для запросов */
-    resize: vertical; /* Разрешаем вертикальное изменение размера */
-}
-
-/* Стиль для кнопки закрытия модального окна */
-.modal-close-button {
-  padding: 0.5rem;
-  margin: -0.5rem -0.5rem -0.5rem auto;
-  background-color: transparent;
-  border: 0;
-  font-size: 1.5rem;
-  font-weight: 700;
-  line-height: 1;
-  color: #000; /* Корректировка цвета при необходимости */
-  text-shadow: 0 1px 0 #fff; /* Корректировка тени при необходимости */
-  opacity: 0.5;
-  cursor: pointer;
-}
-
-.modal-close-button:hover {
-  opacity: 0.75;
-}
-
-/* Стиль для контейнера адаптивной таблицы */
-.table-responsive {
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  margin-bottom: 1.5rem; /* Добавляем пространство под таблицей */
-}
-
-.table-responsive > .data-table {
-  margin-bottom: 0; /* Убираем нижний отступ у таблицы внутри обертки */
-}
-
-/* Корректировка стилей для меню администратора */
-.dropdown-menu-container {
-    background-color: var(--bg-container);
-    border: 1px solid var(--border-color);
-    border-radius: var(--border-radius);
-    padding: 15px;
-    box-shadow: var(--shadow-sm);
-    margin-bottom: 20px; /* Пространство под меню */
-}
-
-#admin-menu ul {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-}
-
-#admin-menu ul li {
-    margin-bottom: 5px; /* Пространство между пунктами меню */
-}
-
-#admin-menu ul li a {
-    display: block; /* Делаем ссылки блочными для лучшей области клика */
-    padding: 8px 10px;
-    color: var(--text-primary);
-    text-decoration: none;
-    transition: background-color 0.2s ease;
-    border-radius: var(--border-radius); /* Небольшое скругление */
-}
-
-#admin-menu ul li a:hover {
-    background-color: var(--bg-table-stripe);
-}
-
-#admin-menu ul li a.active {
-    font-weight: 600;
-    color: var(--primary-color);
-}
-
-#tables-submenu {
-    margin-top: 5px;
-    padding-left: 15px; /* Отступ для подменю */
-    border-top: 1px solid var(--border-color); /* Разделитель */
-    padding-top: 5px;
-}
-
-#tables-submenu li {
-    margin-bottom: 3px;
-}
-
-#tables-submenu li a {
-    font-size: 0.9em; /* Меньший шрифт для пунктов подменю */
-    color: var(--text-secondary);
-    padding: 5px 10px;
-}
-
-#tables-submenu li a:hover {
-    background-color: var(--bg-button-secondary-hover);
-    color: var(--primary-color);
-}
-
-
-
-/* Стили для сообщений об успехе/ошибке */
-.device-info {
-    padding: 12px 20px;
-    margin-bottom: 1.5rem;
-    border: 1px solid transparent;
-    border-radius: var(--border-radius);
-    font-size: 1rem;
-    font-weight: 500;
-}
-
-.device-info.text-success {
-    color: var(--success-color);
-    background-color: rgba(25, 135, 84, 0.1); /* Светло-зеленый фон */
-    border-color: rgba(25, 135, 84, 0.2);
-}
-
-.device-info.text-danger {
-    color: var(--danger-color);
-    background-color: rgba(220, 53, 69, 0.1); /* Светло-красный фон */
-    border-color: rgba(220, 53, 69, 0.2);
-}
-
-.device-info.text-warning {
-    color: var(--warning-color);
-    background-color: rgba(255, 193, 7, 0.1); /* Светло-желтый фон */
-    border-color: rgba(255, 193, 7, 0.2);
-}
-
-
-/* Стили для текстового поля SQL запроса в модалке */
-/* Если общие стили textarea и .input-field уже достаточны, этот блок можно удалить */
-.sql-textarea {
-    font-family: Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace; /* Моноширинный шрифт для кода */
-    min-height: 150px; /* Немного больше места для запроса */
-}
-
-/* Улучшение стилей для модального окна */
-.modal-content {
-    /* Добавляем возможность изменения размера */
-    resize: both; /* Позволяет изменять размер по горизонтали и вертикали */
-    overflow: auto; /* Добавляем скроллбары, если контент не помещается */
-    min-width: 300px; /* Минимальная ширина */
-    min-height: 200px; /* Минимальная высота */
-}
-
-/* Стили для мобильного меню (добавлены для адаптивности хедера) */
-@media (max-width: 768px) {
-    .site-header .header-container {
-        flex-wrap: wrap; /* Разрешаем перенос элементов */
-    }
-
-    .site-header .header-left {
-        flex-grow: 1; /* Логотип может занимать доступное место */
-    }
-
-    .site-header .header-nav,
-    .site-header .header-right {
-        flex-basis: 100%; /* Занимают всю ширину */
-        margin-top: 10px; /* Отступ сверху */
-    }
-
-    .site-header .header-nav.mobile-active,
-    .site-header .header-right.mobile-active {
-      display: flex; /* Переопределяем display: none */
-    }
-
-    .site-header .header-nav ul {
-        flex-direction: column; /* Элементы списка вертикально */
-        align-items: stretch; /* Растягиваем элементы по ширине */
-    }
-
-    .site-header .header-nav ul li {
-        margin: 0; /* Убираем горизонтальные отступы */
-    }
-
-    .site-header .header-nav ul li a {
-        padding: 12px 20px; /* Увеличиваем область клика */
-        text-align: left; /* Выравнивание текста по левому краю */
-    }
-
-     .site-header .header-right {
-         flex-direction: column; /* Элементы справа вертикально */
-         align-items: stretch; /* Растягиваем по ширине */
-         gap: 10px; /* Уменьшаем расстояние */
-     }
-
-     .site-header .user-info {
-         flex-direction: column;
-         align-items: stretch;
-         gap: 10px;
-     }
-
-     .site-header .auth-form {
-         flex-direction: column;
-         align-items: stretch;
-         gap: 10px;
-     }
-      .site-header .auth-form input[type="text"],
-      .site-header .auth-form input[type="password"],
-      .site-header .login-button {
-          width: 100%; /* Поля ввода и кнопка занимают всю ширину */
-      }
-
-      .site-header .logout-form {
-          width: 100%;
-      }
-      .site-header .logout-link {
-          justify-content: center; /* Центрируем кнопку выхода */
-      }
-
-      .site-header .user-link-container {
-          width: 100%; /* Контейнер ссылки на профиль занимает всю ширину */
-          justify-content: center; /* Центрируем содержимое */
-      }
-       .site-header .user-profile-link {
-           justify-content: center; /* Центрируем содержимое */
-       }
-
-
-     body.menu-open {
-       overflow: hidden; /* Блокировка прокрутки при открытом мобильном меню */
-     }
-}
-
-/* НОВЫЕ СТИЛИ ДЛЯ ПРОСМОТРА ТАБЛИЦ */
-.admin-section {
-    margin-top: 25px;
-    padding: 20px;
-    background: var(--bg-container);
-    border: 1px solid var(--border-color); /* Добавлена рамка для секции */
-    border-radius: calc(var(--border-radius) + 2px);
-    box-shadow: var(--shadow-sm);
-}
-
-.table-list-container {
-    margin-bottom: 20px;
-}
-
-.table-list-container h3 {
-    margin-bottom: 15px;
-    color: var(--primary-color);
-    font-size: 1.2rem;
-}
-
-.table-list-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); /* Адаптивная сетка для названий таблиц */
-    gap: 10px; /* Пространство между ссылками на таблицы */
-}
-
-.table-name-link {
-    display: block;
-    padding: 10px 15px;
-    background-color: var(--bg-table-header);
-    border: 1px solid var(--border-color);
-    border-radius: var(--border-radius);
-    text-align: center;
-    color: var(--text-primary);
-    font-weight: 500;
-    transition: all 0.2s ease;
-    word-break: break-word; /* Перенос длинных названий */
-    overflow-wrap: break-word; /* Перенос длинных названий */
-}
-
-.table-name-link:hover {
-    background-color: var(--bg-button-secondary-hover);
-    border-color: var(--accent-color);
-    color: var(--primary-color);
-}
-
-.table-name-link.active {
-    background-color: var(--primary-color);
-    border-color: var(--primary-color);
-    color: var(--text-light);
-    font-weight: 600;
-}
-
-.table-data-container {
-    /* Существующие стили таблицы будут применяться к таблице внутри этого контейнера */
-}
-
-.table-data-container h2 {
-    margin-bottom: 15px;
-    color: var(--primary-color);
-    font-size: 1.4rem;
-}
-
-/* Добавляем отступ сверху для контейнера данных таблицы, когда он отображается */
-.table-viewer-area .table-data-container {
-    margin-top: 20px;
-}
-
-/* Стили для мобильного меню (добавлены для адаптивности хедера) */
-@media (max-width: 768px) {
-    .site-header .header-container {
-        flex-wrap: wrap; /* Разрешаем перенос элементов */
-    }
-
-    .site-header .header-left {
-        flex-grow: 1; /* Логотип может занимать доступное место */
-    }
-
-    .site-header .header-nav,
-    .site-header .header-right {
-        flex-basis: 100%; /* Занимают всю ширину */
-        margin-top: 10px; /* Отступ сверху */
-    }
-
-    .site-header .header-nav.mobile-active,
-    .site-header .header-right.mobile-active {
-      display: flex; /* Переопределяем display: none */
-    }
-
-    .site-header .header-nav ul {
-        flex-direction: column; /* Элементы списка вертикально */
-        align-items: stretch; /* Растягиваем элементы по ширине */
-    }
-
-    .site-header .header-nav ul li {
-        margin: 0; /* Убираем горизонтальные отступы */
-    }
-
-    .site-header .header-nav ul li a {
-        padding: 12px 20px; /* Увеличиваем область клика */
-        text-align: left; /* Выравнивание текста по левому краю */
-    }
-
-     .site-header .header-right {
-         flex-direction: column; /* Элементы справа вертикально */
-         align-items: stretch; /* Растягиваем по ширине */
-         gap: 10px; /* Уменьшаем расстояние */
-     }
-
-     .site-header .user-info {
-         flex-direction: column;
-         align-items: stretch;
-         gap: 10px;
-     }
-
-     .site-header .auth-form {
-         flex-direction: column;
-         align-items: stretch;
-         gap: 10px;
-     }
-      .site-header .auth-form input[type="text"],
-      .site-header .auth-form input[type="password"],
-      .site-header .login-button {
-          width: 100%; /* Поля ввода и кнопка занимают всю ширину */
-      }
-
-      .site-header .logout-form {
-          width: 100%;
-      }
-      .site-header .logout-link {
-          justify-content: center; /* Центрируем кнопку выхода */
-      }
-
-      .site-header .user-link-container {
-          width: 100%; /* Контейнер ссылки на профиль занимает всю ширину */
-          justify-content: center; /* Центрируем содержимое */
-      }
-       .site-header .user-profile-link {
-           justify-content: center; /* Центрируем содержимое */
-       }
-
-
-     body.menu-open {
-       overflow: hidden; /* Блокировка прокрутки при открытом мобильном меню */
-     }
-}
-
-/* Стили для контейнера результатов */
-.result-container {
-    background-color: var(--bg-container);
-    border: 1px solid var(--border-color);
-    border-radius: var(--border-radius);
-    padding: 1.5rem;
-    box-shadow: var(--shadow-sm);
-    margin-top: 1.5rem;
-}
-
-
-
-/* Стили для сообщений о состоянии */
-.search-message {
-    padding: 12px 15px;
-    border-radius: var(--border-radius);
-    margin-bottom: 1rem;
-    font-weight: 500;
-}
-
-.search-message.info {
-    background-color: rgba(13, 110, 253, 0.1);
-    border: 1px solid rgba(13, 110, 253, 0.2);
-    color: var(--accent-color);
-}
-
-.search-message.warning {
-    background-color: var(--corporate-yellow-light);
-    border: 1px solid rgba(255, 193, 7, 0.2);
-    color: var(--warning-color);
-}
-
-.search-message.error {
-    background-color: rgba(220, 53, 69, 0.1);
-    border: 1px solid rgba(220, 53, 69, 0.2);
-    color: var(--danger-color);
-}
-
-/* Адаптивность для мобильных */
-@media (max-width: 768px) {
-    #searchDeviceForm .params-container {
-        grid-template-columns: 1fr;
-    }
-
-    .search-results-table {
-        display: block;
-        overflow-x: auto;
-    }
-
-    .search-results-table th,
-    .search-results-table td {
-        padding: 8px 10px;
-        font-size: 0.9rem;
-    }
-}
-
-/* Стили для подсветки ячеек в таблице испытаний (вкладка 3) */
-.nested-table td.tolerance-valid {
-  background-color: rgba(25, 135, 84, 0.15) !important; /* Светло-зеленый фон (из --success-color) */
-  /* color: var(--success-color); */ /* Можно раскомментировать, если нужен цвет текста */
-}
-
-.nested-table td.tolerance-invalid {
-  background-color: rgba(220, 53, 69, 0.15) !important; /* Светло-красный фон (из --danger-color) */
-  /* color: var(--danger-color); */ /* Можно раскомментировать, если нужен цвет текста */
-}
-
-/* Стиль для ячеек, где допуск не определен или значение нечисловое/пустое */
-.nested-table td.no-highlight {
-  background-color: transparent !important;
-}
-
-/* Стили для нового блока дополнительной информации */
-.additional-info-section {
-    background-color: var(--bg-container);
-    border-radius: var(--border-radius);
-    border: var(--border-width) solid var(--border-color);
-    padding: 1.5rem;
-    box-shadow: var(--shadow-sm);
-    margin-bottom: 2rem; /* Отступ до кнопки "Создать прибор" */
-    margin-top: 1.5rem; /* Отступ сверху от предыдущих блоков */
-    margin-bottom: 2rem; /* Отступ до кнопок действий */
-}
-
-.additional-info-section .table-section-header {
-    margin-top: 0;
-    margin-bottom: 1.25rem;
-    padding-bottom: 0.75rem;
-    border-bottom: 1px solid var(--border-color);
-    color: var(--primary-color);
-}
-
-.additional-info-section .form-group {
-    margin-bottom: 0; /* Убираем лишний отступ, так как textarea уже имеет padding */
-}
-
-.additional-info-section .param-label {
-    display: flex;
-    align-items: center;
-    margin-bottom: 0.5rem;
-    font-weight: 600;
-    color: var(--text-secondary);
-}
-
-.additional-info-section .param-label i {
-    color: var(--primary-color);
-    margin-right: 0.5rem;
-    font-size: 1rem;
-}
-
-.additional-info-section .param-textarea {
-    width: 100%;
-    padding: 10px 12px;
-    font-size: 14px;
-    line-height: 1.5;
-    color: var(--text-primary);
-    background-color: var(--bg-input);
-    border: var(--border-width) solid var(--border-color-input);
-    border-radius: var(--border-radius);
-    resize: vertical;
-    min-height: 120px; /* Увеличиваем минимальную высоту для удобства ввода */
-    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
-}
-
-.additional-info-section .param-textarea:focus {
-    border-color: var(--border-color-focus);
-    box-shadow: 0 0 0 3px rgba(44, 62, 80, 0.15);
-    outline: none;
-}
-
-.additional-info-section {
-    background-color: var(--bg-container);
-    border-radius: var(--border-radius);
-    border: var(--border-width) solid var(--border-color);
-    padding: 1.5rem;
-    box-shadow: var(--shadow-sm);
-    margin-top: 1.5rem; /* Отступ сверху от предыдущих блоков */
-    margin-bottom: 2rem; /* Отступ до кнопок действий */
-}
-
-.additional-info-section .table-section-header {
-    margin-top: 0;
-    margin-bottom: 1.25rem;
-    padding-bottom: 0.75rem;
-    border-bottom: 1px solid var(--border-color);
-    color: var(--primary-color);
-}
-
-.additional-info-section .form-group {
-    margin-bottom: 0; /* Убираем лишний отступ, так как textarea уже имеет padding */
-}
-
-.additional-info-section .param-label {
-    display: flex;
-    align-items: center;
-    margin-bottom: 0.5rem;
-    font-weight: 600;
-    color: var(--text-secondary);
-}
-
-.additional-info-section .param-label i {
-    color: var(--primary-color);
-    margin-right: 0.5rem;
-    font-size: 1rem;
-}
-
-.additional-info-section .param-textarea {
-    width: 100%;
-    padding: 10px 12px;
-    font-size: 14px;
-    line-height: 1.5;
-    color: var(--text-primary);
-    background-color: var(--bg-input);
-    border: var(--border-width) solid var(--border-color-input);
-    border-radius: var(--border-radius);
-    resize: vertical;
-    min-height: 120px; /* Увеличиваем минимальную высоту для удобства ввода */
-    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
-}
-
-.additional-info-section .param-textarea:focus {
-    border-color: var(--border-color-focus);
-    box-shadow: 0 0 0 3px rgba(44, 62, 80, 0.15);
-    outline: none;
-}
-
-/* ==========================================================================
-   Стили для отображения поля additional_info в истории изменений
-   ========================================================================== */
-
-/* ==========================================================================
-   Стили для отображения поля additional_info в истории изменений
-   ========================================================================== */
-
-/* Контейнер для секции дополнительной информации в истории */
-.history-additional-info-section {
-    background-color: var(--bg-table-stripe); /* Легкий фон */
-    border-top: 1px solid var(--border-color); /* Разделитель сверху */
-    padding: 1rem 1.5rem; /* Внутренние отступы */
-    margin-top: 1rem; /* Отступ от предыдущего блока (таблицы параметров) */
-    border-radius: var(--border-radius); /* Скругление углов */
-    display: flex; /* Используем flexbox для расположения полей */
-    flex-direction: column; /* Элементы располагаются в колонку */
-    gap: 15px; /* Промежуток между подсекциями */
-}
-
-.history-additional-info-section .table-section-header {
-    margin-top: 0;
-    margin-bottom: 0; /* Убираем отступ, так как общий gap управляет им */
-    padding-bottom: 0;
-    border-bottom: none;
-    color: var(--primary-color);
-    font-size: 1.1rem; /* Чуть больший размер для основного заголовка секции */
-    font-weight: 700;
-    text-align: center; /* Центрируем заголовок */
-    padding-bottom: 10px; /* Отступ под заголовком */
-}
-
-/* Общий стиль для подсекций "Новые сведения" и "Старые сведения" */
-.additional-info-sub-section {
     display: flex;
     flex-direction: column;
-    gap: 8px; /* Промежуток между меткой и полем значения */
+    gap: var(--space-5);
 }
 
-/* Метка "Новые сведения" / "Старые сведения" */
-.additional-info-field-label {
-    font-weight: 600;
-    color: var(--text-secondary);
-    margin-bottom: 0; /* Убираем стандартный отступ P */
-    font-size: 0.9rem; /* Меньший размер для метки */
-    text-transform: uppercase; /* Верхний регистр */
+.history-record-item {
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-4);
+    box-shadow: var(--shadow-xs);
+    transition: box-shadow var(--t-base), border-color var(--t-base);
 }
 
-/* Контейнер для самого текста дополнительной информации (как нового, так и старого) */
-.additional-info-value-box {
-    font-size: 0.95rem;
-    line-height: 1.6;
-    color: var(--text-primary);
-    white-space: pre-wrap; /* Сохраняет пробелы и переносы строк */
-    word-break: break-word; /* Перенос слов, если очень длинные */
-    padding: 10px 12px; /* Внутренний отступ для содержимого */
-    background-color: var(--bg-input); /* Фон полей ввода (белый) */
-    border: var(--border-width) solid var(--border-color-input); /* Легкая рамка */
-    border-radius: var(--border-radius);
-    box-shadow: var(--shadow-sm); /* Небольшая тень */
-    min-height: 50px; /* Минимальная высота для единообразия */
-    display: flex; /* Используем flex для выравнивания содержимого */
-    align-items: center; /* Выравнивание текста по центру по вертикали */
+.history-record-item:hover {
+    box-shadow: var(--shadow-sm);
+    border-color: var(--color-primary-200);
 }
 
-/* Стиль для поля с новым значением (светло-желтый фон) */
-.new-value-highlight {
-    background-color: var(--corporate-yellow-light); /* Светлый жёлтый фон */
-    border-color: var(--corporate-yellow-dark); /* Немного темнее рамка */
+.history-record-item.is-current {
+    border-color: var(--color-primary);
+    background: linear-gradient(180deg, var(--color-surface) 0%, var(--color-primary-100) 100%);
+    position: relative;
 }
 
-/* Стиль для поля со старым значением (без выделения) */
-.old-value-no-highlight {
-    /* Никаких дополнительных стилей, используются базовые additional-info-value-box */
+.history-record-item.is-current::after {
+    content: 'Актуальная';
+    position: absolute;
+    top: var(--space-3);
+    right: var(--space-3);
+    background: linear-gradient(180deg, var(--color-primary) 0%, var(--color-primary-600) 100%);
+    color: #fff;
+    padding: 3px 10px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-radius: var(--radius-pill);
 }
 
-.search-message {
-    padding: 10px 20px;
-    margin-bottom: 20px;
-    border-radius: 8px;
-    font-weight: 600;
-    text-align: center;
-    opacity: 1;
-    transition: opacity 0.5s ease-out;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.search-message.success {
-    background-color: #d4edda; /* Светло-зеленый */
-    color: #155724; /* Темно-зеленый */
-    border: 1px solid #c3e6cb;
-}
-
-.search-message.error {
-    background-color: #f8d7da; /* Светло-красный */
-    color: #721c24; /* Темно-красный */
-    border: 1px solid #f5c6cb;
-}
-
-/* Общие стили для иконочных кнопок */
-.button-icon {
-    padding: 8px 12px; /* Оптимальный padding для кнопки с иконкой */
-    font-size: 1rem;    /* Размер иконки Font Awesome по умолчанию */
-    line-height: 1.5;   /* Выравнивание иконки */
-    min-width: auto;    /* Позволяет кнопке быть по размеру иконки */
-    background-color: var(--bg-button-secondary-hover); /* Светлый фон, как у неактивных табов */
-    border-color: var(--border-color-input);
-    color: var(--text-secondary);
-}
-
-.button-icon:hover {
-    background-color: #dce0e4; /* Немного темнее при наведении */
-    border-color: #adb5bd;
-    color: var(--primary-color);
-}
-
-.button-icon i {
-    margin: 0; /* Убираем отступы, если только иконка */
-}
-
-/* Специфичные стили, если нужны, но общих должно хватить */
-.copy-data-icon {
-    /* Можно добавить специфичные стили, если .button-icon недостаточно */
-}
-
-.paste-data-icon {
-    /* Можно добавить специфичные стили, если .button-icon недостаточно */
-}
-
-/* Адаптация контейнера кнопок вкладок на форме создания, если иконка добавляется туда */
-#createDeviceForm .tab-buttons {
-    display: flex; /* Уже должно быть, но для уверенности */
-    align-items: center; /* Выравниваем кнопки и иконку по центру */
-    gap: 10px; /* Расстояние между элементами */
-}
-#deviceDetailsContainer .tab-buttons { /* Если контейнер в showDeviceData так называется */
+.history-header {
+    padding-bottom: var(--space-3);
+    margin-bottom: var(--space-3);
+    border-bottom: 1px dashed var(--color-border);
     display: flex;
-    align-items: center;
-    gap: 10px;
+    flex-wrap: wrap;
+    gap: var(--space-3) var(--space-5);
+    color: var(--color-text-muted);
+    font-size: var(--fs-small);
 }
 
-/* Стили для readonly полей, чтобы они выглядели как неактивные */
-.input-field.readonly-field {
-    background-color: var(--disabled-bg, #e9ecef); /* Цвет фона для отключенных полей */
-    color: var(--text-secondary, #6c757d);          /* Цвет текста для отключенных полей */
-    cursor: default;                             /* Стандартный курсор */
-    opacity: 0.8;                                /* Немного прозрачности */
-}
-.input-field.readonly-field:focus {
-    box-shadow: none; /* Убираем тень фокуса для readonly полей */
-    border-color: var(--border-color-input, #ced4da); /* Стандартная граница */
+.history-header p {
+    margin: 0;
 }
 
-/* Стили для сообщений */
-.message {
-    padding: 10px 15px;
-    margin-bottom: 15px;
-    border-radius: var(--border-radius);
-    font-weight: 500;
-    text-align: center;
-}
-.message.success {
-    background-color: rgba(25, 135, 84, 0.1);
-    border: 1px solid rgba(25, 135, 84, 0.2);
-    color: var(--success-color);
-}
-.message.error {
-    background-color: rgba(220, 53, 69, 0.1);
-    border: 1px solid rgba(220, 53, 69, 0.2);
-    color: var(--danger-color);
-}
-.message.warning {
-    background-color: rgba(255, 193, 7, 0.1);
-    border: 1px solid rgba(255, 193, 7, 0.2);
-    color: var(--warning-color);
+.history-header strong {
+    color: var(--color-text);
 }
 
-/*
- * Новые стили для вкладки "Сведения о ремонте"
- */
-
-/* Стиль для ячейки с измененными данными в истории */
-.history-subtable td.changed-field {
-  background-color: var(--corporate-yellow-light, #fffbe5) !important;
-  font-weight: 600;
-  color: #856404;
-  position: relative;
-  border-left: 3px solid var(--corporate-orange, #fd7e14);
+/* --- Таблица истории (компактная) --- */
+.history-table,
+.history-subtable {
+    font-size: var(--fs-small);
 }
 
-/* Псевдо-элемент для добавления иконки или маркера к измененному полю */
-.history-subtable td.changed-field::before {
-
-  position: absolute;
-  left: 8px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: var(--corporate-orange, #fd7e14);
-  font-size: 1.1em;
-  font-weight: bold;
+.history-table td,
+.history-subtable td {
+    padding: 8px 10px;
 }
 
-/* Стиль для заголовка "Актуальные данные" */
-.history-current-header {
-  font-size: 1.2rem;
-  color: var(--primary-color);
-  margin-top: 0;
-  margin-bottom: 1rem;
-  padding-bottom: 0.5rem;
-  border-bottom: 2px solid var(--primary-color);
+.history-table td.changed {
+    background-color: var(--color-warning-100);
+    position: relative;
+    padding-right: 24px;
 }
 
-/* Стиль для заголовка "История изменений" */
-.history-log-header {
-  font-size: 1.2rem;
-  color: var(--secondary-color);
-  margin-top: 2rem;
-  margin-bottom: 1rem;
-  padding-bottom: 0.5rem;
-  border-bottom: 1px solid var(--border-color);
+.history-table td.changed::before {
+    content: '\f0e7'; /* fa-bolt */
+    font-family: 'Font Awesome 5 Free';
+    font-weight: 900;
+    color: var(--color-warning);
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    font-size: 0.75rem;
 }
 
-/* ==========================================================================
-   Новые стили для вкладки "Сведения о ремонте" (Tab 4)
-   ========================================================================== */
+.history-old-value {
+    display: inline-block;
+    color: var(--color-text-muted);
+    text-decoration: line-through;
+    font-size: 0.85em;
+    margin-left: 6px;
+}
 
-/* Контейнер для всей истории ремонтов */
+.history-new-value {
+    color: var(--color-success);
+    font-weight: 600;
+}
+
+.history-additional-info-section {
+    margin-top: var(--space-4);
+    padding-top: var(--space-3);
+    border-top: 1px dashed var(--color-border);
+}
+
+/* --- Вложенные элементы истории правок --- */
+.history-sub-item {
+    margin: var(--space-3) 0;
+    padding: var(--space-3);
+    background-color: var(--color-surface-2);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+}
+
+.history-sub-header {
+    font-size: var(--fs-small);
+    font-weight: 600;
+    color: var(--color-text-muted);
+    margin-bottom: var(--space-2);
+    padding-bottom: 6px;
+    border-bottom: 1px dashed var(--color-border);
+}
+
+.history-textarea-comparison {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.history-textarea-comparison textarea {
+    min-height: 60px;
+    background-color: var(--color-surface);
+    font-size: var(--fs-xs);
+    padding: 6px 8px;
+}
+
+.change-label {
+    font-size: var(--fs-xs);
+    font-weight: 700;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.changed-field {
+    background-color: var(--color-warning-100);
+}
+
+/* ================================================================
+   17. Ремонтный аккордеон (tab-4)
+   ================================================================ */
 .repair-history-container {
-  margin-top: 1.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    margin-top: var(--space-4);
 }
 
-/* Отдельный элемент аккордеона (одна запись о ремонте) */
 .repair-accordion-item {
-  background-color: var(--bg-container);
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius);
-  transition: box-shadow 0.2s ease;
-  box-shadow: var(--shadow-sm);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background-color: var(--color-surface);
+    overflow: hidden;
+    box-shadow: var(--shadow-xs);
+    transition: box-shadow var(--t-base), border-color var(--t-base);
 }
 
 .repair-accordion-item:hover {
-  box-shadow: var(--shadow-md);
+    border-color: var(--color-primary-200);
+    box-shadow: var(--shadow-sm);
 }
 
-/* Заголовок аккордеона, который является кликабельным */
+.repair-accordion-item.expanded {
+    border-color: var(--color-primary);
+    box-shadow: var(--shadow-md);
+}
+
 .repair-accordion-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1rem 1.25rem;
-  cursor: pointer;
-  border-radius: var(--border-radius);
-  transition: background-color 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    padding: var(--space-3) var(--space-4);
+    cursor: pointer;
+    background-color: var(--color-surface-2);
+    transition: background-color var(--t-fast) var(--ease-out);
+}
+
+.repair-accordion-header:hover {
+    background-color: var(--color-primary-100);
 }
 
 .repair-accordion-item.expanded .repair-accordion-header {
-    background-color: var(--bg-table-header);
-    border-bottom: 1px solid var(--border-color);
-    border-bottom-left-radius: 0;
-    border-bottom-right-radius: 0;
+    background: linear-gradient(180deg, var(--color-primary-100) 0%, var(--color-surface) 100%);
+    border-bottom: 1px solid var(--color-border);
 }
 
-/* Заголовок записи (Дата, Автор) */
 .accordion-title {
-  font-weight: 600;
-  color: var(--primary-color);
-  font-size: 1rem;
+    font-weight: 700;
+    color: var(--color-text);
+    font-size: var(--fs-small);
+    flex-shrink: 0;
 }
 
-/* Краткая причина ремонта */
 .accordion-reason {
-  flex-grow: 1;
-  padding: 0 1.5rem;
-  font-size: 0.9rem;
-  color: var(--text-secondary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+    flex: 1 1 auto;
+    color: var(--color-text-muted);
+    font-size: var(--fs-small);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
+
 .accordion-reason strong {
-    font-weight: 600;
-    color: var(--text-primary);
+    color: var(--color-text);
+    margin-right: 4px;
 }
 
-
-/* Иконка-шеврон */
 .accordion-icon {
-  font-size: 1rem;
-  color: var(--secondary-color);
-  transition: transform 0.3s ease;
+    color: var(--color-text-muted);
+    transition: transform var(--t-base) var(--ease-out),
+                color var(--t-base) var(--ease-out);
+    flex-shrink: 0;
 }
+
 .repair-accordion-item.expanded .accordion-icon {
-  transform: rotate(180deg);
+    transform: rotate(180deg);
+    color: var(--color-primary);
 }
 
-/* Тело аккордеона (скрытое по-умолчанию) */
 .repair-accordion-body {
-  display: none;
-  padding: 1.5rem;
-  border-top: 1px solid var(--border-color);
+    display: none;
+    padding: var(--space-4);
+    animation: accordionOpen var(--t-base) var(--ease-out);
 }
+
 .repair-accordion-item.expanded .repair-accordion-body {
-  display: block;
-}
-
-/* Кнопки действий внутри аккордеона */
-.repair-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-  margin-top: 1.5rem;
-  padding-top: 1.5rem;
-  border-top: 1px solid var(--border-color);
-}
-
-/* Контейнер для отображения истории правок одной записи */
-.edit-history-details {
-  margin-top: 1.5rem;
-  padding: 1rem;
-  background-color: #fcfcfd;
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius);
-}
-.edit-history-details h4 {
-    margin-top: 0;
-    color: var(--primary-color);
-}
-.history-sub-item {
-    margin-bottom: 1rem;
-    padding-bottom: 1rem;
-    border-bottom: 1px dashed var(--border-color);
-}
-.history-sub-item:last-child {
-    border-bottom: none;
-    margin-bottom: 0;
-    padding-bottom: 0;
-}
-.history-sub-header {
-    font-weight: 600;
-    margin-bottom: 0.5rem;
-    font-size: 0.9rem;
-    color: var(--secondary-color);
-}
-.history-subtable td.changed-field {
-    padding: 8px;
-}
-.history-subtable .old-value, .history-subtable .new-value {
     display: block;
-    font-size: 0.85rem;
-}
-.history-subtable .old-value {
-    color: var(--danger-color);
-    text-decoration: line-through;
-}
-.history-subtable .new-value {
-    color: var(--success-color);
-    font-weight: 600;
 }
 
-/* Заголовок для формы нового ремонта */
-#newRepairDataForm .form-section-title {
-    font-size: 1.2rem;
-    color: var(--primary-color);
-    margin-bottom: 1rem;
-    padding-bottom: 0.5rem;
-    border-bottom: 1px solid var(--border-color);
+@keyframes accordionOpen {
+    from { opacity: 0; transform: translateY(-8px); }
+    to   { opacity: 1; transform: translateY(0); }
 }
 
-@media (max-width: 768px) {
-    .repair-accordion-header {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 0.5rem;
-    }
-    .accordion-reason {
-        padding: 0;
-        white-space: normal;
-    }
+.repair-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    margin-top: var(--space-3);
 }
-/* ==========================================================================
-   СТИЛИ ДЛЯ ВКЛАДКИ 8 "ФАЙЛЫ"
-   ========================================================================== */
 
-/* Контейнер для вкладок типов файлов */
+.edit-history-details {
+    margin-top: var(--space-4);
+    padding-top: var(--space-3);
+    border-top: 1px dashed var(--color-border);
+}
+
+.edit-history-details h4 {
+    font-size: 1rem;
+    margin: 0 0 var(--space-3);
+    color: var(--color-text);
+}
+
+/* Danger button (для админ-удаления записей) */
+.button-danger {
+    background: linear-gradient(180deg, var(--color-danger) 0%, #c41e32 100%);
+    color: #fff;
+    border-color: var(--color-danger);
+}
+
+.button-danger:hover {
+    background: linear-gradient(180deg, #c41e32 0%, #a8192b 100%);
+    border-color: #a8192b;
+}
+
+/* ================================================================
+   18. Файлы (tab-8)
+   ================================================================ */
 .file-type-tabs {
     display: flex;
     flex-wrap: wrap;
-    gap: 10px;
-    border-bottom: 2px solid var(--border-color);
-    padding-bottom: 10px;
-    margin-bottom: 1.5rem;
+    gap: var(--space-2);
+    padding: var(--space-3);
+    background-color: var(--color-surface-2);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    margin-bottom: var(--space-4);
 }
 
 .file-type-tabs .button {
-    border-radius: var(--border-radius) var(--border-radius) 0 0;
-    border-bottom: none;
-    background-color: var(--bg-table-header);
-    color: var(--text-secondary);
-    font-weight: 600;
-}
-
-.file-type-tabs .button:hover {
-    background-color: #e9ecef;
+    flex: 1 1 auto;
+    min-width: 160px;
 }
 
 .file-type-tabs .button.active {
-    background-color: var(--bg-container);
-    color: var(--primary-color);
-    border-color: var(--border-color);
-    border-bottom: 2px solid var(--bg-container);
-    margin-bottom: -2px;
+    background: linear-gradient(180deg, var(--color-primary) 0%, var(--color-primary-600) 100%);
+    color: #fff;
+    border-color: var(--color-primary);
+    box-shadow: var(--shadow-sm);
 }
 
-/* Область отображения файлов */
-#file-display-area {
-    background-color: var(--bg-container);
-    padding: 1.5rem;
-    border: 1px solid var(--border-color);
-    border-top: none;
-    border-radius: 0 0 var(--border-radius) var(--border-radius);
+.file-display-wrapper {
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-5);
+    box-shadow: var(--shadow-xs);
+    min-height: 200px;
 }
 
-.info-message, .error-message {
-    text-align: center;
-    padding: 1rem;
-    border-radius: var(--border-radius);
-    font-weight: 500;
-}
-.info-message {
-    background-color: #eef2f7;
-    color: var(--secondary-color);
-}
-.error-message {
-    background-color: #f8d7da;
-    color: var(--danger-color);
-}
-
-/* Контролы (заголовок и сортировка) */
-.file-area-controls {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1.5rem;
-    flex-wrap: wrap;
-    gap: 1rem;
-}
-.file-area-controls h4 {
-    margin: 0;
-    color: var(--primary-color);
-}
-.file-action-buttons {
-    display: flex;
-    gap: 10px;
-}
-.button-small {
-    padding: 6px 12px;
-    font-size: 13px;
-}
-
-/* Список файлов */
-.file-list {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-}
-.file-item {
-    display: flex;
-    align-items: center;
-    padding: 1rem 0;
-    border-bottom: 1px solid var(--border-color);
-    gap: 1rem;
-}
-.file-item:last-child {
-    border-bottom: none;
-}
-.file-info {
-    flex-grow: 1;
-}
-.file-name {
-    font-size: 1rem;
-    font-weight: 600;
-    color: var(--text-primary);
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    word-break: break-all;
-}
-.file-date {
-    font-size: 0.85rem;
-    color: var(--text-secondary);
-    margin-top: 4px;
-}
-.file-actions {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    flex-shrink: 0;
-}
-.rename-icon {
-    color: var(--secondary-color);
-    cursor: pointer;
-    font-size: 1em;
-    padding: 5px;
-    transition: color 0.2s ease;
-}
-.rename-icon:hover {
-    color: var(--accent-color);
-}
-
-/* Форма загрузки */
 .upload-form-container {
-    margin-top: 2rem;
-    padding-top: 1.5rem;
-    border-top: 1px solid var(--border-color);
+    background: linear-gradient(180deg, var(--color-surface) 0%, var(--color-surface-2) 100%);
+    border: 1px dashed var(--color-primary-200);
+    border-radius: var(--radius-md);
+    padding: var(--space-4);
+    margin-bottom: var(--space-4);
 }
+
 .upload-title {
-    margin-top: 0;
-    margin-bottom: 1rem;
-    font-size: 1.1rem;
-    color: var(--primary-color);
+    font-size: 1rem;
+    font-weight: 700;
+    margin: 0 0 var(--space-3);
+    color: var(--color-text);
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
 }
+
+.upload-title::before {
+    content: '\f093'; /* fa-upload */
+    font-family: 'Font Awesome 5 Free';
+    font-weight: 900;
+    color: var(--color-primary);
+}
+
 #dynamicUploadForm {
     display: flex;
-    gap: 10px;
+    flex-wrap: wrap;
+    gap: var(--space-3);
     align-items: center;
 }
-#dynamicUploadForm .file-input {
-    flex-grow: 1;
-    border: 1px solid var(--border-color);
-    border-radius: var(--border-radius);
-    padding: 5px;
-}
-#dynamicUploadForm .file-input::file-selector-button {
-    padding: 8px 12px;
-    border-radius: var(--border-radius);
-    border: none;
-    background-color: var(--bg-table-header);
-    color: var(--text-secondary);
+
+.file-input {
+    flex: 1 1 280px;
+    padding: 8px 10px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background-color: var(--color-surface);
+    font-size: var(--fs-small);
     cursor: pointer;
-    transition: background-color 0.2s ease;
-}
-#dynamicUploadForm .file-input::file-selector-button:hover {
-    background-color: #e9ecef;
 }
 
-.upload-message.success-message {
-    color: var(--success-color);
-    font-weight: 500;
+.file-input::-webkit-file-upload-button {
+    background: linear-gradient(180deg, var(--color-primary-100) 0%, var(--color-surface-2) 100%);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    padding: 6px 12px;
+    margin-right: var(--space-3);
+    color: var(--color-primary-700);
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color var(--t-fast);
 }
 
-/* Общий контейнер для file-display-area */
-.file-display-wrapper {
-    /* Добавляем лёгкий фон, чтобы выделить секцию */
-    background-color: var(--bg-container);
-    border: 1px solid var(--border-color);
-    border-radius: var(--border-radius);
-    padding: 1.5rem;
+.file-input::-webkit-file-upload-button:hover {
+    background: var(--color-primary-200);
 }
 
-/* Контейнер формы загрузки: уже существующий класс улучшен */
-.upload-form-container {
-    background-color: #fff; /* Чуть светлее, чтобы форма выделялась */
-    border: 1px solid var(--border-color);
-    border-radius: var(--border-radius);
-    padding: 1rem 1.5rem;
-    margin-bottom: 1.5rem;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-}
-
-/* Заголовок формы загрузки */
-.upload-form-container .upload-title {
-    font-size: 1.2rem;
-    margin-bottom: 0.75rem;
-    border-bottom: 1px solid var(--border-color);
-    padding-bottom: 0.5rem;
-    color: var(--primary-color);
-}
-
-/* Сообщение загрузки */
 .upload-message {
-    margin-top: 0.75rem;
-    font-size: 0.95rem;
+    font-size: var(--fs-small);
+    color: var(--color-text-muted);
 }
 
-/* Если успешное сообщение */
-.upload-message.success-message {
-    color: var(--success-color);
+.file-area-controls {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--space-3);
+    margin-bottom: var(--space-3);
+    padding-bottom: var(--space-3);
+    border-bottom: 1px solid var(--color-border);
 }
 
-/* Error сообщение */
-.upload-message.error-message {
-    color: var(--danger-color);
+.file-area-controls h4 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--color-text);
 }
 
-/* Список файлов: обёртка находится в JS, но стили для элементов */
+.file-action-buttons {
+    display: flex;
+    gap: var(--space-2);
+    flex-wrap: wrap;
+}
+
+.button-small {
+    padding: 6px 12px;
+    font-size: var(--fs-xs);
+    min-width: auto;
+}
+
 .file-list {
     list-style: none;
-    padding: 0;
     margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
 }
 
-/* Каждый файл в карточке */
 .file-item {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    background-color: #fff;
-    border: 1px solid var(--border-color);
-    border-radius: var(--border-radius);
-    padding: 0.75rem 1rem;
-    margin-bottom: 0.75rem;
-    transition: background-color 0.2s ease, box-shadow 0.2s ease;
+    gap: var(--space-3);
+    padding: var(--space-3) var(--space-4);
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    transition: border-color var(--t-base), box-shadow var(--t-base), transform var(--t-base);
 }
 
 .file-item:hover {
-    background-color: #f8f9fa;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    border-color: var(--color-primary);
+    box-shadow: var(--shadow-sm);
+    transform: translateX(2px);
 }
 
-/* Информация о файле */
+.file-item::before {
+    content: '\f15b'; /* fa-file */
+    font-family: 'Font Awesome 5 Free';
+    font-weight: 900;
+    color: var(--color-primary);
+    font-size: 1.1rem;
+    margin-right: var(--space-2);
+}
+
 .file-info {
-    flex-grow: 1;
     display: flex;
     flex-direction: column;
-    word-break: break-all;
+    gap: 2px;
+    flex: 1 1 auto;
+    min-width: 0;
 }
 
 .file-name {
-    font-size: 1rem;
     font-weight: 600;
-    color: var(--text-primary);
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
+    color: var(--color-text);
+    font-size: var(--fs-small);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .file-date {
-    font-size: 0.85rem;
-    color: var(--text-secondary);
+    font-size: var(--fs-xs);
+    color: var(--color-text-muted);
+    font-family: var(--font-family-mono);
 }
 
-/* Контейнер для заголовка списка и кнопок сортировки */
-.file-area-controls {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 1rem;
-    margin-bottom: 1rem;
-    padding-bottom: 0.5rem;
-    border-bottom: 1px solid var(--border-color);
-}
-
-.file-area-controls h4 {
-    margin: 0;
-    font-size: 1.1rem;
-    color: var(--primary-color);
-}
-
-.file-action-buttons button {
+.file-actions {
     display: flex;
     align-items: center;
-    gap: 0.3rem;
+    gap: 6px;
+    flex-shrink: 0;
 }
 
-/* Кнопки сортировки */
-.button-small {
-    padding: 6px 12px;
-    font-size: 13px;
-}
-
-/* Если нет файлов */
-.info-message, .error-message {
-    text-align: center;
-    padding: 0.75rem;
-    border-radius: var(--border-radius);
-    font-weight: 500;
-}
-
-/* Модальное окно: можно добавить небольшой отступ */
-#renameFileModal .modal-dialog {
-    max-width: 400px;
-}
-
-#renameFileModal .modal-content {
-    border-radius: var(--border-radius);
-}
-
-/* При активной вкладке типа файла: подчёркивание */
-.file-type-tabs .button.active {
-    /* Оставляем существующие, но добавим лёгкий теневой эффект */
-    box-shadow: 0 -2px 0 0 var(--primary-color) inset;
-}
-
-/* Увеличим область клика по вкладкам */
-.file-type-tabs .button {
-    padding: 0.5rem 1rem;
-}
-
-/* Отступ между блоком вкладок и содержимым */
-.file-type-tabs + .file-display-wrapper {
-    margin-top: 1rem;
-}
-
-#viewDeviceParams,
-#createDeviceForm,
-#searchDeviceForm {
-    display: none;
-}
-
-/* ====================================================================
-   Стили иконок действий в списке файлов (Tab 8)
-   ==================================================================== */
-.file-actions .button-icon,
-.file-actions .download-link {
-    display: flex;
+.button-icon {
+    display: inline-flex;
     align-items: center;
     justify-content: center;
-    padding: 6px;               /* компактный отступ вокруг иконки */
-    font-size: 1.1rem;          /* чуть крупнее сама иконка */
-    background: transparent;    /* без серого фона по умолчанию */
-    border: none;               /* убираем рамку */
-    border-radius: var(--border-radius);
-    color: var(--secondary-color);
+    gap: 6px;
+    width: auto;
+    min-width: 36px;
+    height: 36px;
+    padding: 0 10px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--color-border);
+    background-color: var(--color-surface);
+    color: var(--color-text-muted);
     cursor: pointer;
-    transition: background-color 0.2s ease, color 0.2s ease;
+    font-size: var(--fs-small);
+    text-decoration: none;
+    transition: background-color var(--t-fast) var(--ease-out),
+                color var(--t-fast) var(--ease-out),
+                border-color var(--t-fast) var(--ease-out);
 }
 
-/* Индивидуальные цвета */
-.file-actions .download-link       { color: var(--primary-color); }
-.file-actions .rename-icon         { color: var(--accent-color);  }
-.file-actions .button-icon.text-danger { color: var(--danger-color); }
-
-/* Ховер-эффекты */
-.file-actions .button-icon:hover,
-.file-actions .download-link:hover {
-    background-color: var(--bg-table-header);
-    color: var(--primary-color);
+.button-icon:hover {
+    background-color: var(--color-primary-100);
+    color: var(--color-primary);
+    border-color: var(--color-primary-200);
 }
 
-/* Убираем лишние отступы внутри <i> */
-.file-actions .button-icon i,
-.file-actions .download-link i {
-    margin: 0;
+.button-icon:focus-visible {
+    outline: 3px solid var(--color-focus-ring);
+    outline-offset: 2px;
 }
 
-/* Стили для модального окна уведомлений */
-.modal {
-    display: none;
-    position: fixed;
-    z-index: 2000;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    overflow: auto;
-    background-color: rgba(0, 0, 0, 0.6);
-    opacity: 0;
-    transition: opacity 0.3s ease;
+.download-link:hover {
+    color: var(--color-success);
+    border-color: var(--color-success);
+    background-color: var(--color-success-100);
 }
 
-.modal.is-visible {
-    display: block;
-    opacity: 1;
+.rename-icon:hover {
+    color: var(--color-warning);
+    border-color: var(--color-warning);
+    background-color: var(--color-warning-100);
 }
 
-#notificationModal .modal-content {
-    background-color: #fff;
-    margin: 15% auto;
-    padding: 30px;
-    border: 1px solid #ddd;
-    width: 90%;
-    max-width: 450px;
-    border-radius: 12px;
-    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
-    text-align: center;
-    position: relative;
-    transform: scale(0.9);
-    transition: transform 0.3s ease;
+.button-icon.text-danger:hover,
+.button-icon.text-danger {
+    color: var(--color-danger);
 }
 
-.modal.is-visible .modal-content {
-    transform: scale(1);
+.button-icon.text-danger:hover {
+    background-color: var(--color-danger-100);
+    border-color: var(--color-danger);
 }
 
-#notificationModal .close-button {
-    color: #aaa;
-    position: absolute;
-    top: 10px;
-    right: 15px;
-    font-size: 28px;
-    font-weight: bold;
-    cursor: pointer;
+/* ================================================================
+   19. Дополнительная информация и сообщения-плейсхолдеры
+   ================================================================ */
+.additional-info-section {
+    margin-top: var(--space-5);
+    padding: var(--space-4);
+    background: linear-gradient(180deg, var(--color-surface) 0%, var(--color-surface-2) 100%);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
 }
 
-#notificationModal .close-button:hover,
-#notificationModal .close-button:focus {
-    color: #333;
+.additional-info-section .table-section-header {
+    margin-top: 0;
 }
 
-#notificationModal .modal-icon {
-    font-size: 3rem;
-    margin-bottom: 1rem;
+.info-message,
+.error-message,
+.success-message,
+.warning-message {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-2);
+    padding: var(--space-3) var(--space-4);
+    border-radius: var(--radius-md);
+    border: 1px solid transparent;
+    font-size: var(--fs-small);
+    margin: var(--space-3) 0;
 }
 
-#notificationModal .modal-ok-button {
-    background-color: var(--primary-color);
-    color: white;
-    padding: 12px 25px;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
+.info-message::before,
+.error-message::before,
+.success-message::before,
+.warning-message::before {
+    font-family: 'Font Awesome 5 Free';
+    font-weight: 900;
+    flex-shrink: 0;
     font-size: 1rem;
-    font-weight: 500;
-    transition: background-color 0.2s ease;
+    line-height: 1.4;
 }
 
-#notificationModal .modal-ok-button:hover {
-    background-color: var(--hover-color);
+.info-message {
+    background-color: var(--color-primary-100);
+    border-color: var(--color-primary-200);
+    color: var(--color-primary-700);
 }
 
-body.modal-open {
-    overflow: hidden;
+.info-message::before {
+    content: '\f05a'; /* fa-info-circle */
+    color: var(--color-primary);
 }
 
+.error-message {
+    background-color: var(--color-danger-100);
+    border-color: var(--color-danger);
+    color: var(--color-danger);
+}
+
+.error-message::before {
+    content: '\f06a'; /* fa-exclamation-circle */
+    color: var(--color-danger);
+}
+
+.success-message {
+    background-color: var(--color-success-100);
+    border-color: var(--color-success);
+    color: #1b7a3a;
+}
+
+.success-message::before {
+    content: '\f058'; /* fa-check-circle */
+    color: var(--color-success);
+}
+
+.warning-message {
+    background-color: var(--color-warning-100);
+    border-color: var(--color-warning);
+    color: #7a5200;
+}
+
+.warning-message::before {
+    content: '\f071'; /* fa-exclamation-triangle */
+    color: var(--color-warning);
+}
+
+/* ================================================================
+   20. Админ-секция (элементы только для is-admin)
+   ================================================================ */
+body[data-is-admin="false"] .admin-only {
+    display: none !important;
+}
+
+.admin-section {
+    position: relative;
+    padding: var(--space-4);
+    background: linear-gradient(180deg, var(--color-surface) 0%, var(--color-accent-100) 100%);
+    border: 1px solid var(--color-accent);
+    border-radius: var(--radius-lg);
+    margin-top: var(--space-4);
+}
+
+.admin-section::before {
+    content: 'Admin';
+    position: absolute;
+    top: -10px;
+    left: var(--space-4);
+    background: linear-gradient(180deg, var(--color-accent) 0%, #0c9c8a 100%);
+    color: #fff;
+    padding: 2px 10px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-radius: var(--radius-pill);
+}
+
+/* ================================================================
+   21. Утилиты
+   ================================================================ */
+.mt-0 { margin-top: 0 !important; }
+.mt-1 { margin-top: var(--space-2) !important; }
+.mt-2 { margin-top: var(--space-3) !important; }
+.mt-3 { margin-top: var(--space-4) !important; }
+.mt-4 { margin-top: var(--space-5) !important; }
+.mt-5 { margin-top: var(--space-6) !important; }
+
+.mb-0 { margin-bottom: 0 !important; }
+.mb-1 { margin-bottom: var(--space-2) !important; }
+.mb-2 { margin-bottom: var(--space-3) !important; }
+.mb-3 { margin-bottom: var(--space-4) !important; }
+.mb-4 { margin-bottom: var(--space-5) !important; }
+.mb-5 { margin-bottom: var(--space-6) !important; }
+
+.ms-auto { margin-left: auto !important; }
+.me-auto { margin-right: auto !important; }
+
+.text-center { text-align: center !important; }
+.text-right  { text-align: right !important; }
+.text-left   { text-align: left !important; }
+
+.text-muted   { color: var(--color-text-muted) !important; }
+.text-primary { color: var(--color-primary) !important; }
+.text-success { color: var(--color-success) !important; }
+.text-danger  { color: var(--color-danger) !important; }
+.text-warning { color: var(--color-warning) !important; }
+
+.fw-bold   { font-weight: 700 !important; }
+.fw-normal { font-weight: 400 !important; }
+
+.hidden,
+.d-none { display: none !important; }
+
+.d-block  { display: block !important; }
+.d-flex   { display: flex !important; }
+.d-inline { display: inline !important; }
+
+.gap-2 { gap: var(--space-2) !important; }
+.gap-3 { gap: var(--space-3) !important; }
+.gap-4 { gap: var(--space-4) !important; }
+
+.w-100 { width: 100% !important; }
+
+/* Screen-reader only */
+.sr-only {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    padding: 0 !important;
+    margin: -1px !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    white-space: nowrap !important;
+    border: 0 !important;
+}
+
+/* ================================================================
+   22. Адаптивные правила
+   ================================================================ */
+
+/* Планшеты и небольшие ноутбуки */
+@media (max-width: 1024px) {
+    .action-selector-container {
+        grid-template-columns: 1fr;
+    }
+
+    .tab-header-container {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .device-info-box {
+        width: 100%;
+    }
+
+    .mode-buttons {
+        flex-wrap: wrap;
+    }
+
+    .tab-list {
+        flex-wrap: wrap;
+    }
+}
+
+/* Планшеты (портрет) и крупные мобильные */
 @media (max-width: 768px) {
-    #notificationModal .modal-content {
-        width: 90%;
-        margin: 20% auto;
+    .header-container {
+        flex-wrap: wrap;
+        gap: var(--space-3);
+    }
+
+    .main-nav ul {
+        flex-wrap: wrap;
+        gap: var(--space-2);
+    }
+
+    .user-info {
+        width: 100%;
+        justify-content: flex-end;
+    }
+
+    main,
+    .main-content {
+        padding: var(--space-4) var(--space-3);
+    }
+
+    .tab-list {
+        gap: 6px;
+    }
+
+    .tab-item {
+        padding: 8px 14px;
+        font-size: var(--fs-small);
+    }
+
+    .sub-tabs {
+        position: static !important;
+        box-shadow: none;
+        border: 1px dashed var(--color-border);
+        margin-top: 6px;
+    }
+
+    .parent-tab.open .sub-tabs {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .action-card {
+        padding: var(--space-4);
+    }
+
+    .action-buttons {
+        flex-direction: column;
+    }
+
+    .action-buttons .button {
+        width: 100%;
+    }
+
+    .button {
+        min-width: 100%;
+    }
+
+    .file-type-tabs .button,
+    .mode-buttons .button {
+        min-width: auto;
+        flex: 1 1 auto;
+    }
+
+    .msgr-modal-content,
+    .modal-dialog {
+        max-width: 100%;
+        margin: 0;
+    }
+
+    .device-list-items-container {
+        grid-template-columns: 1fr;
+    }
+
+    .data-table {
+        font-size: var(--fs-xs);
+    }
+
+    .data-table th,
+    .data-table td {
+        padding: 8px 10px;
+    }
+
+    .file-item {
+        flex-wrap: wrap;
+    }
+
+    .file-actions {
+        width: 100%;
+        justify-content: flex-end;
+    }
+
+    .history-record-item.is-current::after {
+        position: static;
+        display: inline-block;
+        margin-bottom: var(--space-2);
+    }
+}
+
+/* Мобильные (портрет) */
+@media (max-width: 480px) {
+    :root {
+        --space-4: 12px;
+        --space-5: 20px;
+        --space-6: 28px;
+    }
+
+    .site-header .main-nav ul li a {
+        padding: 6px 10px;
+        font-size: var(--fs-small);
+    }
+
+    .tab-header-container {
+        gap: var(--space-3);
+    }
+
+    .device-info-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 2px;
+    }
+
+    .device-info-value {
+        margin-left: 0;
+        padding-left: 0;
+        text-align: left;
+        width: 100%;
+    }
+
+    .repair-accordion-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--space-2);
+    }
+
+    .accordion-reason {
+        white-space: normal;
+    }
+
+    .modal-footer {
+        flex-direction: column-reverse;
+    }
+
+    .modal-footer .button {
+        width: 100%;
+    }
+}
+
+/* ================================================================
+   23. prefers-reduced-motion — отключение анимаций
+   ================================================================ */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+
+    .device-list-item:hover,
+    .file-item:hover,
+    .button:hover,
+    .action-card:hover {
+        transform: none !important;
+    }
+}
+
+/* ================================================================
+   24. Печать
+   ================================================================ */
+@media print {
+    body {
+        background: #fff;
+        color: #000;
+    }
+
+    .site-header,
+    .site-footer,
+    .tabs,
+    .mode-buttons,
+    .msgr-open-icon,
+    .msgr-modal,
+    .modal,
+    .ai-agent-panel,
+    .file-type-tabs,
+    .action-buttons,
+    .action-selector-container {
+        display: none !important;
+    }
+
+    .tab-pane {
+        display: block !important;
+        page-break-inside: avoid;
+    }
+
+    .data-table,
+    .nested-table {
+        box-shadow: none;
+        border: 1px solid #000;
+    }
+
+    .data-table th {
+        background: #eee !important;
+        color: #000 !important;
     }
 }

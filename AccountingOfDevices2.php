@@ -53,18 +53,6 @@ if ($is_logged_in) {
     <link rel="stylesheet" href="ai_agent/css/ai_agent.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
-    <style>
-        /* Дополнительные стили для модального окна уведомлений */
-        #notificationModal #notificationMessage {
-            font-size: 1.1rem;
-            line-height: 1.5;
-            color: var(--text-color);
-            margin-bottom: 1.5rem;
-        }
-        #notificationModal .modal-icon i {
-            font-size: 3rem;
-        }
-    </style>
 </head>
 <body 
     data-user-fullname="<?= isset($user_info) ? htmlspecialchars($user_info['lastname'] . ' ' . $user_info['firstname'] . ' ' . $user_info['middlename']) : '' ?>"
@@ -94,9 +82,15 @@ if ($is_logged_in) {
         <div class="header-right">
             <?php if ($is_logged_in && $user_info): ?>
                 <div class="user-info">
+                    <?php
+                        $userInitials = mb_strtoupper(
+                            mb_substr($user_info['lastname']  ?? '', 0, 1) .
+                            mb_substr($user_info['firstname'] ?? '', 0, 1)
+                        );
+                    ?>
                     <div class="user-link-container">
                         <a href="profile.php" class="user-profile-link" title="Перейти в профиль">
-                            <i class="fas fa-user-circle user-icon"></i>
+                            <span class="user-icon" aria-hidden="true"><?= htmlspecialchars($userInitials) ?></span>
                             <span class="user-name">
                                 <?= htmlspecialchars($user_info['lastname'] . " " . mb_substr($user_info['firstname'], 0, 1) . "." . mb_substr($user_info['middlename'], 0, 1) . ".") ?>
                             </span>
@@ -114,9 +108,11 @@ if ($is_logged_in) {
             <?php else: ?>
                 <form class="auth-form" method="POST" action="front.php?c=auth&a=login">
                     <div class="input-wrapper">
+                        <i class="fas fa-user input-icon" aria-hidden="true"></i>
                         <input type="text" name="username" placeholder="Логин" required aria-label="Логин">
                     </div>
                     <div class="input-wrapper">
+                        <i class="fas fa-lock input-icon" aria-hidden="true"></i>
                         <input type="password" name="password" placeholder="Пароль" required aria-label="Пароль">
                     </div>
                     <button type="submit" class="login-button">Войти</button>
@@ -132,26 +128,26 @@ if ($is_logged_in) {
 
 <main class="main-content">
     <div class="accounting-container">
-        <section class="tabs">
-            <ul class="tab-list">
-                <li class="tab-item active" data-tab="1">Идентификационные данные</li>
-                <li class="tab-item parent-tab" data-tab="production">
-                    Производство прибора <i class="fas fa-chevron-down sub-tab-icon"></i>
-                    <ul class="sub-tabs">
-                        <li class="tab-item" data-tab="2">Сведения о выходе из производства</li>
-                        <li class="tab-item" data-tab="3">Сведения об испытаниях</li>
+        <section class="tabs" aria-label="Разделы учёта прибора">
+            <ul class="tab-list" role="tablist">
+                <li class="tab-item active" data-tab="1" role="tab" tabindex="0" aria-selected="true" aria-controls="tab-1">Идентификационные данные</li>
+                <li class="tab-item parent-tab" data-tab="production" role="tab" tabindex="0" aria-haspopup="true" aria-expanded="false">
+                    Производство прибора <i class="fas fa-chevron-down sub-tab-icon" aria-hidden="true"></i>
+                    <ul class="sub-tabs" role="menu">
+                        <li class="tab-item" data-tab="2" role="menuitem" tabindex="-1" aria-controls="tab-2">Сведения о выходе из производства</li>
+                        <li class="tab-item" data-tab="3" role="menuitem" tabindex="-1" aria-controls="tab-3">Сведения об испытаниях</li>
                     </ul>
                 </li>
-                <li class="tab-item parent-tab" data-tab="exploitation">
-                    Эксплуатация прибора <i class="fas fa-chevron-down sub-tab-icon"></i>
-                    <ul class="sub-tabs">
-                        <li class="tab-item" data-tab="4">Сведения о ремонте</li>
-                        <li class="tab-item" data-tab="5">Сведения о неразрушающем контроле</li>
-                        <li class="tab-item" data-tab="6">Сведения о прекращении эксплуатации</li>
-                        <li class="tab-item" data-tab="7">Дополнительные сведения</li>
+                <li class="tab-item parent-tab" data-tab="exploitation" role="tab" tabindex="0" aria-haspopup="true" aria-expanded="false">
+                    Эксплуатация прибора <i class="fas fa-chevron-down sub-tab-icon" aria-hidden="true"></i>
+                    <ul class="sub-tabs" role="menu">
+                        <li class="tab-item" data-tab="4" role="menuitem" tabindex="-1" aria-controls="tab-4">Сведения о ремонте</li>
+                        <li class="tab-item" data-tab="5" role="menuitem" tabindex="-1" aria-controls="tab-5">Сведения о неразрушающем контроле</li>
+                        <li class="tab-item" data-tab="6" role="menuitem" tabindex="-1" aria-controls="tab-6">Сведения о прекращении эксплуатации</li>
+                        <li class="tab-item" data-tab="7" role="menuitem" tabindex="-1" aria-controls="tab-7">Дополнительные сведения</li>
                     </ul>
                 </li>
-                <li class="tab-item" data-tab="8">Файлы</li>
+                <li class="tab-item" data-tab="8" role="tab" tabindex="0" aria-selected="false" aria-controls="tab-8">Файлы</li>
             </ul>
         </section>
 
@@ -972,32 +968,32 @@ const notificationOkButton = notificationModal.querySelector('.modal-ok-button')
 const notificationMessage = document.getElementById('notificationMessage');
 const notificationIconDiv = notificationModal.querySelector('.modal-icon');
 
+// Соответствие типа уведомления: FA-иконка + CSS-модификатор (цветовой пресет)
+const NOTIFICATION_VARIANTS = {
+    success: { icon: 'fas fa-check-circle',        modifier: 'modal-icon--success' },
+    error:   { icon: 'fas fa-exclamation-circle',  modifier: 'modal-icon--error'   },
+    warning: { icon: 'fas fa-exclamation-triangle',modifier: 'modal-icon--warning' },
+    info:    { icon: 'fas fa-info-circle',         modifier: 'modal-icon--info'    }
+};
+
 // Глобальная функция для отображения модального окна с уведомлением
 window.showNotification = function(message, type = 'success') {
     notificationMessage.textContent = message;
-    
-    // Настройка иконки и цвета в зависимости от типа уведомления
+
+    const variant = NOTIFICATION_VARIANTS[type] || NOTIFICATION_VARIANTS.info;
+
+    // Сбрасываем предыдущие семантические модификаторы, оставляя базовый класс .modal-icon
+    notificationIconDiv.className = 'modal-icon';
+    notificationIconDiv.classList.add(variant.modifier);
+    notificationIconDiv.style.color = ''; // защита от старых inline-цветов
+
+    // Обновляем иконку
     notificationIconDiv.innerHTML = '';
-    let iconClass = '';
-    
-    if (type === 'success') {
-        iconClass = 'fas fa-check-circle';
-        notificationIconDiv.style.color = '#28a745'; // Зеленый для успеха
-    } else if (type === 'error') {
-        iconClass = 'fas fa-exclamation-circle';
-        notificationIconDiv.style.color = '#dc3545'; // Красный для ошибки
-    } else if (type === 'warning') {
-        iconClass = 'fas fa-exclamation-triangle';
-        notificationIconDiv.style.color = '#ffc107'; // Желтый для предупреждения
-    } else {
-        iconClass = 'fas fa-info-circle';
-        notificationIconDiv.style.color = '#2D7EFF'; // Синий для информации
-    }
-    
     const iconElement = document.createElement('i');
-    iconElement.className = iconClass;
+    iconElement.className = variant.icon;
+    iconElement.setAttribute('aria-hidden', 'true');
     notificationIconDiv.appendChild(iconElement);
-    
+
     // Показываем модальное окно с классом is-visible
     notificationModal.classList.add('is-visible');
     document.body.classList.add('modal-open');

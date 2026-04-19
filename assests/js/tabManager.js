@@ -45,7 +45,10 @@
 
                 // Для родительских вкладок просто раскрываем/сворачиваем
                 if (tabItem.classList.contains('parent-tab')) {
-                    tabItem.classList.toggle('active');
+                    const nowOpen = tabItem.classList.toggle('active');
+                    if (tabItem.hasAttribute('aria-expanded')) {
+                        tabItem.setAttribute('aria-expanded', nowOpen ? 'true' : 'false');
+                    }
                     return;
                 }
 
@@ -53,6 +56,9 @@
                 tabItems.forEach(item => {
                     if (!item.classList.contains('parent-tab')) {
                         item.classList.remove('active');
+                        if (item.hasAttribute('aria-selected')) {
+                            item.setAttribute('aria-selected', 'false');
+                        }
                     }
                 });
                 // Прячем все панели
@@ -60,11 +66,17 @@
 
                 // Активируем выбранную вкладку
                 tabItem.classList.add('active');
+                if (tabItem.hasAttribute('aria-selected')) {
+                    tabItem.setAttribute('aria-selected', 'true');
+                }
 
                 // 1) Подсвечиваем родителя (если есть)
                 const parentTab = tabItem.closest('.parent-tab');
                 if (parentTab) {
                     parentTab.classList.add('active');
+                    if (parentTab.hasAttribute('aria-expanded')) {
+                        parentTab.setAttribute('aria-expanded', 'true');
+                    }
                 }
 
                 // 2) Показываем соответствующую панель
@@ -100,6 +112,9 @@
             document.querySelectorAll('.parent-tab').forEach(parent => {
                 if (!parent.contains(event.target) && parent.classList.contains('active')) {
                     parent.classList.remove('active');
+                    if (parent.hasAttribute('aria-expanded')) {
+                        parent.setAttribute('aria-expanded', 'false');
+                    }
                 }
             });
         });
