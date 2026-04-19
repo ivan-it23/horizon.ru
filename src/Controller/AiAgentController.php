@@ -339,7 +339,7 @@ class AiAgentController extends BaseController
     private function callLLM(array $messages, int $maxTokens = 4000, float $temperature = 0.7): string
     {
         $payload = [
-            'model' => 'qwen/qwen3.5-9b',
+            'model' => 'deepseek/deepseek-v3.2-exp',
             'messages' => $messages,
             'temperature' => $temperature,
             'max_tokens' => $maxTokens
@@ -687,7 +687,7 @@ class AiAgentController extends BaseController
     private function callLLMStream(array $messages, int $maxTokens, float $temperature, callable $onDelta): void
     {
         $payload = [
-            'model' => 'qwen/qwen3.5-9b',
+            'model' => 'deepseek/deepseek-v3.2-exp',
             'messages' => $messages,
             'temperature' => $temperature,
             'max_tokens' => $maxTokens,

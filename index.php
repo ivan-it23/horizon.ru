@@ -65,9 +65,15 @@ if ($is_logged_in) {
         <div class="header-right">
             <?php if ($is_logged_in && $user_info): ?>
                 <div class="user-info">
+                    <?php
+                        $userInitials = mb_strtoupper(
+                            mb_substr($_SESSION['user']['lastname'] ?? '', 0, 1) .
+                            mb_substr($_SESSION['user']['firstname'] ?? '', 0, 1)
+                        );
+                    ?>
                      <div class="user-link-container">
                         <a href="profile.php" class="user-profile-link" title="Перейти в профиль">
-                            <i class="fas fa-user-circle user-icon"></i>
+                            <span class="user-icon" aria-hidden="true"><?= htmlspecialchars($userInitials) ?></span>
                             <span class="user-name">
                                 <?= htmlspecialchars($_SESSION['user']['lastname'] . " " .
                                     mb_substr($_SESSION['user']['firstname'], 0, 1) . "." .
@@ -87,9 +93,11 @@ if ($is_logged_in) {
             <?php else: ?>
                 <form class="auth-form" method="POST" action="front.php?c=auth&a=login">
                     <div class="input-wrapper">
+                        <i class="fas fa-user input-icon" aria-hidden="true"></i>
                         <input type="text" name="username" placeholder="Логин" required aria-label="Логин">
                     </div>
                     <div class="input-wrapper">
+                        <i class="fas fa-lock input-icon" aria-hidden="true"></i>
                         <input type="password" name="password" placeholder="Пароль" required aria-label="Пароль">
                     </div>
                     <button type="submit" class="login-button">Войти</button>
@@ -103,16 +111,14 @@ if ($is_logged_in) {
 </header>
 
 <main class="main-content">
-    <div class="main-container">
-        <div class="hero-section">
-            <div class="hero-content">
-                <h1>Система учёта приборов АМК «Горизонт»</h1>
-                <p class="subtitle">Единая платформа для централизованного управления данными геофизических приборов компании.</p>
-                <!-- Удалены hero-slogan и hero-icon-wrapper, которые были связаны с изображениями и доп. контентом -->
-            </div>
-            <!-- Удалена секция для галереи изображений -->
+    <section class="hero-section">
+        <div class="hero-content">
+            <h1>Система учёта приборов АМК «Горизонт»</h1>
+            <p class="subtitle">Единая платформа для централизованного управления данными геофизических приборов компании.</p>
         </div>
+    </section>
 
+    <div class="main-container">
         <section class="device-type-selection">
             <h2>Выберите тип каротажа для управления данными</h2>
             <div class="device-type-grid">
@@ -173,24 +179,24 @@ if ($is_logged_in) {
     function showModal(message) {
         modalMessage.textContent = message;
 
-        // Динамическое изменение иконки модального окна
-        modalIconDiv.innerHTML = ''; // Очищаем старую иконку
-        let iconClass = '';
+        // Определяем иконку и семантический вариант (цвет задан в CSS)
+        let iconClass = 'fas fa-info-circle';
+        let variant = 'info';
         if (message.includes('авторизоваться')) {
-            iconClass = 'fas fa-lock'; // Иконка замка для авторизации
-            modalIconDiv.style.color = '#E64C4C'; // Красный для ошибки/предупреждения
+            iconClass = 'fas fa-lock';
+            variant = 'danger';
         } else if (message.includes('в разработке')) {
-            iconClass = 'fas fa-tools'; // Иконка инструментов для "в разработке"
-            modalIconDiv.style.color = '#2D7EFF'; // Синий для информации
-        } else {
-            iconClass = 'fas fa-info-circle'; // По умолчанию информационная иконка
-            modalIconDiv.style.color = '#2D7EFF';
+            iconClass = 'fas fa-tools';
+            variant = 'info';
         }
+
+        modalIconDiv.className = 'modal-icon modal-icon--' + variant;
+        modalIconDiv.innerHTML = '';
         const iconElement = document.createElement('i');
         iconElement.className = iconClass;
         modalIconDiv.appendChild(iconElement);
 
-        infoModal.classList.add('is-visible'); // Добавляем класс для анимации
+        infoModal.classList.add('is-visible'); // Анимация появления
         document.body.classList.add('modal-open'); // Блокировка прокрутки фона
     }
 
