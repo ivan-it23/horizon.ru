@@ -1765,8 +1765,15 @@ body.modal-open {
                 filter var(--t-base) var(--ease-out);
 }
 
+/* FA-глиф конверта в собственном em-box сидит выше оптического
+   центра (типовая особенность шрифта Font Awesome: верх em-box
+   включает ascent, а глиф рисуется ближе к top), поэтому
+   подравниваем его вниз, чтобы конверт визуально стоял ровно по
+   центру кнопки. Значение подобрано эмпирически под FA 6. */
 .msgr-open-icon::before {
+    display: block;
     line-height: 1;
+    transform: translateY(2px);
 }
 
 .msgr-open-icon:hover {
