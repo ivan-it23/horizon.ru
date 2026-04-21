@@ -403,7 +403,6 @@ if ($is_logged_in) {
                         <div class="device-info-item"><span class="device-info-label"><i class="fas fa-barcode"></i> Серийный №:</span><span id="serialNumberTab2" class="device-info-value">-</span></div>
                         <div class="device-info-item"><span class="device-info-label"><i class="fas fa-cube"></i> Корпус №:</span><span id="caseNumberTab2" class="device-info-value">-</span></div>
                     </div>
-                </div>
                 <div class="mode-buttons">
                     <button type="button" id="showCreateFormTab2" class="button button-secondary"><i class="fas fa-plus"></i> Создать</button>
                     <button type="button" id="showHistoryTab2" class="button button-secondary"><i class="fas fa-history"></i> История</button>
@@ -430,6 +429,7 @@ if ($is_logged_in) {
                         </div>
                     </div>
                 </div>
+                </div>
                 <form id="newProductionDiscontinuation">
                     <table class="data-table">
                         <thead><tr><th>Поле</th><th>Значение</th><th>Примечание</th></tr></thead>
@@ -451,7 +451,6 @@ if ($is_logged_in) {
                         <div class="device-info-item"><span class="device-info-label"><i class="fas fa-barcode"></i> Серийный №:</span><span id="serialNumberTab3" class="device-info-value">-</span></div>
                         <div class="device-info-item"><span class="device-info-label"><i class="fas fa-cube"></i> Корпус №:</span><span id="caseNumberTab3" class="device-info-value">-</span></div>
                     </div>
-                </div>
                 <div class="mode-buttons">
                     <button type="button" id="showCreateFormTab3" class="button button-secondary"><i class="fas fa-plus"></i> Создать</button>
                     <button type="button" id="showHistoryTab3" class="button button-secondary"><i class="fas fa-history"></i> История</button>
@@ -478,6 +477,7 @@ if ($is_logged_in) {
                             </div>
                         </div>
                     </div>
+                </div>
                 </div>
                 <form id="newTestingData">
                     <table class="data-table">
@@ -600,7 +600,6 @@ if ($is_logged_in) {
                         <div class="device-info-item"><span class="device-info-label"><i class="fas fa-barcode"></i> Серийный №:</span><span id="serialNumberTab4" class="device-info-value">-</span></div>
                         <div class="device-info-item"><span class="device-info-label"><i class="fas fa-cube"></i> Корпус №:</span><span id="caseNumberTab4" class="device-info-value">-</span></div>
                     </div>
-                </div>
 
                 <!-- Кнопки для переключения между созданием и просмотром истории -->
                 <div class="mode-buttons">
@@ -628,6 +627,7 @@ if ($is_logged_in) {
                             </div>
                         </div>
                     </div>
+                </div>
                 </div>
 
                 <!-- Форма для создания НОВОЙ записи о ремонте (изначально скрыта) -->
@@ -664,7 +664,6 @@ if ($is_logged_in) {
                         <div class="device-info-item"><span class="device-info-label"><i class="fas fa-barcode"></i> Серийный №:</span><span id="serialNumberTab5" class="device-info-value">-</span></div>
                         <div class="device-info-item"><span class="device-info-label"><i class="fas fa-cube"></i> Корпус №:</span><span id="caseNumberTab5" class="device-info-value">-</span></div>
                     </div>
-                </div>
                 <div class="mode-buttons">
                     <button type="button" id="showCreateFormTab5" class="button button-secondary"><i class="fas fa-plus"></i> Создать</button>
                     <button type="button" id="showHistoryTab5" class="button button-secondary"><i class="fas fa-history"></i> История</button>
@@ -691,6 +690,7 @@ if ($is_logged_in) {
                         </div>
                     </div>
                 </div>
+                </div>
                 <form id="newInspectionData">
                     <table class="data-table">
                         <thead><tr><th>Поле</th><th>Значение</th><th>Примечание</th></tr></thead>
@@ -713,7 +713,6 @@ if ($is_logged_in) {
                         <div class="device-info-item"><span class="device-info-label"><i class="fas fa-barcode"></i> Серийный №:</span><span id="serialNumberTab6" class="device-info-value">-</span></div>
                         <div class="device-info-item"><span class="device-info-label"><i class="fas fa-cube"></i> Корпус №:</span><span id="caseNumberTab6" class="device-info-value">-</span></div>
                     </div>
-                </div>
                 <div class="mode-buttons">
                     <button type="button" id="showCreateFormTab6" class="button button-secondary"><i class="fas fa-plus"></i> Создать</button>
                     <button type="button" id="showHistoryTab6" class="button button-secondary"><i class="fas fa-history"></i> История</button>
@@ -740,6 +739,7 @@ if ($is_logged_in) {
                         </div>
                     </div>
                 </div>
+                </div>
                 <form id="newTerminationData">
                     <table class="data-table">
                         <thead><tr><th>Поле</th><th>Значение</th><th>Примечание</th></tr></thead>
@@ -762,7 +762,6 @@ if ($is_logged_in) {
                         <div class="device-info-item"><span class="device-info-label"><i class="fas fa-barcode"></i> Серийный №:</span><span id="serialNumberTab7" class="device-info-value">-</span></div>
                         <div class="device-info-item"><span class="device-info-label"><i class="fas fa-cube"></i> Корпус №:</span><span id="caseNumberTab7" class="device-info-value">-</span></div>
                     </div>
-                </div>
                 <div class="mode-buttons">
                     <button type="button" id="showCreateFormTab7" class="button button-secondary"><i class="fas fa-plus"></i> Создать</button>
                     <button type="button" id="showHistoryTab7" class="button button-secondary"><i class="fas fa-history"></i> История</button>
@@ -788,6 +787,7 @@ if ($is_logged_in) {
                             </div>
                         </div>
                     </div>
+                </div>
                 </div>
                 <form id="newAdditionalData">
                     <table class="data-table">
