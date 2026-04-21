@@ -8,6 +8,59 @@
    страницы сообщений.
    ========================================================================== */
 
+/* --- Защитные правила для шапки ---
+   Дублируют значения из StyleAccountingOfDevices.css, чтобы гарантировать
+   единообразный вид навигации и аватара-инициалов, даже если на проде
+   остаётся старая закешированная версия базовой таблицы стилей. */
+.site-header .header-nav ul {
+    display: flex;
+    list-style: none;
+    gap: var(--space-4);
+    margin: 0;
+    padding: 0;
+}
+
+.site-header .header-nav ul li a {
+    display: inline-block;
+    padding: 8px 14px;
+    border-radius: var(--radius-md);
+    color: var(--color-text-muted);
+    font-weight: 600;
+    font-size: var(--fs-small);
+    text-decoration: none;
+    position: relative;
+    transition: color var(--t-fast) var(--ease-out),
+                background-color var(--t-fast) var(--ease-out);
+}
+
+.site-header .header-nav ul li a:hover {
+    color: var(--color-primary);
+    background-color: var(--color-primary-100);
+}
+
+.site-header .header-nav ul li a.active {
+    color: var(--color-primary);
+    background-color: var(--color-primary-100);
+    font-weight: 700;
+}
+
+.site-header .user-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-accent) 100%);
+    color: #fff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    flex-shrink: 0;
+    box-shadow: var(--shadow-sm);
+    text-transform: uppercase;
+}
+
 /* --- Основная область контента --- */
 .profile-main {
     padding: var(--space-5) 0 var(--space-6);
