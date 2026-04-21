@@ -789,6 +789,10 @@ main,
     grid-column: 2;
     grid-row: 1;
     align-self: start;
+    /* обнуляем штатный margin-bottom карточки — иначе в грид-ячейку
+       попадает лишние ~24px, и align-self:end у .mode-buttons
+       опускает ряд кнопок ниже реального нижнего края карточки */
+    margin-bottom: 0;
 }
 
 /* .mode-buttons — в ту же ячейку, что и заголовок (grid-column:1,
