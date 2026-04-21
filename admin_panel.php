@@ -292,14 +292,19 @@ if ($is_logged_in && isset($user_info['id'])) {
             <div class="header-right">
                 <?php if ($is_logged_in && $user_info): ?>
                     <div class="user-info">
+                        <?php
+                            $userInitials = mb_strtoupper(
+                                mb_substr($user_info['lastname']  ?? '', 0, 1) .
+                                mb_substr($user_info['firstname'] ?? '', 0, 1)
+                            );
+                        ?>
                          <div class="user-link-container">
                             <a href="profile.php" class="user-profile-link" title="Перейти в профиль">
-                                <i class="fas fa-user-circle user-icon"></i>
+                                <span class="user-icon" aria-hidden="true"><?= htmlspecialchars($userInitials) ?></span>
                                 <span class="user-name">
                                     <?= htmlspecialchars($user_info['lastname'] . " " .
                                         mb_substr($user_info['firstname'], 0, 1) . "." .
                                         mb_substr($user_info['middlename'], 0, 1) . ".") ?>
-
                                 </span>
                             </a>
                             <span id="unread-count-badge-index" class="unread-badge <?= $unread_count > 0 ? 'visible' : '' ?>" title="Непрочитанные сообщения">
