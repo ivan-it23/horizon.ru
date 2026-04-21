@@ -1739,46 +1739,34 @@ body.modal-open {
    ================================================================ */
 /* Иконка-конверт, открывающая модалку мессенджера.
    Без собственного фона/обводки — рисуется только сам глиф FA
-   того же кегля, что и текст на кнопках «+ Создать»/«История»
-   (var(--fs-small)), чтобы визуально равномерно стоять с ними в
-   одной строке. Флексовая центровка контейнера .mode-buttons
-   сама выровняет иконку по центру высоты соседних кнопок. */
+   чуть крупнее текста соседних кнопок «+ Создать»/«История»,
+   чтобы визуально считываться как отдельное действие в ряду.
+   Флексовая центровка контейнера .mode-buttons сама выровняет
+   иконку по центру высоты кнопок, дополнительной вертикальной
+   коррекции не требуется. Никакой анимации при hover — строгий
+   корпоративный стиль, только смена цвета. */
 .msgr-open-icon {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     padding: 6px;
     color: var(--color-primary);
-    font-size: var(--fs-small);
+    font-size: 1.15rem;
     line-height: 1;
     background: none;
     border: none;
     border-radius: var(--radius-sm);
     cursor: pointer;
-    transition: color var(--t-base) var(--ease-out),
-                transform var(--t-fast) var(--ease-out);
+    transition: color var(--t-base) var(--ease-out);
 }
 
 .msgr-open-icon:hover {
     color: var(--color-primary-600);
-    transform: translateY(-1px);
-}
-
-.msgr-open-icon:active {
-    transform: translateY(0);
 }
 
 .msgr-open-icon:focus-visible {
     outline: 2px solid var(--color-focus-ring);
     outline-offset: 2px;
-}
-
-@media (prefers-reduced-motion: reduce) {
-    .msgr-open-icon,
-    .msgr-open-icon:hover {
-        transition: none;
-        transform: none;
-    }
 }
 
 .msgr-modal {
