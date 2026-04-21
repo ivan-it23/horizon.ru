@@ -191,7 +191,7 @@ if ($is_logged_in) {
                     </select>
                 </div>
 
-                <div id="viewDeviceParams" class="device-params-section">
+                <div id="viewDeviceParams" class="device-params-section" style="display: none;">
                     <h3 class="section-title">Параметры прибора</h3>
                     <div class="params-container">
                         <div class="form-group param-group">
@@ -242,7 +242,7 @@ if ($is_logged_in) {
                     <div id="deviceList" class="device-list-container mt-4"></div>
                 </div>
 
-                <div id="createDeviceForm">
+                <div id="createDeviceForm" style="display: none;">
                     <h3>Создать новый прибор</h3>
                     <form id="newDeviceForm">
                         <div class="params-container">
@@ -352,7 +352,7 @@ if ($is_logged_in) {
                     </form>
                 </div>
 
-                <div id="searchDeviceForm">
+                <div id="searchDeviceForm" style="display: none;">
                     <div class="device-params-section">
                         <h3 class="section-title">Поиск прибора</h3>
 
