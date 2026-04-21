@@ -759,7 +759,12 @@ main,
 .tab-pane { display: none; }
 .tab-pane.active { display: block; }
 
-/* Sticky-подзаголовок вкладки при прокрутке длинных форм */
+/* Sticky-подзаголовок вкладки при прокрутке длинных форм.
+   Grid: слева колонка с заголовком и (опционально) .mode-buttons,
+   справа — карточка идентификации, растянутая на обе строки.
+   Ряд кнопок «Создать / История / конверт» выравнивается по
+   НИЖНЕЙ границе карточки, чтобы форма ввода/просмотра под ним
+   не наслаивалась на карточку идентификации. */
 .tab-header-container {
     position: sticky;
     top: calc(var(--header-height) + 8px);
@@ -767,11 +772,34 @@ main,
     background: var(--color-bg);
     padding: var(--space-3) 0;
     margin-bottom: var(--space-4);
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-4);
-    align-items: flex-start;
-    justify-content: space-between;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: auto auto;
+    column-gap: var(--space-4);
+    row-gap: var(--space-3);
+    align-items: start;
+}
+
+.tab-header-container > .tab-title {
+    grid-column: 1;
+    grid-row: 1;
+    align-self: start;
+}
+
+.tab-header-container > .device-info-box {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    align-self: stretch;
+}
+
+/* .mode-buttons теперь живёт внутри tab-header-container (на вкладках
+   2..7). Ставим его в левую нижнюю ячейку, прижимаем к низу строки —
+   так нижний край ряда кнопок совпадает с нижней границей карточки. */
+.tab-header-container > .mode-buttons {
+    grid-column: 1;
+    grid-row: 2;
+    align-self: end;
+    margin: 0;
 }
 
 .tab-title {
@@ -2654,8 +2682,16 @@ body[data-is-admin="false"] .admin-only {
     }
 
     .tab-header-container {
-        flex-direction: column;
-        align-items: stretch;
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-rows: auto auto auto;
+    }
+
+    .tab-header-container > .tab-title,
+    .tab-header-container > .device-info-box,
+    .tab-header-container > .mode-buttons {
+        grid-column: 1;
+        grid-row: auto;
+        align-self: stretch;
     }
 
     .device-info-box {
