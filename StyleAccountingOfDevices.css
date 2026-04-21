@@ -1737,60 +1737,53 @@ body.modal-open {
 /* ================================================================
    15. Мессенджер (msgr-*)
    ================================================================ */
-/* Примечание: Font Awesome рендерит сам глиф через ::before у .fa*,
-   поэтому псевдоэлементы ::before/::after НЕ используются у
-   .msgr-open-icon, иначе конверт пропадёт.
-   «Свечение» вокруг иконки и блик реализованы через box-shadow. */
+/* Иконка-конверт, открывающая модалку мессенджера.
+   Оформлена строго под стиль .button-primary: такой же градиент,
+   тот же border-radius и поведение hover/active, но квадратная
+   иконка-кнопка по высоте соседних .button-secondary («+ Создать»,
+   «История») — без glow/глянца, чтобы держать корпоративный тон.
+   FA рендерит сам глиф через ::before у .fa*, поэтому свои
+   псевдоэлементы здесь не используются. */
 .msgr-open-icon {
-    position: relative;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 44px;
-    height: 44px;
-    border-radius: 50%;
-    background:
-        radial-gradient(circle at 32% 24%,
-                        rgba(255, 255, 255, 0.35) 0%,
-                        rgba(255, 255, 255, 0) 45%),
-        linear-gradient(135deg, var(--color-primary) 0%, var(--color-accent) 100%);
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    border-radius: var(--radius-md);
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-600) 100%);
     color: #fff;
-    font-size: 1.05rem;
+    font-size: 0.95rem;
     line-height: 1;
+    text-align: center;
     cursor: pointer;
-    border: none;
-    box-shadow:
-        0 8px 20px rgba(0, 90, 156, 0.28),
-        0 0 0 6px rgba(0, 184, 196, 0.08),
-        inset 0 1px 0 rgba(255, 255, 255, 0.35),
-        inset 0 -1px 0 rgba(0, 0, 0, 0.12);
-    transition: transform var(--t-base) var(--ease-out),
+    border: 1px solid transparent;
+    box-shadow: var(--shadow-xs);
+    transition: transform var(--t-fast) var(--ease-out),
                 box-shadow var(--t-base) var(--ease-out),
                 filter var(--t-base) var(--ease-out);
 }
 
+.msgr-open-icon::before {
+    line-height: 1;
+}
+
 .msgr-open-icon:hover {
     color: #fff;
-    transform: translateY(-2px) scale(1.06);
-    filter: brightness(1.08) saturate(1.1);
-    box-shadow:
-        0 14px 32px rgba(0, 90, 156, 0.45),
-        0 0 0 10px rgba(0, 184, 196, 0.12),
-        inset 0 1px 0 rgba(255, 255, 255, 0.45),
-        inset 0 -1px 0 rgba(0, 0, 0, 0.12);
+    transform: translateY(-1px);
+    filter: brightness(1.06);
+    box-shadow: var(--shadow-md);
 }
 
 .msgr-open-icon:active {
-    transform: translateY(-1px) scale(0.98);
-    box-shadow:
-        0 4px 10px rgba(0, 90, 156, 0.28),
-        0 0 0 4px rgba(0, 184, 196, 0.1),
-        inset 0 1px 2px rgba(0, 0, 0, 0.14);
+    transform: translateY(0);
+    box-shadow: var(--shadow-xs);
 }
 
 .msgr-open-icon:focus-visible {
     outline: 3px solid var(--color-focus-ring);
-    outline-offset: 3px;
+    outline-offset: 2px;
 }
 
 @media (prefers-reduced-motion: reduce) {
