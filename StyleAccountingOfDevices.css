@@ -1743,23 +1743,27 @@ body.modal-open {
     justify-content: center;
     width: 40px;
     height: 40px;
-    margin-left: auto;
     border-radius: 50%;
-    background-color: var(--color-surface-2);
-    color: var(--color-primary);
-    font-size: 1.1rem;
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-600) 100%);
+    color: #fff;
+    font-size: 1rem;
     cursor: pointer;
-    border: 1px solid var(--color-border);
-    transition: background-color var(--t-fast) var(--ease-out),
-                color var(--t-fast) var(--ease-out),
-                transform var(--t-fast) var(--ease-out);
+    border: 1px solid transparent;
+    box-shadow: var(--shadow-xs);
+    transition: transform var(--t-fast) var(--ease-out),
+                box-shadow var(--t-base) var(--ease-out),
+                filter var(--t-base) var(--ease-out);
 }
 
 .msgr-open-icon:hover {
-    background-color: var(--color-primary);
     color: #fff;
     transform: translateY(-1px);
-    border-color: var(--color-primary);
+    filter: brightness(1.06);
+    box-shadow: var(--shadow-md);
+}
+
+.msgr-open-icon:active {
+    transform: translateY(0);
 }
 
 .msgr-open-icon:focus-visible {
@@ -1792,9 +1796,12 @@ body.modal-open {
     border-radius: var(--radius-xl);
     box-shadow: var(--shadow-lg);
     width: 100%;
-    max-width: 560px;
+    max-width: 480px;
+    max-height: min(560px, 90vh);
     padding: var(--space-5);
     position: relative;
+    display: flex;
+    flex-direction: column;
     animation: modalSlideUp var(--t-slow) var(--ease-out);
 }
 
@@ -1827,11 +1834,15 @@ body.modal-open {
 .msgr-modal-body-content {
     display: flex;
     flex-direction: column;
-    gap: var(--space-4);
+    gap: var(--space-3);
+    flex: 1 1 auto;
+    min-height: 0;
 }
 
 .msgr-user-list-section {
-    max-height: 300px;
+    flex: 0 1 auto;
+    min-height: 0;
+    max-height: 100%;
     overflow-y: auto;
     border: 1px solid var(--color-border);
     border-radius: var(--radius-md);
