@@ -92,8 +92,11 @@ try {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Личный кабинет</title>
+    <link rel="stylesheet" href="StyleAccountingOfDevices.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="StyleForProfile.css">
+    <link rel="icon" href="images/favicon1.png" type="image/png">
 </head>
 <body>
 <header class="site-header">
@@ -105,15 +108,15 @@ try {
         </div>
         <nav class="header-nav">
             <ul>
-                <li><a href="index.php"> Главная</a></li>
+                <li><a href="index.php">Главная</a></li>
                 <li>
-                    <a href="AccountingOfDevices2.php" class="<?= basename($_SERVER['PHP_SELF']) == 'AccountingOfDevices2.php' ? 'active' : '' ?>"> Учёт приборов</a>
+                    <a href="AccountingOfDevices2.php" class="<?= basename($_SERVER['PHP_SELF']) == 'AccountingOfDevices2.php' ? 'active' : '' ?>">Учёт приборов</a>
                 </li>
 
                 <?php // Отображение ссылки на админ-панель только для администраторов
                 if (isset($user_info['is_admin']) && $user_info['is_admin']): ?>
                     <li>
-                        <a href="admin_panel.php"> Админ-панель</a>
+                        <a href="admin_panel.php">Админ-панель</a>
                     </li>
                 <?php endif; ?>
             </ul>
@@ -121,11 +124,15 @@ try {
         <div class="header-right">
             <?php // Проверяем, авторизован ли пользователь
             if ($is_logged_in && $user_info):
+                $userInitials = mb_strtoupper(
+                    mb_substr($user_info['lastname']  ?? '', 0, 1) .
+                    mb_substr($user_info['firstname'] ?? '', 0, 1)
+                );
                 ?>
                 <div class="user-info">
                     <div class="user-link-container">
                         <a href="profile.php" class="user-profile-link" title="Перейти в профиль">
-                            <i class="fas fa-user-circle user-icon"></i>
+                            <span class="user-icon" aria-hidden="true"><?= htmlspecialchars($userInitials) ?></span>
                             <span class="user-name">
                                 <?= htmlspecialchars($user_info['lastname'] . " " . mb_substr($user_info['firstname'], 0, 1) . "." . mb_substr($user_info['middlename'], 0, 1) . ".") ?>
                             </span>
@@ -159,69 +166,76 @@ try {
 </header>
 
 
-<main class="container">
-    <div class="profile-header">
-        <i class="fas fa-envelope"></i> <h1>Личный кабинет: Сообщения</h1>
-    </div>
-
-    <div class="tab-buttons">
-        <button class="tab-button active" data-tab="inbox-tab"><i class="fas fa-inbox"></i> Входящие</button>
-        <button class="tab-button" data-tab="sent-tab"><i class="fas fa-paper-plane"></i> Отправленные</button>
-        <button class="tab-button" data-tab="compose-tab"><i class="fas fa-pen-to-square"></i> Написать</button>
-    </div>
-
-    <div class="tabs-content">
-        <div id="inbox-tab" class="tab-pane active">
-            <h2><i class="fas fa-inbox" style="margin-right: 8px; color: var(--secondary-color);"></i>Входящие сообщения</h2>
-            <?php if (empty($inbox_messages)): ?>
-                <p class="no-messages">У вас ещё нет входящих сообщений.</p>
-            <?php else: ?>
-                <table class="messages-table">
-                    <thead>
-                    <tr>
-                        <th>Отправитель</th>
-                        <th>Дата</th>
-                        <th>Сообщение</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    <?php foreach ($inbox_messages as $msg): ?>
-                        <tr>
-                            <td data-label="Отправитель:"><?= htmlspecialchars($msg['lastname'] . ' ' . $msg['firstname'] . ' ' . $msg['middlename']) ?></td>
-                            <td data-label="Дата:"><?= htmlspecialchars($msg['sent_at']) ?></td>
-                            <td data-label="Сообщение:"><div class="message-content"><?= nl2br(htmlspecialchars($msg['message'])) ?></div></td>
-                        </tr>
-                    <?php endforeach; ?>
-                    </tbody>
-                </table>
-            <?php endif; ?>
+<main class="profile-main">
+    <div class="accounting-container">
+        <div class="profile-header">
+            <i class="fas fa-envelope" aria-hidden="true"></i>
+            <h1>Личный кабинет: Сообщения</h1>
         </div>
 
-        <div id="sent-tab" class="tab-pane">
-            <h2><i class="fas fa-paper-plane" style="margin-right: 8px; color: var(--secondary-color);"></i>Отправленные сообщения</h2>
-            <div id="sent-messages-content">
-                <div class="loading-placeholder">
-                    <i class="fas fa-spinner fa-spin"></i> Загрузка отправленных сообщений...
+        <div class="tab-buttons" role="tablist">
+            <button class="tab-button active" data-tab="inbox-tab" role="tab" aria-selected="true"><i class="fas fa-inbox"></i> Входящие</button>
+            <button class="tab-button" data-tab="sent-tab" role="tab" aria-selected="false"><i class="fas fa-paper-plane"></i> Отправленные</button>
+            <button class="tab-button" data-tab="compose-tab" role="tab" aria-selected="false"><i class="fas fa-pen-to-square"></i> Написать</button>
+        </div>
+
+        <div class="tabs-content">
+            <div id="inbox-tab" class="tab-pane active" role="tabpanel">
+                <h2 class="profile-section-title"><i class="fas fa-inbox"></i>Входящие сообщения</h2>
+                <?php if (empty($inbox_messages)): ?>
+                    <p class="no-messages">У вас ещё нет входящих сообщений.</p>
+                <?php else: ?>
+                    <div class="table-responsive">
+                        <table class="data-table messages-table">
+                            <thead>
+                                <tr>
+                                    <th>Отправитель</th>
+                                    <th>Дата</th>
+                                    <th>Сообщение</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            <?php foreach ($inbox_messages as $msg): ?>
+                                <tr>
+                                    <td data-label="Отправитель"><?= htmlspecialchars($msg['lastname'] . ' ' . $msg['firstname'] . ' ' . $msg['middlename']) ?></td>
+                                    <td data-label="Дата"><?= htmlspecialchars($msg['sent_at']) ?></td>
+                                    <td data-label="Сообщение"><div class="message-content"><?= nl2br(htmlspecialchars($msg['message'])) ?></div></td>
+                                </tr>
+                            <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                <?php endif; ?>
+            </div>
+
+            <div id="sent-tab" class="tab-pane" role="tabpanel">
+                <h2 class="profile-section-title"><i class="fas fa-paper-plane"></i>Отправленные сообщения</h2>
+                <div id="sent-messages-content">
+                    <div class="loading-placeholder">
+                        <i class="fas fa-spinner fa-spin"></i> Загрузка отправленных сообщений...
+                    </div>
                 </div>
             </div>
-        </div>
 
-        <div id="compose-tab" class="tab-pane">
-            <h2><i class="fas fa-pen-to-square" style="margin-right: 8px; color: var(--secondary-color);"></i>Новое сообщение</h2>
-            <form id="compose-form">
-                <div class="form-group"> <label for="recipient-select">Получатель:</label>
-                    <select id="recipient-select" name="to_id" required>
-                        <option value="">Загрузка пользователей...</option>
-                    </select>
-                </div>
-                <div class="form-group"> <label for="message-text">Сообщение:</label>
-                    <textarea id="message-text" name="message" required></textarea>
-                </div>
-                <button type="submit" id="send-button">
-                    <i class="fas fa-paper-plane"></i> Отправить
-                </button>
-                <div id="send-status" class="d-none"></div>
-            </form>
+            <div id="compose-tab" class="tab-pane" role="tabpanel">
+                <h2 class="profile-section-title"><i class="fas fa-pen-to-square"></i>Новое сообщение</h2>
+                <form id="compose-form">
+                    <div class="form-group">
+                        <label for="recipient-select">Получатель</label>
+                        <select id="recipient-select" name="to_id" class="input-field" required>
+                            <option value="">Загрузка пользователей...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="message-text">Сообщение</label>
+                        <textarea id="message-text" name="message" class="param-textarea" required></textarea>
+                    </div>
+                    <button type="submit" id="send-button" class="button button-primary">
+                        <i class="fas fa-paper-plane"></i> Отправить
+                    </button>
+                    <div id="send-status" class="d-none" role="status"></div>
+                </form>
+            </div>
         </div>
     </div>
 </main>
