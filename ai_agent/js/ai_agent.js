@@ -267,32 +267,69 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Обработчики событий для ИИ-агента
     aiSendButton.addEventListener('click', sendAiMessage);
-    aiUserInput.addEventListener('keypress', (event) => {
-        if (event.key === 'Enter') sendAiMessage();
+    aiUserInput.addEventListener('keydown', (event) => {
+        // Enter отправляет сообщение, Shift+Enter — перенос строки
+        if (event.key === 'Enter' && !event.shiftKey) {
+            event.preventDefault();
+            sendAiMessage();
+        }
     });
 
-    // Функция переключения боковой панели ИИ-агента
-    function toggleAiSidebar() {
-        const isOpen = aiSidebar.classList.toggle('open');
-        // Показ/скрытие кнопки робота
-        aiChatButton.style.display = isOpen ? 'none' : 'flex';
-        // Переключаем иконку стрелки
-        if (aiSidebarToggle) {
-            const icon = aiSidebarToggle.querySelector('i');
-            if (icon) icon.classList.toggle('fa-chevron-right') && icon.classList.toggle('fa-chevron-left');
-        }
-        if (isOpen && aiChatHistory.length === 0) {
+    // Авто-рост высоты поля ввода по мере набора текста
+    function autoresizeInput() {
+        aiUserInput.style.height = 'auto';
+        const next = Math.min(aiUserInput.scrollHeight, 140);
+        aiUserInput.style.height = next + 'px';
+    }
+    aiUserInput.addEventListener('input', autoresizeInput);
+
+    // Оверлей drawer-панели
+    const aiOverlay = document.getElementById('ai-agent-overlay');
+
+    // Функции открытия/закрытия drawer-панели ИИ-агента
+    function openAiSidebar() {
+        aiSidebar.classList.add('open');
+        aiSidebar.setAttribute('aria-hidden', 'false');
+        if (aiOverlay) aiOverlay.classList.add('open');
+        if (aiChatButton) aiChatButton.style.display = 'none';
+
+        if (aiChatHistory.length === 0) {
             aiChatHistory = [{ role: 'model', parts: [{ text: initialAiMessage }] }];
             renderAiChatHistory();
         }
-        aiUserInput.focus();
+
+        // Фокус на поле ввода после окончания slide-in анимации
+        setTimeout(() => {
+            if (aiUserInput) aiUserInput.focus();
+        }, 240);
     }
+
+    function closeAiSidebar() {
+        aiSidebar.classList.remove('open');
+        aiSidebar.setAttribute('aria-hidden', 'true');
+        if (aiOverlay) aiOverlay.classList.remove('open');
+        if (aiChatButton) aiChatButton.style.display = 'flex';
+    }
+
+    function toggleAiSidebar() {
+        if (aiSidebar.classList.contains('open')) {
+            closeAiSidebar();
+        } else {
+            openAiSidebar();
+        }
+    }
+
     // Обработчики открытия/закрытия
     if (aiChatButton) aiChatButton.addEventListener('click', toggleAiSidebar);
     if (aiSidebarToggle) aiSidebarToggle.addEventListener('click', toggleAiSidebar);
-    if (aiSidebarClose) aiSidebarClose.addEventListener('click', function() {
-        aiSidebar.classList.remove('open');
-        aiChatButton.style.display = 'flex';
+    if (aiSidebarClose) aiSidebarClose.addEventListener('click', closeAiSidebar);
+    if (aiOverlay) aiOverlay.addEventListener('click', closeAiSidebar);
+
+    // Закрытие по клавише Esc
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && aiSidebar.classList.contains('open')) {
+            closeAiSidebar();
+        }
     });
 
 });

@@ -1,266 +1,412 @@
-/* Стили для AI-агента */
-.ai-sidebar {
-    position: fixed;
-    top: 0;
-    right: -350px;
-    width: 350px;
-    height: 100%;
-    background: #fff;
-    box-shadow: -2px 0 8px rgba(0,0,0,0.1);
-    z-index: 1000;
-    display: flex;
-    flex-direction: column;
-    transition: right 0.3s ease;
-}
-.ai-sidebar.open {
-    right: 0;
-}
-.ai-sidebar-header {
-    padding: 16px;
-    background: #2D7EFF;
-    color: #fff;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-.ai-sidebar-header h3 {
-    margin: 0;
-    font-size: 1.2rem;
-}
-.ai-sidebar-header .ai-model-selector {
-    margin-left: auto;
-    margin-right: 16px; /* Увеличенный отступ перед кнопкой свернуть */
-}
-/* Увеличиваем внутренний отступ справа для селектора модели, чтобы текст не накладывался на стрелку */
-.ai-model-select {
-    padding-right: 24px;
-}
-.ai-sidebar-toggle {
-    background: transparent;
-    border: none;
-    color: #fff;
-    font-size: 1.2rem;
-    cursor: pointer;
-    margin-left: 8px;
-}
-.ai-chat-box {
-    flex: 1;
-    padding: 16px;
-    overflow-y: auto;
-    background: #f9f9f9;
-}
-.ai-message {
-    margin-bottom: 16px;
-    display: flex;
-}
-.ai-message-user .ai-message-bubble {
-    background: #DCF8C6;
-    align-self: flex-end;
-}
-.ai-message-ai .ai-message-bubble {
-    background: #fff;
-    align-self: flex-start;
-}
-.ai-message-bubble {
-    padding: 10px;
-    border-radius: 8px;
-    max-width: 80%;
-}
-.ai-input-container {
-    padding: 8px;
-    display: flex;
-    border-top: 1px solid #ddd;
-}
-.ai-input {
-    flex: 1;
-    padding: 8px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    resize: none;
-}
-.ai-send {
-    margin-left: 8px;
-    background: #2D7EFF;
-    color: #fff;
-    border: none;
-    padding: 8px 12px;
-    border-radius: 4px;
-    cursor: pointer;
-}
+/* ==========================================================================
+   ai_agent.css — Стили ИИ-ассистента.
+   Плавающая кнопка-триггер + drawer-панель на всю высоту справа.
+   Использует дизайн-токены из StyleAccountingOfDevices.css (фирменный цвет,
+   отступы, радиусы, тени, переходы) и отражает строгий корпоративный стиль
+   приложения учёта геофизических приборов.
+   ========================================================================== */
+
+/* --- Плавающая кнопка-триггер --------------------------------------------- */
 .ai-chat-button {
     position: fixed;
-    bottom: 24px;
-    right: 24px;
-    width: 56px;
-    height: 56px;
-    background: #2D7EFF;
-    color: #fff;
+    right: var(--space-5, 24px);
+    bottom: var(--space-5, 24px);
+    width: 52px;
+    height: 52px;
+    padding: 0;
     border: none;
-    border-radius: 50%;
-    font-size: 24px;
-    display: flex;
+    border-radius: var(--radius-md, 10px);
+    background: linear-gradient(135deg,
+        var(--color-primary, #005A9C) 0%,
+        var(--color-primary-600, #004B80) 100%);
+    color: #fff;
+    font-size: 1.15rem;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    z-index: 1000;
+    box-shadow: var(--shadow-md, 0 6px 16px rgba(11, 30, 45, 0.08));
+    transition: background-color var(--t-fast, 160ms) var(--ease-out, ease-out),
+                transform var(--t-fast, 160ms) var(--ease-out, ease-out),
+                box-shadow var(--t-fast, 160ms) var(--ease-out, ease-out);
+    z-index: 1200;
 }
+
 .ai-chat-button:hover {
-    background: #1a5dcc;
+    background: linear-gradient(135deg,
+        var(--color-primary-600, #004B80) 0%,
+        var(--color-primary-700, #003F6E) 100%);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-lg, 0 16px 40px rgba(11, 30, 45, 0.12));
 }
-.ai-loading-modal {
+
+.ai-chat-button:active {
+    transform: translateY(0);
+    box-shadow: var(--shadow-sm, 0 2px 6px rgba(11, 30, 45, 0.06));
+}
+
+.ai-chat-button:focus-visible {
+    outline: none;
+    box-shadow: var(--shadow-md, 0 6px 16px rgba(11, 30, 45, 0.08)),
+                var(--shadow-focus, 0 0 0 3px rgba(0, 184, 196, 0.35));
+}
+
+/* --- Drawer-overlay ------------------------------------------------------- */
+.ai-drawer-overlay {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(11, 30, 45, 0.35);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity var(--t-base, 220ms) var(--ease-out, ease-out),
+                visibility 0s linear var(--t-base, 220ms);
+    z-index: 1100;
+}
+
+.ai-drawer-overlay.open {
+    opacity: 1;
+    visibility: visible;
+    transition: opacity var(--t-base, 220ms) var(--ease-out, ease-out);
+}
+
+/* --- Drawer-панель -------------------------------------------------------- */
+.ai-sidebar.ai-drawer {
     position: fixed;
     top: 0;
-    left: 0;
-    width: 100%;
+    right: 0;
+    bottom: 0;
+    width: min(440px, 92vw);
     height: 100%;
-    background: rgba(0,0,0,0.3);
-    display: none;
+    background: var(--color-surface, #FFFFFF);
+    border-left: 1px solid var(--color-border, #DCE4EC);
+    box-shadow: var(--shadow-lg, 0 16px 40px rgba(11, 30, 45, 0.12));
+    display: flex;
+    flex-direction: column;
+    transform: translateX(100%);
+    transition: transform var(--t-base, 220ms) var(--ease-out, ease-out);
+    z-index: 1150;
+    /* убираем артефакты старого позиционирования через right: -350px */
+    left: auto;
+}
+
+.ai-sidebar.ai-drawer.open {
+    transform: translateX(0);
+}
+
+/* --- Шапка drawer --------------------------------------------------------- */
+.ai-sidebar-header.ai-drawer-header {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3, 12px);
+    padding: var(--space-4, 16px) var(--space-5, 24px);
+    background: var(--color-surface-2, #F8FAFC);
+    border-bottom: 1px solid var(--color-border, #DCE4EC);
+    color: var(--color-text, #0B1E2D);
+}
+
+.ai-drawer-header::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 4px;
+    background: linear-gradient(180deg,
+        var(--color-primary, #005A9C) 0%,
+        var(--color-accent, #00B8C4) 100%);
+    border-top-left-radius: 0;
+}
+
+.ai-drawer-heading {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3, 12px);
+    min-width: 0;
+}
+
+.ai-drawer-logo {
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-sm, 6px);
+    background: linear-gradient(135deg,
+        var(--color-primary, #005A9C) 0%,
+        var(--color-accent, #00B8C4) 100%);
+    color: #fff;
+    font-size: 0.95rem;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
-    z-index: 2000;
+    flex-shrink: 0;
+    box-shadow: var(--shadow-sm, 0 2px 6px rgba(11, 30, 45, 0.06));
 }
-.ai-loading-modal.visible {
-    display: flex;
-}
-.ai-loading-content {
-    background: #fff;
-    padding: 20px;
-    border-radius: 8px;
-    text-align: center;
-}
-.ai-loading-spinner {
-    border: 4px solid #f3f3f3;
-    border-top: 4px solid #2D7EFF;
-    border-radius: 50%;
-    width: 40px;
-    height: 40px;
-    animation: spin 1s linear infinite;
-    margin: 0 auto 10px;
-}
-@keyframes spin {
-    to { transform: rotate(360deg); }
-}
-.ai-loading-text {
-    font-size: 1rem;
-    color: #333;
-} 
 
-/* Markdown-оформление для сообщений ИИ-агента */
+.ai-drawer-title-wrap {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    line-height: 1.2;
+}
+
+.ai-sidebar-header.ai-drawer-header h3 {
+    margin: 0;
+    font-size: 1.02rem;
+    font-weight: 700;
+    color: var(--color-text, #0B1E2D);
+    letter-spacing: 0.01em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.ai-drawer-subtitle {
+    margin-top: 2px;
+    font-size: 0.78rem;
+    color: var(--color-text-muted, #5A6B7B);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.ai-sidebar-close.ai-drawer-close {
+    flex-shrink: 0;
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    border: 1px solid transparent;
+    border-radius: var(--radius-sm, 6px);
+    background: transparent;
+    color: var(--color-text-muted, #5A6B7B);
+    font-size: 1.05rem;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color var(--t-fast, 160ms) var(--ease-out, ease-out),
+                color var(--t-fast, 160ms) var(--ease-out, ease-out),
+                border-color var(--t-fast, 160ms) var(--ease-out, ease-out);
+    margin-left: 0;
+}
+
+.ai-sidebar-close.ai-drawer-close:hover {
+    background: var(--color-primary-100, #E6F0F9);
+    color: var(--color-primary, #005A9C);
+    border-color: var(--color-border, #DCE4EC);
+}
+
+.ai-sidebar-close.ai-drawer-close:focus-visible {
+    outline: none;
+    box-shadow: var(--shadow-focus, 0 0 0 3px rgba(0, 184, 196, 0.35));
+}
+
+/* --- Область истории диалога --------------------------------------------- */
+.ai-chat-box {
+    flex: 1 1 auto;
+    min-height: 0;
+    padding: var(--space-5, 24px);
+    background: var(--color-bg, #F3F6F9);
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4, 16px);
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-border-strong, #BFCAD6) transparent;
+}
+
+.ai-chat-box::-webkit-scrollbar {
+    width: 8px;
+}
+
+.ai-chat-box::-webkit-scrollbar-thumb {
+    background: var(--color-border-strong, #BFCAD6);
+    border-radius: var(--radius-full, 9999px);
+}
+
+/* --- Сообщения ------------------------------------------------------------ */
+.ai-message {
+    display: flex;
+    margin: 0;
+    width: 100%;
+}
+
+.ai-message-user {
+    justify-content: flex-end;
+}
+
+.ai-message-ai {
+    justify-content: flex-start;
+}
+
+.ai-message-bubble {
+    position: relative;
+    padding: var(--space-3, 12px) var(--space-4, 16px);
+    border-radius: var(--radius-md, 10px);
+    max-width: 88%;
+    font-size: 0.92rem;
+    line-height: 1.5;
+    color: var(--color-text, #0B1E2D);
+    background: var(--color-surface, #FFFFFF);
+    border: 1px solid var(--color-border, #DCE4EC);
+    box-shadow: var(--shadow-xs, 0 1px 2px rgba(11, 30, 45, 0.04));
+    word-wrap: break-word;
+    overflow-wrap: anywhere;
+}
+
+/* AI — слева, с акцентной полосой */
+.ai-message-ai .ai-message-bubble {
+    border-top-left-radius: var(--radius-sm, 6px);
+    padding-left: calc(var(--space-4, 16px) + 4px);
+}
+
+.ai-message-ai .ai-message-bubble::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 10%;
+    bottom: 10%;
+    width: 3px;
+    border-radius: var(--radius-full, 9999px);
+    background: linear-gradient(180deg,
+        var(--color-primary, #005A9C) 0%,
+        var(--color-accent, #00B8C4) 100%);
+}
+
+/* Пользователь — справа, в тонированном варианте */
+.ai-message-user .ai-message-bubble {
+    border-top-right-radius: var(--radius-sm, 6px);
+    background: var(--color-primary-100, #E6F0F9);
+    border-color: transparent;
+    color: var(--color-primary-900, #001A2E);
+}
+
+/* --- Markdown внутри ответов ИИ ------------------------------------------ */
 .ai-message-ai .ai-message-bubble h1,
 .ai-message-ai .ai-message-bubble h2,
 .ai-message-ai .ai-message-bubble h3 {
-    margin: 12px 0 6px 0;
-    font-weight: bold;
-    color: #333333;
+    margin: var(--space-3, 12px) 0 var(--space-2, 8px);
+    font-weight: 700;
+    color: var(--color-text, #0B1E2D);
+    line-height: 1.25;
 }
-.ai-message-ai .ai-message-bubble h1 { font-size: 1.3em; }
-.ai-message-ai .ai-message-bubble h2 { font-size: 1.15em; }
-.ai-message-ai .ai-message-bubble h3 { font-size: 1.05em; }
+
+.ai-message-ai .ai-message-bubble h1 { font-size: 1.1rem; }
+.ai-message-ai .ai-message-bubble h2 { font-size: 1.02rem; }
+.ai-message-ai .ai-message-bubble h3 { font-size: 0.96rem; }
+
+.ai-message-ai .ai-message-bubble p {
+    margin: 0 0 var(--space-2, 8px);
+}
+
+.ai-message-ai .ai-message-bubble p:last-child {
+    margin-bottom: 0;
+}
 
 .ai-message-ai .ai-message-bubble ul,
 .ai-message-ai .ai-message-bubble ol {
-    margin: 8px 0 8px 20px;
-    padding-left: 20px;
+    margin: var(--space-2, 8px) 0;
+    padding-left: var(--space-5, 24px);
 }
+
 .ai-message-ai .ai-message-bubble li {
-    margin-bottom: 4px;
+    margin-bottom: var(--space-1, 4px);
 }
+
 .ai-message-ai .ai-message-bubble strong {
-    color: #333333;
-    font-weight: bold;
+    color: var(--color-text, #0B1E2D);
+    font-weight: 700;
 }
+
 .ai-message-ai .ai-message-bubble em {
-    color: #555;
+    color: var(--color-text-muted, #5A6B7B);
+    font-style: italic;
 }
+
 .ai-message-ai .ai-message-bubble code {
-    background: #f4f4f4;
-    color: #c7254e;
-    padding: 2px 4px;
-    border-radius: 3px;
-    font-size: 0.95em;
+    background: var(--color-surface-2, #F8FAFC);
+    color: var(--color-primary-700, #003F6E);
+    padding: 2px 5px;
+    border: 1px solid var(--color-border, #DCE4EC);
+    border-radius: var(--radius-sm, 6px);
+    font-size: 0.88em;
+    font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
 }
+
 .ai-message-ai .ai-message-bubble pre {
-    background: #f4f4f4;
-    padding: 8px;
-    border-radius: 4px;
+    margin: var(--space-2, 8px) 0;
+    background: var(--color-surface-2, #F8FAFC);
+    border: 1px solid var(--color-border, #DCE4EC);
+    border-radius: var(--radius-sm, 6px);
+    padding: var(--space-3, 12px);
     overflow-x: auto;
-    font-size: 0.95em;
+    font-size: 0.86em;
+    line-height: 1.5;
 }
+
+.ai-message-ai .ai-message-bubble pre code {
+    background: transparent;
+    border: none;
+    padding: 0;
+    color: var(--color-text, #0B1E2D);
+}
+
 .ai-message-ai .ai-message-bubble table {
     border-collapse: collapse;
     width: 100%;
-    margin: 10px 0;
-    background: #fff;
+    margin: var(--space-3, 12px) 0;
+    background: var(--color-surface, #FFFFFF);
+    font-size: 0.88em;
 }
+
 .ai-message-ai .ai-message-bubble th,
 .ai-message-ai .ai-message-bubble td {
-    border: 1px solid #e0e0e0;
-    padding: 6px 8px;
+    border: 1px solid var(--color-border, #DCE4EC);
+    padding: var(--space-2, 8px) var(--space-3, 12px);
     text-align: left;
 }
+
 .ai-message-ai .ai-message-bubble th {
-    background: #f5f5f5;
-    color: #333333;
+    background: var(--color-surface-2, #F8FAFC);
+    color: var(--color-text, #0B1E2D);
+    font-weight: 600;
 }
+
 .ai-message-ai .ai-message-bubble hr {
     border: none;
-    border-top: 1px solid #e0e0e0;
-    margin: 12px 0;
+    border-top: 1px solid var(--color-border, #DCE4EC);
+    margin: var(--space-3, 12px) 0;
 }
+
 .ai-message-ai .ai-message-bubble blockquote {
-    border-left: 4px solid #333333;
-    background: #f5f5f5;
-    margin: 8px 0;
-    padding: 6px 12px;
-    color: #333;
-    font-style: italic;
-} 
-
-.ai-sidebar-close {
-    background: transparent;
-    border: none;
-    color: #fff;
-    font-size: 1.3rem;
-    cursor: pointer;
-    margin-left: 8px;
-    transition: color 0.2s;
+    margin: var(--space-2, 8px) 0;
+    padding: var(--space-2, 8px) var(--space-3, 12px);
+    border-left: 3px solid var(--color-primary, #005A9C);
+    background: var(--color-primary-100, #E6F0F9);
+    color: var(--color-text, #0B1E2D);
+    border-radius: 0 var(--radius-sm, 6px) var(--radius-sm, 6px) 0;
+    font-style: normal;
 }
-.ai-sidebar-close:hover {
-    color: #ff4d4f;
-} 
 
-.ai-chat-loading {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 12px 0;
-    background: #f9f9f9;
+.ai-message-ai .ai-message-bubble a {
+    color: var(--color-primary, #005A9C);
+    text-decoration: underline;
+    text-underline-offset: 2px;
 }
-.ai-chat-loading-spinner {
-    border: 4px solid #f3f3f3;
-    border-top: 4px solid #2D7EFF;
-    border-radius: 50%;
-    width: 32px;
-    height: 32px;
-    animation: spin 1s linear infinite;
-    margin-bottom: 8px;
-}
-.ai-chat-loading-text {
-    font-size: 1rem;
-    color: #2D7EFF;
-    text-align: center;
-} 
 
-/* Индикатор статуса стриминга (отображается до получения первого delta) */
+.ai-message-ai .ai-message-bubble a:hover {
+    color: var(--color-primary-600, #004B80);
+}
+
+/* --- Состояние «Думаю...» и статус-индикатор ---------------------------- */
 .ai-status-indicator {
     display: inline-block;
-    color: #888;
+    color: var(--color-text-muted, #5A6B7B);
     font-style: italic;
-    font-size: 0.95rem;
+    font-size: 0.9rem;
     position: relative;
-    padding-right: 24px;
+    padding-right: 28px;
 }
+
 .ai-status-indicator::after {
     content: '';
     position: absolute;
@@ -269,12 +415,218 @@
     transform: translateY(-50%);
     width: 18px;
     height: 4px;
-    background-image: radial-gradient(circle, #2D7EFF 2px, transparent 2px);
+    background-image: radial-gradient(circle,
+        var(--color-primary, #005A9C) 2px, transparent 2px);
     background-size: 6px 6px;
     background-repeat: repeat-x;
     animation: ai-dots-pulse 1.2s infinite ease-in-out;
 }
+
 @keyframes ai-dots-pulse {
     0%, 100% { opacity: 0.3; }
-    50% { opacity: 1; }
+    50%      { opacity: 1; }
+}
+
+/* --- Footer-инпут --------------------------------------------------------- */
+.ai-input-container.ai-drawer-footer {
+    flex-shrink: 0;
+    display: flex;
+    align-items: flex-end;
+    gap: var(--space-3, 12px);
+    padding: var(--space-4, 16px) var(--space-5, 24px);
+    background: var(--color-surface, #FFFFFF);
+    border-top: 1px solid var(--color-border, #DCE4EC);
+}
+
+.ai-input-wrap {
+    flex: 1 1 auto;
+    display: block;
+    min-width: 0;
+}
+
+.ai-input {
+    width: 100%;
+    min-height: 42px;
+    max-height: 140px;
+    padding: 10px var(--space-3, 12px);
+    font-family: inherit;
+    font-size: 0.92rem;
+    line-height: 1.4;
+    color: var(--color-text, #0B1E2D);
+    background: var(--color-surface, #FFFFFF);
+    border: 1px solid var(--color-border, #DCE4EC);
+    border-radius: var(--radius-sm, 6px);
+    resize: none;
+    transition: border-color var(--t-fast, 160ms) var(--ease-out, ease-out),
+                box-shadow var(--t-fast, 160ms) var(--ease-out, ease-out);
+    box-sizing: border-box;
+}
+
+.ai-input::placeholder {
+    color: var(--color-text-muted, #5A6B7B);
+}
+
+.ai-input:focus {
+    outline: none;
+    border-color: var(--color-accent, #00B8C4);
+    box-shadow: var(--shadow-focus, 0 0 0 3px rgba(0, 184, 196, 0.35));
+}
+
+.ai-send {
+    flex-shrink: 0;
+    width: 42px;
+    height: 42px;
+    padding: 0;
+    border: none;
+    border-radius: var(--radius-sm, 6px);
+    background: linear-gradient(135deg,
+        var(--color-primary, #005A9C) 0%,
+        var(--color-primary-600, #004B80) 100%);
+    color: #fff;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.95rem;
+    transition: background-color var(--t-fast, 160ms) var(--ease-out, ease-out),
+                transform var(--t-fast, 160ms) var(--ease-out, ease-out),
+                box-shadow var(--t-fast, 160ms) var(--ease-out, ease-out),
+                opacity var(--t-fast, 160ms) var(--ease-out, ease-out);
+    margin-left: 0;
+}
+
+.ai-send:hover:not(:disabled) {
+    background: linear-gradient(135deg,
+        var(--color-primary-600, #004B80) 0%,
+        var(--color-primary-700, #003F6E) 100%);
+    box-shadow: var(--shadow-sm, 0 2px 6px rgba(11, 30, 45, 0.06));
+}
+
+.ai-send:active:not(:disabled) {
+    transform: translateY(1px);
+}
+
+.ai-send:focus-visible {
+    outline: none;
+    box-shadow: var(--shadow-focus, 0 0 0 3px rgba(0, 184, 196, 0.35));
+}
+
+.ai-send:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+/* --- Loading-строка (между чатом и инпутом) ------------------------------ */
+.ai-chat-loading {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-3, 12px);
+    padding: var(--space-3, 12px) var(--space-5, 24px);
+    background: var(--color-surface-2, #F8FAFC);
+    border-top: 1px solid var(--color-border, #DCE4EC);
+}
+
+.ai-chat-loading-spinner {
+    width: 18px;
+    height: 18px;
+    border: 2px solid var(--color-border, #DCE4EC);
+    border-top-color: var(--color-primary, #005A9C);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+.ai-chat-loading-text {
+    font-size: 0.88rem;
+    color: var(--color-text-muted, #5A6B7B);
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* --- Старая full-screen loading-модалка (если где-то ещё используется) -- */
+.ai-loading-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(11, 30, 45, 0.35);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+}
+
+.ai-loading-modal.visible {
+    display: flex;
+}
+
+.ai-loading-content {
+    background: var(--color-surface, #FFFFFF);
+    padding: var(--space-5, 24px) var(--space-6, 32px);
+    border-radius: var(--radius-md, 10px);
+    box-shadow: var(--shadow-lg, 0 16px 40px rgba(11, 30, 45, 0.12));
+    text-align: center;
+}
+
+.ai-loading-spinner {
+    width: 38px;
+    height: 38px;
+    border: 3px solid var(--color-border, #DCE4EC);
+    border-top-color: var(--color-primary, #005A9C);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto var(--space-3, 12px);
+}
+
+.ai-loading-text {
+    font-size: 0.95rem;
+    color: var(--color-text, #0B1E2D);
+}
+
+/* --- Адаптив -------------------------------------------------------------- */
+@media (max-width: 640px) {
+    .ai-sidebar.ai-drawer {
+        width: 100vw;
+    }
+
+    .ai-drawer-subtitle {
+        display: none;
+    }
+
+    .ai-chat-box {
+        padding: var(--space-4, 16px);
+    }
+
+    .ai-input-container.ai-drawer-footer,
+    .ai-sidebar-header.ai-drawer-header {
+        padding-left: var(--space-4, 16px);
+        padding-right: var(--space-4, 16px);
+    }
+
+    .ai-chat-button {
+        width: 48px;
+        height: 48px;
+        right: var(--space-4, 16px);
+        bottom: var(--space-4, 16px);
+    }
+}
+
+/* --- Уважаем prefers-reduced-motion -------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+    .ai-sidebar.ai-drawer,
+    .ai-drawer-overlay,
+    .ai-chat-button,
+    .ai-send,
+    .ai-sidebar-close.ai-drawer-close,
+    .ai-input {
+        transition: none;
+    }
+
+    .ai-chat-loading-spinner,
+    .ai-loading-spinner,
+    .ai-status-indicator::after {
+        animation: none;
+    }
 }
