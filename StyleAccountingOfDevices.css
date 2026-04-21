@@ -1738,69 +1738,45 @@ body.modal-open {
    15. Мессенджер (msgr-*)
    ================================================================ */
 /* Иконка-конверт, открывающая модалку мессенджера.
-   Оформлена строго под стиль .button-primary: такой же градиент,
-   тот же border-radius и поведение hover/active, но квадратная
-   иконка-кнопка по высоте соседних .button-secondary («+ Создать»,
-   «История») — без glow/глянца, чтобы держать корпоративный тон.
-   FA рендерит сам глиф через ::before у .fa*, поэтому свои
-   псевдоэлементы здесь не используются. */
+   Без собственного фона/обводки — рисуется только сам глиф FA
+   того же кегля, что и текст на кнопках «+ Создать»/«История»
+   (var(--fs-small)), чтобы визуально равномерно стоять с ними в
+   одной строке. Флексовая центровка контейнера .mode-buttons
+   сама выровняет иконку по центру высоты соседних кнопок. */
 .msgr-open-icon {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 40px;
-    height: 40px;
-    padding: 0;
-    border-radius: var(--radius-md);
-    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-600) 100%);
-    color: #fff;
-    font-size: 0.95rem;
+    padding: 6px;
+    color: var(--color-primary);
+    font-size: var(--fs-small);
     line-height: 1;
-    text-align: center;
+    background: none;
+    border: none;
+    border-radius: var(--radius-sm);
     cursor: pointer;
-    border: 1px solid transparent;
-    box-shadow: var(--shadow-xs);
-    transition: transform var(--t-fast) var(--ease-out),
-                box-shadow var(--t-base) var(--ease-out),
-                filter var(--t-base) var(--ease-out);
-}
-
-/* FA-глиф конверта в собственном em-box сидит выше оптического
-   центра (типовая особенность шрифта Font Awesome: ascent занимает
-   больше вертикального места, чем descent, + у самого конверта
-   визуальная масса смещена вниз за счёт прямоугольного тела
-   относительно треугольного клапана), поэтому подравниваем глиф
-   вниз, чтобы он стоял ровно по оптическому центру 40-пиксельной
-   кнопки. Значение подобрано эмпирически под FA 6 и проверено на
-   превью ×6 c перекрестьем на геометрическом центре. */
-.msgr-open-icon::before {
-    display: block;
-    line-height: 1;
-    transform: translateY(4px);
+    transition: color var(--t-base) var(--ease-out),
+                transform var(--t-fast) var(--ease-out);
 }
 
 .msgr-open-icon:hover {
-    color: #fff;
+    color: var(--color-primary-600);
     transform: translateY(-1px);
-    filter: brightness(1.06);
-    box-shadow: var(--shadow-md);
 }
 
 .msgr-open-icon:active {
     transform: translateY(0);
-    box-shadow: var(--shadow-xs);
 }
 
 .msgr-open-icon:focus-visible {
-    outline: 3px solid var(--color-focus-ring);
+    outline: 2px solid var(--color-focus-ring);
     outline-offset: 2px;
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .msgr-open-icon {
-        transition: none;
-    }
+    .msgr-open-icon,
     .msgr-open-icon:hover {
+        transition: none;
         transform: none;
     }
 }
