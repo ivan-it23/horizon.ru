@@ -168,23 +168,26 @@
             compositionButton.textContent = 'Состав прибора';
             compositionButton.dataset.tab = 'device_composition_section';
 
-            // --- Новая кнопка/иконка Копировать ---
+            // --- Иконочная кнопка: копировать данные прибора (tertiary) ---
             const copyDataButton = document.createElement('button');
             copyDataButton.type = 'button';
             copyDataButton.title = 'Копировать данные прибора';
-            copyDataButton.className = 'button button-icon copy-data-icon'; // Общий класс для иконочных кнопок
-            copyDataButton.innerHTML = '<i class="fas fa-copy"></i>'; // Иконка Font Awesome
+            copyDataButton.setAttribute('aria-label', 'Копировать данные прибора');
+            copyDataButton.className = 'button button-icon copy-data-icon';
+            copyDataButton.innerHTML = '<i class="fas fa-copy" aria-hidden="true"></i>';
             copyDataButton.addEventListener('click', () => handleCopyDeviceData(deviceId));
 
+            // --- Иконочная кнопка: скачать данные прибора (tertiary) ---
             const exportButton = document.createElement('button');
             exportButton.type = 'button';
-            exportButton.textContent = 'Скачать данные для прибора';
-            exportButton.classList.add('button', 'button-secondary', 'export-device-btn');
+            exportButton.title = 'Скачать данные прибора';
+            exportButton.setAttribute('aria-label', 'Скачать данные прибора');
+            exportButton.className = 'button button-icon export-device-btn';
+            exportButton.innerHTML = '<i class="fas fa-download" aria-hidden="true"></i>';
             exportButton.dataset.deviceId     = device.id;
             exportButton.dataset.serialNumber = device.serial_number;
             exportButton.dataset.caseNumber   = device.case_number;
             exportButton.addEventListener('click', function() {
-                // Предполагается, что функция exportDeviceData определена где-то еще
                 if (typeof exportDeviceData === 'function') {
                     exportDeviceData(
                         this.dataset.deviceId,
@@ -198,7 +201,8 @@
 
             tabContainer.appendChild(paramsButton);
             tabContainer.appendChild(compositionButton);
-            tabContainer.appendChild(copyDataButton); // Добавляем кнопку копирования
+            tabContainer.appendChild(copyDataButton);
+            tabContainer.appendChild(exportButton);
 
             const paramsSection = document.createElement('div');
             paramsSection.id = 'device_params_section';
@@ -417,124 +421,116 @@
                 }
             });
 
-            // Формирование таблицы с параметрами прибора
-            const tableParams = document.createElement('table');
-            tableParams.className = 'data-table device-params-table';
-            const theadParams  = document.createElement('thead');
-            theadParams.innerHTML = '<tr><th>Поле</th><th>Значение</th></tr>';
-            tableParams.appendChild(theadParams);
-            const tbodyParams = document.createElement('tbody');
+            // --- Параметры прибора, сгруппированные по смыслу --------------
+            // Вспомогательная функция: собирает подкарточку-группу с таблицей
+            // «Поле | Значение» и возвращает корневой элемент.
+            function buildParamsGroup(title, iconClass, entries) {
+                const groupSection = document.createElement('section');
+                groupSection.className = 'params-group';
 
-            const fieldNames = {
-                id:             'ID',
-                device_type:    'Тип прибора',
-                serial_number:  'Серийный номер',
-                case_number:    'Номер корпуса',
-                length_mm:      'Длина, мм',
-                diameter_mm:    'Диаметр, мм',
-                upper_thread:   'Резьба верхняя',
-                lower_thread:   'Резьба нижняя',
-                frequency1_khz: 'Рабочая частота 1, кГц',
-                frequency2_khz: 'Рабочая частота 2, кГц'
-            };
+                const heading = document.createElement('h5');
+                heading.className = 'params-group-title';
+                if (iconClass) {
+                    const icon = document.createElement('i');
+                    icon.className = iconClass;
+                    icon.setAttribute('aria-hidden', 'true');
+                    heading.appendChild(icon);
+                }
+                heading.appendChild(document.createTextNode(title));
+                groupSection.appendChild(heading);
 
-            for (const key in fieldNames) {
-                const row = document.createElement('tr');
-                const th  = document.createElement('td');
-                th.textContent = fieldNames[key];
-                const td  = document.createElement('td');
-                const inp = document.createElement('input');
-                inp.type      = 'text';
-                inp.className = 'input-field';
-                inp.name      = key;
-                inp.value     = device[key] || '';
-                inp.style.width = '100%';
-                 if (key === 'id' || key === 'device_type') {
-                     inp.readOnly = true;
-                     inp.classList.add('readonly-field');
-                 }
-                td.appendChild(inp);
-                row.appendChild(th);
-                row.appendChild(td);
-                tbodyParams.appendChild(row);
+                const table = document.createElement('table');
+                table.className = 'data-table device-params-table';
+                const tbody = document.createElement('tbody');
+
+                entries.forEach(entry => {
+                    const row = document.createElement('tr');
+                    const th  = document.createElement('td');
+                    th.textContent = entry.label;
+                    const td  = document.createElement('td');
+                    const inp = document.createElement('input');
+                    inp.type      = 'text';
+                    inp.className = 'input-field';
+                    inp.name      = entry.key;
+                    inp.value     = entry.value != null ? entry.value : '';
+                    if (entry.readonly) {
+                        inp.readOnly = true;
+                        inp.classList.add('readonly-field');
+                    }
+                    if (typeof entry.onReady === 'function') {
+                        entry.onReady(inp);
+                    }
+                    td.appendChild(inp);
+                    row.appendChild(th);
+                    row.appendChild(td);
+                    tbody.appendChild(row);
+                });
+
+                table.appendChild(tbody);
+                groupSection.appendChild(table);
+                return groupSection;
             }
 
+            // Группа 1: Идентификация
+            paramsSection.appendChild(buildParamsGroup('Идентификация', 'fas fa-id-card', [
+                { key: 'id',            label: 'ID',              value: device.id,            readonly: true },
+                { key: 'device_type',   label: 'Тип прибора',     value: device.device_type,   readonly: true },
+                { key: 'serial_number', label: 'Серийный номер',  value: device.serial_number },
+                { key: 'case_number',   label: 'Номер корпуса',   value: device.case_number }
+            ]));
+
+            // Группа 2: Геометрия
+            paramsSection.appendChild(buildParamsGroup('Геометрия', 'fas fa-ruler-combined', [
+                { key: 'length_mm',   label: 'Длина, мм',   value: device.length_mm },
+                { key: 'diameter_mm', label: 'Диаметр, мм', value: device.diameter_mm }
+            ]));
+
+            // Группа 3: Резьбы
+            paramsSection.appendChild(buildParamsGroup('Резьбы', 'fas fa-cogs', [
+                { key: 'upper_thread', label: 'Резьба верхняя', value: device.upper_thread },
+                { key: 'lower_thread', label: 'Резьба нижняя', value: device.lower_thread }
+            ]));
+
+            // Группа 4: Рабочие частоты
+            paramsSection.appendChild(buildParamsGroup('Рабочие частоты', 'fas fa-wave-square', [
+                { key: 'frequency1_khz', label: 'Частота 1, кГц', value: device.frequency1_khz },
+                { key: 'frequency2_khz', label: 'Частота 2, кГц', value: device.frequency2_khz }
+            ]));
+
+            // Группа 5: Базы приёмников (динамически, зависит от типа)
             const recvCount = (device.device_type === 'Картограф') ? 3 : 1;
+            const receiverEntries = [];
             for (let i = 1; i <= recvCount; i++) {
                 const key = `receiver_base${i}_mm`;
                 if (device[key] !== undefined && device[key] !== null) {
-                    const row = document.createElement('tr');
-                    const th  = document.createElement('td');
-                    th.textContent = `База приёмника ${i}, мм`;
-                    const td  = document.createElement('td');
-                    const inp = document.createElement('input');
-                    inp.type      = 'text';
-                    inp.className = 'input-field';
-                    inp.name      = key;
-                    inp.value     = device[key] || '';
-                    inp.style.width = '100%';
-                    td.appendChild(inp);
-                    row.appendChild(th);
-                    row.appendChild(td);
-                    tbodyParams.appendChild(row);
+                    receiverEntries.push({ key, label: `База приёмника ${i}, мм`, value: device[key] });
                 }
             }
+            if (receiverEntries.length > 0) {
+                paramsSection.appendChild(buildParamsGroup('Базы приёмников', 'fas fa-satellite-dish', receiverEntries));
+            }
 
+            // Группа 6: Базы передатчиков (динамически)
+            const transmitterEntries = [];
             for (let i = 1; i <= 5; i++) {
                 const key = `transmitter_base${i}_mm`;
                 if (device[key] !== undefined && device[key] !== null) {
-                    const row = document.createElement('tr');
-                    const th  = document.createElement('td');
-                    th.textContent = `База передатчика ${i}, мм`;
-                    const td  = document.createElement('td');
-                    const inp = document.createElement('input');
-                    inp.type      = 'text';
-                    inp.className = 'input-field';
-                    inp.name      = key;
-                    inp.value     = device[key];
-                    inp.style.width = '100%';
-                    td.appendChild(inp);
-                    row.appendChild(th);
-                    row.appendChild(td);
-                    tbodyParams.appendChild(row);
+                    transmitterEntries.push({ key, label: `База передатчика ${i}, мм`, value: device[key] });
                 }
             }
+            if (transmitterEntries.length > 0) {
+                paramsSection.appendChild(buildParamsGroup('Базы передатчиков', 'fas fa-broadcast-tower', transmitterEntries));
+            }
 
-            const fieldNamesLast = {
-                record_date:     'Дата создания записи',
-                creator_lastname:'Создатель записи',
-                changed_at:      'Дата изменения записи',
-                changer_lastname: 'Автор последнего изменения'
-            };
+            // Группа 7: Авторство и даты
             let authorLastChangeInput = null;
-
-            for (const key in fieldNamesLast) {
-                const row = document.createElement('tr');
-                const th  = document.createElement('td');
-                th.textContent = fieldNamesLast[key];
-                const td  = document.createElement('td');
-                const inp = document.createElement('input');
-                inp.type      = 'text';
-                inp.className = 'input-field readonly-field'; // Добавлен readonly-field для стилизации
-                inp.name      = key;
-                inp.readOnly  = true;
-
-                if (key === 'creator_lastname') {
-                     inp.value = device['creator_lastname'] || 'Нет данных';
-                } else if (key === 'changer_lastname') {
-                     inp.value = 'Загрузка...';
-                     authorLastChangeInput = inp;
-                } else if (key === 'changed_at' && device[key] == null) {
-                    inp.value = 'Нет данных';
-                } else {
-                    inp.value = device[key] || '';
-                }
-                inp.style.width = '100%';
-                td.appendChild(inp);
-                row.appendChild(th);
-                row.appendChild(td);
-                tbodyParams.appendChild(row);
-            }
+            paramsSection.appendChild(buildParamsGroup('Авторство и даты', 'fas fa-user-clock', [
+                { key: 'record_date',      label: 'Дата создания записи',       value: device.record_date,                         readonly: true },
+                { key: 'creator_lastname', label: 'Создатель записи',           value: device.creator_lastname || 'Нет данных',    readonly: true },
+                { key: 'changed_at',       label: 'Дата последнего изменения', value: device.changed_at || 'Нет данных',          readonly: true },
+                { key: 'changer_lastname', label: 'Автор последнего изменения', value: 'Загрузка...',                              readonly: true,
+                  onReady: (inp) => { authorLastChangeInput = inp; } }
+            ]));
 
             if (authorLastChangeInput) {
                  fetch('front.php?c=deviceHistory&a=history', {
@@ -569,9 +565,6 @@
                  });
             }
 
-            tableParams.appendChild(tbodyParams);
-            paramsSection.appendChild(tableParams);
-
             // --- Дополнительная информация (additional_info) ---
             const additionalInfoSection = document.createElement('div');
             additionalInfoSection.className = 'additional-info-section mt-4'; // Используем новый класс для стилей
@@ -600,43 +593,41 @@
             additionalInfoTextarea.value = device.additional_info || ''; // Заполняем значением из БД
             additionalInfoFormGroup.appendChild(additionalInfoTextarea);
 
+            // --- Основная кнопка действия: Сохранить (primary) ---
             const saveButton   = document.createElement('button');
             saveButton.type    = 'button';
-            saveButton.textContent = 'Сохранить изменения';
+            saveButton.innerHTML = '<i class="fas fa-save" aria-hidden="true"></i> Сохранить изменения';
             saveButton.classList.add('button', 'button-primary', 'save-device-changes-btn');
             saveButton.dataset.deviceId = device.id;
             saveButton.addEventListener('click', () => {
-                // Предполагается, что функция saveDeviceChanges определена где-то еще
-                // и boardsToDelete доступна ей (например, через замыкание или как глобальная переменная, управляемая в showDeviceData)
                 if (typeof saveDeviceChanges === 'function') {
-                     saveDeviceChanges(device.id, boardsToDelete);
+                    saveDeviceChanges(device.id, boardsToDelete);
                 } else {
                     console.error('Function saveDeviceChanges is not defined.');
                 }
             });
 
-
+            // --- Вторичная кнопка действия: История (secondary) ---
             const historyButton = document.createElement('button');
             historyButton.type  = 'button';
-            historyButton.textContent = 'Посмотреть историю записей';
+            historyButton.innerHTML = '<i class="fas fa-history" aria-hidden="true"></i> Посмотреть историю записей';
             historyButton.classList.add('button', 'button-secondary', 'view-history-btn');
             historyButton.dataset.deviceId = device.id;
             historyButton.addEventListener('click', () => {
-
-                 if (typeof fetchDeviceHistory === 'function') {
+                if (typeof fetchDeviceHistory === 'function') {
                     fetchDeviceHistory(device.id);
-                 } else {
+                } else {
                     console.error('Function fetchDeviceHistory is not defined.');
-                 }
+                }
             });
 
-
+            // Панель действий над карточкой прибора.
+            // Иерархия: primary (Сохранить) → secondary (История).
+            // Tertiary-иконки (Копировать/Скачать) вынесены в верхний tab-bar.
             const btnContainer = document.createElement('div');
-            btnContainer.className = 'mode-buttons mt-3';
-            btnContainer.style.justifyContent = 'flex-start';
+            btnContainer.className = 'device-action-bar';
             btnContainer.appendChild(saveButton);
             btnContainer.appendChild(historyButton);
-            btnContainer.appendChild(exportButton);
 
             deviceDiv.appendChild(tabContainer);
             deviceDiv.appendChild(paramsSection);
