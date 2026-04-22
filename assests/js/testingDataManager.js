@@ -197,7 +197,7 @@
             if (typeof global.showNotification === 'function') {
                 global.showNotification('Ошибка: Прибор не выбран. Пожалуйста, выберите прибор на вкладке "Идентификационные данные".', 'error');
             } else {
-                alert('Ошибка: Прибор не выбран. Пожалуйста, выберите прибор на вкладке "Идентификационные данные".');
+                showNotification('Прибор не выбран. Пожалуйста, выберите прибор на вкладке «Идентификационные данные».', 'warning');
             }
             return;
         }
@@ -237,7 +237,7 @@
                 if (typeof global.showNotification === 'function') {
                     global.showNotification(`${result.test_result_status}. ${result.message}`, 'success');
                 } else {
-                    alert(`${result.test_result_status}. ${result.message}`);
+                    showNotification(`${result.test_result_status}. ${result.message}`, 'success');
                 }
 
                 // Сбрасываем форму и подсветку
@@ -256,7 +256,7 @@
                 if (typeof global.showNotification === 'function') {
                     global.showNotification(`Ошибка при сохранении: ${result.message || 'Неизвестная ошибка сервера.'}`, 'error');
                 } else {
-                    alert(`Ошибка при сохранении: ${result.message || 'Неизвестная ошибка сервера.'}`);
+                    showNotification(`Ошибка при сохранении: ${result.message || 'Неизвестная ошибка сервера.'}`, 'error');
                 }
             }
         } catch (err) {
@@ -264,7 +264,7 @@
             if (typeof global.showNotification === 'function') {
                 global.showNotification(`Критическая ошибка при сохранении данных испытаний: ${err.message}`, 'error');
             } else {
-                alert(`Критическая ошибка при сохранении данных испытаний: ${err.message}`);
+                showNotification(`Критическая ошибка при сохранении данных испытаний: ${err.message}`, 'error');
             }
         } finally {
             elements.saveTestingDataButton.disabled = false;

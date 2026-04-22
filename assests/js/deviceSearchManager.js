@@ -145,7 +145,11 @@
                 renderDeviceList(devices, deviceListDiv);
             } else {
                 // Если ничего не найдено
-                deviceListDiv.innerHTML = '<p class="info-message">Приборы не найдены по заданным параметрам.</p>';
+                deviceListDiv.innerHTML = emptyStateHTML(
+                    'fa-search',
+                    'Приборы не найдены',
+                    'Попробуйте изменить параметры поиска.'
+                );
                 resetDeviceSelection();
             }
         })
@@ -218,7 +222,11 @@
             } else {
                 // Нет данных или ошибка
                 if (searchResultDiv) {
-                    searchResultDiv.innerHTML = `<p class="info-message">${responseJson.message || 'Прибор не найден'}</p>`;
+                    searchResultDiv.innerHTML = emptyStateHTML(
+                        'fa-search',
+                        'Прибор не найден',
+                        responseJson.message || 'Проверьте серийный / инвентарный номер и попробуйте ещё раз.'
+                    );
                 }
                 resetDeviceSelection();
             }
@@ -244,7 +252,11 @@
         searchResultDiv.innerHTML = '';
         
         if (!devices || devices.length === 0) {
-            searchResultDiv.innerHTML = '<p class="info-message">Прибор не найден</p>';
+            searchResultDiv.innerHTML = emptyStateHTML(
+                'fa-search',
+                'Прибор не найден',
+                'Проверьте серийный / инвентарный номер и попробуйте ещё раз.'
+            );
             resetDeviceSelection();
             return;
         }

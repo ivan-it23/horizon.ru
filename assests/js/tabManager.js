@@ -39,7 +39,11 @@
                 if (tabItem.classList.contains('disabled')) {
                     e.preventDefault();
                     e.stopPropagation();
-                    alert(disabledMsg);
+                    if (typeof window.showNotification === 'function') {
+                        window.showNotification(disabledMsg, 'warning');
+                    } else {
+                        alert(disabledMsg);
+                    }
                     return;
                 }
 

@@ -78,7 +78,7 @@ const RepairManager = (function() {
             if (typeof window.showNotification === 'function') {
                 window.showNotification('Пожалуйста, выберите прибор на вкладке "Идентификационные данные".', 'error');
             } else {
-                alert('Пожалуйста, выберите прибор на вкладке "Идентификационные данные".');
+                showNotification('Пожалуйста, выберите прибор на вкладке «Идентификационные данные».', 'warning');
             }
             return;
         }
@@ -104,7 +104,7 @@ const RepairManager = (function() {
             if (typeof window.showNotification === 'function') {
                 window.showNotification('Пожалуйста, выберите прибор на вкладке "Идентификационные данные".', 'error');
             } else {
-                alert('Пожалуйста, выберите прибор на вкладке "Идентификационные данные".');
+                showNotification('Пожалуйста, выберите прибор на вкладке «Идентификационные данные».', 'warning');
             }
             return;
         }
@@ -122,7 +122,7 @@ const RepairManager = (function() {
             if (typeof window.showNotification === 'function') {
                 window.showNotification('Пожалуйста, выберите прибор на вкладке "Идентификационные данные".', 'error');
             } else {
-                alert('Пожалуйста, выберите прибор на вкладке "Идентификационные данные".');
+                showNotification('Пожалуйста, выберите прибор на вкладке «Идентификационные данные».', 'warning');
             }
             return;
         }
@@ -140,7 +140,7 @@ const RepairManager = (function() {
                 if (typeof window.showNotification === 'function') {
                     window.showNotification(data.message, 'success');
                 } else {
-                    alert(data.message);
+                    showNotification(data.message, data.status === 'success' ? 'success' : 'info');
                 }
                 createForm.style.display = 'none';
                 showHistoryButton.click(); // Обновляем и показываем историю
@@ -148,7 +148,7 @@ const RepairManager = (function() {
                 if (typeof window.showNotification === 'function') {
                     window.showNotification('Ошибка: ' + data.message, 'error');
                 } else {
-                    alert('Ошибка: ' + data.message);
+                    showNotification('Ошибка: ' + data.message, 'error');
                 }
             }
         })
@@ -157,7 +157,7 @@ const RepairManager = (function() {
             if (typeof window.showNotification === 'function') {
                 window.showNotification('Критическая ошибка при создании записи о ремонте.', 'error');
             } else {
-                alert('Критическая ошибка при создании записи о ремонте.');
+                showNotification('Критическая ошибка при создании записи о ремонте.', 'error');
             }
         });
     }
@@ -257,7 +257,7 @@ const RepairManager = (function() {
                     if (typeof window.showNotification === 'function') {
                         window.showNotification(data.message || 'Ответ без сообщения', data.success ? 'success' : 'error');
                     } else {
-                        alert(data.message || 'Ответ без сообщения');
+                        showNotification(data.message || 'Ответ без сообщения', data.status === 'success' ? 'success' : 'info');
                     }
                     if (data.success) loadAndDisplayRepairHistory();
                 })
@@ -266,7 +266,7 @@ const RepairManager = (function() {
                     if (typeof window.showNotification === 'function') {
                         window.showNotification('Ошибка сети или сервера при сохранении изменений.', 'error');
                     } else {
-                        alert('Ошибка сети или сервера при сохранении изменений.');
+                        showNotification('Ошибка сети или сервера при сохранении изменений.', 'error');
                     }
                 });
         });
@@ -300,7 +300,7 @@ const RepairManager = (function() {
                         if (typeof window.showNotification === 'function') {
                             window.showNotification(data.message, data.success ? 'success' : 'error');
                         } else {
-                            alert(data.message);
+                            showNotification(data.message, data.status === 'success' ? 'success' : 'info');
                         }
                         if(data.success) loadAndDisplayRepairHistory();
                     })
@@ -309,7 +309,7 @@ const RepairManager = (function() {
                         if (typeof window.showNotification === 'function') {
                             window.showNotification('Ошибка сети или сервера при удалении записи.', 'error');
                         } else {
-                            alert('Ошибка сети или сервера при удалении записи.');
+                            showNotification('Ошибка сети или сервера при удалении записи.', 'error');
                         }
                     });
                 }

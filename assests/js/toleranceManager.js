@@ -188,7 +188,7 @@
                 if (typeof global.showNotification === 'function') {
                     global.showNotification('Допуски успешно сохранены!', 'success');
                 } else {
-                    alert('Допуски успешно сохранены!');
+                    showNotification('Допуски успешно сохранены!', 'success');
                 }
                 if (toleranceModal) {
                     toleranceModal.classList.remove('is-visible');
@@ -201,7 +201,7 @@
                 throw new Error(result.message || 'Ошибка сохранения допусков');
             }
         } catch (err) {
-            alert('Ошибка: ' + err.message);
+            showNotification('Ошибка: ' + err.message, 'error');
         }
     }
 
@@ -328,7 +328,7 @@
             showBtn.addEventListener('click', () => {
                 const deviceType = ($id('deviceTypeTab3')||{}).textContent || '';
                 if (!deviceType || deviceType === '-') {
-                    alert('Пожалуйста, выберите прибор на вкладке "Идентификационные данные".');
+                    showNotification('Пожалуйста, выберите прибор на вкладке «Идентификационные данные».', 'warning');
                     return;
                 }
                 ($id('deviceTypeInModal')||{}).textContent = deviceType;

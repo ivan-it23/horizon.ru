@@ -203,7 +203,14 @@
         const serial = (formData.get('serial_number') || '').trim();
         const caseNum= (formData.get('case_number')   || '').trim();
         if (!serial || !caseNum) {
-            global.displayMessage ? global.displayMessage('Пожалуйста, заполните поля "Серийный номер" и "Номер корпуса"', 'error') : alert('Заполните поля сер. № и корпус №');
+            const warn = 'Пожалуйста, заполните поля «Серийный номер» и «Номер корпуса».';
+            if (typeof global.showNotification === 'function') {
+                global.showNotification(warn, 'warning');
+            } else if (global.displayMessage) {
+                global.displayMessage(warn, 'error');
+            } else {
+                alert(warn);
+            }
             return;
         }
 
