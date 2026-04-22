@@ -149,7 +149,7 @@
         } else if (typeof global.displayMessage === 'function') {
             global.displayMessage(msg, type);
         } else {
-            alert(msg);
+            console[type === 'error' ? 'error' : 'log'](msg);
         }
     }
 

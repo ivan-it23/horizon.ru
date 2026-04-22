@@ -181,9 +181,11 @@
                 }
 
                 if (!historyData || historyData.length === 0) {
-                    const noHistoryMsg = document.createElement('p');
-                    noHistoryMsg.textContent = 'История изменений отсутствует.';
-                    historyContentDiv.appendChild(noHistoryMsg);
+                    historyContentDiv.appendChild(buildEmptyState(
+                        'fa-history',
+                        'История изменений отсутствует',
+                        'Как только у прибора появятся изменения — они будут показаны здесь.'
+                    ));
                     return;
                 }
 
@@ -420,11 +422,8 @@
                                 const headerRow = tbody.insertRow();
                                 const headerCell = headerRow.insertCell();
                                 headerCell.colSpan = 4;
-                                headerCell.className = 'history-field-label';
-                                headerCell.textContent = 'Добавлено:';
-                                headerCell.style.backgroundColor = 'var(--corporate-yellow-light)';
-                                headerCell.style.fontWeight = 'bold';
-                                headerCell.style.color = 'var(--primary-color)';
+                                headerCell.className = 'history-diff-header history-diff-header--added';
+                                headerCell.textContent = 'Добавлено';
                                 diffs.removed.forEach(board => {
                                     const row = tbody.insertRow();
                                     row.className = 'added';
@@ -443,11 +442,8 @@
                                 const headerRow = tbody.insertRow();
                                 const headerCell = headerRow.insertCell();
                                 headerCell.colSpan = 4;
-                                headerCell.className = 'history-field-label';
-                                headerCell.textContent = 'Удалено:';
-                                headerCell.style.backgroundColor = 'var(--corporate-orange-light)';
-                                headerCell.style.fontWeight = 'bold';
-                                headerCell.style.color = 'var(--primary-color)';
+                                headerCell.className = 'history-diff-header history-diff-header--removed';
+                                headerCell.textContent = 'Удалено';
                                 diffs.added.forEach(board => {
                                     const row = tbody.insertRow();
                                     row.className = 'removed';
@@ -465,11 +461,8 @@
                                 const headerRow = tbody.insertRow();
                                 const headerCell = headerRow.insertCell();
                                 headerCell.colSpan = 4;
-                                headerCell.className = 'history-field-label';
-                                headerCell.textContent = 'Изменено:';
-                                headerCell.style.backgroundColor = 'var(--corporate-yellow-light)';
-                                headerCell.style.fontWeight = 'bold';
-                                headerCell.style.color = 'var(--primary-color)';
+                                headerCell.className = 'history-diff-header history-diff-header--changed';
+                                headerCell.textContent = 'Изменено';
 
                                 diffs.changed.forEach(change => {
                                     const row = document.createElement('tr');

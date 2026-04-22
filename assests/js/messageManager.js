@@ -107,12 +107,12 @@
 
         const messageText = textarea.value.trim();
         if (selectedRecipientId === null) {
-            alert("Пожалуйста, выберите получателя.");
+            showNotification("Пожалуйста, выберите получателя.", 'warning');
             resetModalState(modal);
             return;
         }
         if (messageText === "") {
-            alert("Пожалуйста, введите текст сообщения.");
+            showNotification("Пожалуйста, введите текст сообщения.", 'warning');
             return;
         }
 
@@ -128,7 +128,7 @@
             }))
             .then(result => {
                 if (result.success) {
-                    alert("Сообщение успешно отправлено!");
+                    showNotification("Сообщение успешно отправлено!", 'success');
                     closeModal(modal);
                 } else {
                     throw new Error(result.error || "Неизвестная ошибка");
@@ -136,7 +136,7 @@
             })
             .catch(err => {
                 console.error("MessageManager: ошибка отправки сообщения:", err);
-                alert("Ошибка при отправке сообщения: " + err.message);
+                showNotification("Ошибка при отправке сообщения: " + err.message, 'error');
             });
     }
 

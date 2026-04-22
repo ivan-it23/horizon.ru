@@ -50,7 +50,11 @@
             tab8Pane.querySelectorAll('.file-type-tabs .button.active').forEach(btn => btn.classList.remove('active'));
             const fileDisplayArea = tab8Pane.querySelector('#file-display-area');
             if (fileDisplayArea) {
-                fileDisplayArea.innerHTML = '<p class="info-message">Выберите тип файла для просмотра и управления.</p>';
+                fileDisplayArea.innerHTML = emptyStateHTML(
+                    'fa-folder-open',
+                    'Выберите тип файла',
+                    'Чтобы увидеть список файлов и управлять ими, выберите тип файла выше.'
+                );
             }
         }
 
@@ -83,7 +87,11 @@
             if (!devices || devices.length === 0) {
                 const targetDiv = document.getElementById('searchDeviceForm').classList.contains('active') ? searchResultDiv : deviceListDiv;
                 if (targetDiv) {
-                    targetDiv.innerHTML = '<p class="info-message">Прибор не найден.</p>';
+                    targetDiv.innerHTML = emptyStateHTML(
+                        'fa-search',
+                        'Прибор не найден',
+                        'Проверьте серийный / инвентарный номер и попробуйте ещё раз.'
+                    );
                 }
                 selectedDeviceId = null; // selectedDeviceId должен быть доступен в этой области видимости
                 selectedSerialNumber = null;
@@ -201,7 +209,12 @@
             compositionSection.id = 'device_composition_section';
             compositionSection.className = 'tab-content-section';
             compositionSection.style.display = 'none';
-            compositionSection.innerHTML = '<p>Информация о составе прибора появится здесь.</p>';
+            compositionSection.innerHTML = emptyStateHTML(
+                'fa-microchip',
+                'Состав прибора пока не загружен',
+                'Переключитесь на эту вкладку, чтобы увидеть список плат и радиоэлементов прибора.'
+            );
+            compositionSection.dataset.empty = 'true';
 
             paramsButton.addEventListener('click', function() {
                 paramsSection.style.display = 'block';
@@ -216,7 +229,7 @@
                 compositionButton.classList.add('active');
                 paramsButton.classList.remove('active');
 
-                if (compositionSection.innerHTML.includes('<p>Информация о составе прибора появится здесь.</p>')) {
+                if (compositionSection.dataset.empty === 'true') {
                     fetch('front.php?c=device&a=composition', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -242,6 +255,7 @@
                     })
                     .then(data => {
                         compositionSection.innerHTML = ''; // Очищаем перед заполнением
+                        delete compositionSection.dataset.empty;
 
                         let table = document.createElement('table');
                         table.className = 'data-table device-structure-table';
@@ -353,7 +367,7 @@
                             if (hasBoardsToSelect) {
                                 deleteBoardSelectionContainer.style.display = 'flex'; // Показываем контейнер
                             } else {
-                                alert('Нет плат для удаления или все платы уже помечены к удалению.');
+                                showNotification('Нет плат для удаления или все платы уже помечены к удалению.', 'info');
                                 deleteBoardSelectionContainer.style.display = 'none';
                             }
                         });
@@ -375,14 +389,14 @@
                                     if (!boardsToDelete.includes(boardNameToDelete)) {
                                         boardsToDelete.push(boardNameToDelete);
                                     }
-                                    alert(`Плата "${boardNameToDelete}" помечена к удалению. Изменения будут применены после сохранения.`);
+                                    showNotification(`Плата «${boardNameToDelete}» помечена к удалению. Изменения будут применены после сохранения.`, 'info');
                                 } else if (rowToDelete && rowToDelete.classList.contains('pending-deletion')) {
-                                    alert(`Плата "${boardNameToDelete}" уже помечена к удалению.`);
+                                    showNotification(`Плата «${boardNameToDelete}» уже помечена к удалению.`, 'warning');
                                 } else {
-                                    alert(`Плата с идентификатором "${rowBoardNameAttribute}" не найдена для удаления.`);
+                                    showNotification(`Плата с идентификатором «${rowBoardNameAttribute}» не найдена для удаления.`, 'error');
                                 }
                             } else {
-                                alert('Пожалуйста, выберите плату для удаления.');
+                                showNotification('Пожалуйста, выберите плату для удаления.', 'warning');
                             }
                             deleteBoardSelectionContainer.style.display = 'none';
                         });
@@ -697,7 +711,7 @@
         if (typeof global.showNotification === 'function') {
             global.showNotification('Скачивание данных для прибора началось', 'info');
         } else {
-            alert('Скачивание данных для прибора началось');
+            showNotification('Скачивание данных для прибора началось', 'info');
         }
         // Открываем окно для загрузки данных
         window.open(`front.php?c=device&a=export&${params.toString()}`, '_blank');

@@ -29,7 +29,12 @@
         const caseNumber   = document.getElementById('caseNumberTab8').textContent.trim();
         const deviceType   = document.getElementById('deviceTypeTab8').textContent.trim();
         if (serialNumber === '-' || caseNumber === '-' || deviceType === '-') {
-            fileDisplayArea.innerHTML = '<p class="error-message">Выберите прибор на вкладке "Идентификационные данные".</p>';
+            fileDisplayArea.innerHTML = emptyStateHTML(
+                'fa-microchip',
+                'Прибор не выбран',
+                'Вернитесь на вкладку «Идентификационные данные» и выберите прибор, чтобы увидеть его файлы.',
+                'error'
+            );
             return;
         }
 
@@ -113,10 +118,12 @@
 
         /* ---- 3. Список файлов ---- */
         if (!currentFiles.length) {
-            const p = document.createElement('p');
-            p.className = 'info-message';
-            p.textContent = 'Файлы этого типа не найдены.';
-            fileDisplayArea.appendChild(p);
+            fileDisplayArea.appendChild(buildEmptyState(
+                'fa-folder-open',
+                'Файлы этого типа не найдены',
+                'Вы можете загрузить первый файл через форму выше.',
+                'compact'
+            ));
         } else {
             const ul = document.createElement('ul');
             ul.className = 'file-list';
@@ -140,7 +147,7 @@
                     if (typeof window.showNotification === 'function') {
                         window.showNotification('Загрузка файла начата', 'info');
                     } else {
-                        alert('Загрузка файла начата');
+                        showNotification('Загрузка файла начата', 'info');
                     }
                 });
                 actionsDiv.appendChild(downloadLink);
@@ -240,14 +247,14 @@
             if (typeof window.showNotification === 'function') {
                 window.showNotification(data.message || 'Файл успешно загружен', 'success');
             } else {
-                alert(data.message || 'Файл успешно загружен');
+                showNotification(data.message || 'Файл успешно загружен', 'success');
             }
         } catch (err) {
             if (msgDiv) msgDiv.textContent = 'Ошибка: ' + err.message;
             if (typeof window.showNotification === 'function') {
                 window.showNotification('Ошибка загрузки: ' + err.message, 'error');
             } else {
-                alert('Ошибка загрузки: ' + err.message);
+                showNotification('Ошибка загрузки: ' + err.message, 'error');
             }
         } finally {
             // Сбрасываем флаг отправки в любом случае
@@ -271,13 +278,13 @@
             if (typeof window.showNotification === 'function') {
                 window.showNotification('Файл успешно удалён', 'success');
             } else {
-                alert('Файл успешно удалён');
+                showNotification('Файл успешно удалён', 'success');
             }
         } catch (err) {
             if (typeof window.showNotification === 'function') {
                 window.showNotification('Ошибка удаления: ' + err.message, 'error');
             } else {
-                alert('Ошибка удаления: ' + err.message);
+                showNotification('Ошибка удаления: ' + err.message, 'error');
             }
         }
     }
@@ -318,7 +325,7 @@
             if (typeof window.showNotification === 'function') {
                 window.showNotification('Имя файла не может быть пустым.', 'error');
             } else {
-                alert('Имя файла не может быть пустым.');
+                showNotification('Имя файла не может быть пустым.', 'warning');
             }
             return;
         }
@@ -332,13 +339,13 @@
             if (typeof window.showNotification === 'function') {
                 window.showNotification('Файл успешно переименован', 'success');
             } else {
-                alert('Файл успешно переименован');
+                showNotification('Файл успешно переименован', 'success');
             }
         } catch (err) {
             if (typeof window.showNotification === 'function') {
                 window.showNotification('Ошибка: ' + err.message, 'error');
             } else {
-                alert('Ошибка: ' + err.message);
+                showNotification('Ошибка: ' + err.message, 'error');
             }
         }
     });
