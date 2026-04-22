@@ -16,6 +16,8 @@
     --color-primary-600: #004B80;
     --color-primary:     #005A9C;
     --color-primary-500: #0A72BA;
+    --color-primary-300: #7FA9CC;
+    --color-primary-200: #B3CFE6;
     --color-primary-100: #E6F0F9;
 
     /* ---- Accent (teal) ---- */
@@ -84,6 +86,7 @@
     --radius-lg:   16px;
     --radius-xl:   24px;
     --radius-full: 9999px;
+    --radius-pill: 9999px;
     --border-radius: var(--radius-md); /* алиас */
     --border-width: 1px;
 
@@ -93,6 +96,7 @@
     --shadow-md:    0 6px 16px rgba(11, 30, 45, 0.08);
     --shadow-lg:    0 16px 40px rgba(11, 30, 45, 0.12);
     --shadow-focus: 0 0 0 3px rgba(0, 184, 196, 0.35);
+    --color-focus-ring: rgba(0, 184, 196, 0.55);
 
     /* ---- Spacing ---- */
     --space-1:  4px;
@@ -1363,6 +1367,36 @@ button:disabled {
     border-bottom: 1px solid var(--color-border);
 }
 
+/* --- Карточка деталей прибора на вкладке «Идентификационные данные» --- */
+.device-details-container {
+    margin-top: var(--space-4);
+    padding: var(--space-4);
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-xs);
+}
+
+.device-details-container > .tab-buttons {
+    margin-bottom: var(--space-4);
+}
+
+/* Фиксированная ширина колонки полей в параметрах прибора. */
+.device-params-table {
+    table-layout: fixed;
+}
+
+.device-params-table tbody > tr > td:first-child {
+    width: 38%;
+    font-weight: 600;
+    color: var(--color-text);
+    border-right: 1px solid var(--color-border);
+}
+
+.device-structure-table tbody > tr > td {
+    vertical-align: middle;
+}
+
 .table-section-header {
     font-size: 1rem;
     font-weight: 700;
@@ -2513,6 +2547,71 @@ body.modal-open {
 
 .additional-info-section .table-section-header {
     margin-top: 0;
+}
+
+/* --- Подсекции «Новые / Старые сведения» в истории изменений --- */
+.additional-info-sub-section {
+    margin-top: var(--space-3);
+}
+
+.additional-info-sub-section:first-of-type {
+    margin-top: var(--space-2);
+}
+
+.additional-info-field-label {
+    margin: 0 0 var(--space-2) 0;
+    font-size: var(--fs-xs);
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--color-text-muted);
+}
+
+.additional-info-value-box {
+    padding: var(--space-3) var(--space-4);
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-left: 3px solid var(--color-border-strong);
+    border-radius: var(--radius-sm);
+    color: var(--color-text);
+    font-size: var(--fs-small);
+    line-height: 1.55;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.additional-info-value-box.new-value-highlight {
+    background-color: var(--color-success-100);
+    border-color: var(--color-success);
+    border-left-width: 3px;
+    color: var(--color-text);
+}
+
+.additional-info-value-box.new-value-highlight::before {
+    content: '';
+}
+
+.additional-info-sub-section:has(> .additional-info-field-label) .additional-info-field-label {
+    display: block;
+}
+
+/* «Старые сведения» — приглушённый вид: серый фон, муированный текст,
+   чтобы визуально отличаться от «новых» без декоративщины. */
+.additional-info-value-box.old-value-no-highlight {
+    background-color: var(--color-surface-2);
+    border-color: var(--color-border);
+    border-left-color: var(--color-border-strong);
+    color: var(--color-text-muted);
+}
+
+/* Метка «Новые сведения» — тональный акцент,
+   чтобы ярлык и значение читались как пара. */
+.additional-info-sub-section:has(.new-value-highlight) > .additional-info-field-label {
+    color: var(--color-success);
+}
+
+.additional-info-sub-section:has(.old-value-no-highlight) > .additional-info-field-label {
+    color: var(--color-text-muted);
 }
 
 .info-message,
