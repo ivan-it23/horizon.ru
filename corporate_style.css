@@ -859,8 +859,8 @@ img {
    Главный дашборд (KPI-карточки на главной для залогиненных)
    ===================================================== */
 .dashboard {
-    margin: calc(var(--space-7) * -1) 0 var(--space-6);
-    padding-bottom: var(--space-5);
+    margin: var(--space-6) 0;
+    padding-bottom: var(--space-3);
     position: relative;
     z-index: 2;
 }
