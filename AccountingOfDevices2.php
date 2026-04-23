@@ -886,16 +886,7 @@ if ($is_logged_in) {
     </div>
 </main>
 
-<!-- Модальное окно для уведомлений -->
-<div id="notificationModal" class="modal">
-    <div class="modal-content">
-        <span class="close-button">&times;</span>
-        <div class="modal-icon"><i class="fas fa-check-circle"></i></div>
-        <p id="notificationMessage"></p>
-        <button class="modal-ok-button">OK</button>
-    </div>
-</div>
-
+<script src="assests/js/notifications.js"></script>
 <script src="assests/js/utils.js"></script>
 <script src="assests/js/deviceStorage.js"></script>
 <script src="assests/js/tabManager.js"></script>
@@ -965,76 +956,9 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 
-<!-- Скрипт для управления модальным окном уведомлений -->
-<script>
-// Функции управления модальным окном
-const notificationModal = document.getElementById('notificationModal');
-const notificationCloseButton = notificationModal.querySelector('.close-button');
-const notificationOkButton = notificationModal.querySelector('.modal-ok-button');
-const notificationMessage = document.getElementById('notificationMessage');
-const notificationIconDiv = notificationModal.querySelector('.modal-icon');
-
-// Соответствие типа уведомления: FA-иконка + CSS-модификатор (цветовой пресет)
-const NOTIFICATION_VARIANTS = {
-    success: { icon: 'fas fa-check-circle',        modifier: 'modal-icon--success' },
-    error:   { icon: 'fas fa-exclamation-circle',  modifier: 'modal-icon--error'   },
-    warning: { icon: 'fas fa-exclamation-triangle',modifier: 'modal-icon--warning' },
-    info:    { icon: 'fas fa-info-circle',         modifier: 'modal-icon--info'    }
-};
-
-// Глобальная функция для отображения модального окна с уведомлением
-window.showNotification = function(message, type = 'success') {
-    notificationMessage.textContent = message;
-
-    const variant = NOTIFICATION_VARIANTS[type] || NOTIFICATION_VARIANTS.info;
-
-    // Сбрасываем предыдущие семантические модификаторы, оставляя базовый класс .modal-icon
-    notificationIconDiv.className = 'modal-icon';
-    notificationIconDiv.classList.add(variant.modifier);
-    notificationIconDiv.style.color = ''; // защита от старых inline-цветов
-
-    // Обновляем иконку
-    notificationIconDiv.innerHTML = '';
-    const iconElement = document.createElement('i');
-    iconElement.className = variant.icon;
-    iconElement.setAttribute('aria-hidden', 'true');
-    notificationIconDiv.appendChild(iconElement);
-
-    // Показываем модальное окно с классом is-visible
-    notificationModal.classList.add('is-visible');
-    document.body.classList.add('modal-open');
-};
-
-// Функция скрытия модального окна
-function hideNotification() {
-    notificationModal.classList.remove('is-visible');
-    document.body.classList.remove('modal-open');
-}
-
-// Обработчики событий для закрытия модального окна
-notificationCloseButton.addEventListener('click', hideNotification);
-notificationOkButton.addEventListener('click', hideNotification);
-
-// Закрытие модального окна по клику вне его контента
-window.addEventListener('click', (event) => {
-    if (event.target === notificationModal) {
-        hideNotification();
-    }
-});
-
-// Замена стандартного alert на показ модального окна
-// Это упрощенный вариант, который перехватывает только прямые вызовы alert()
-const originalAlert = window.alert;
-window.alert = function(message) {
-    // Если сообщение об успешном создании прибора, показываем модальное окно
-    if (message === 'Прибор успешно создан!') {
-        showNotification(message, 'success');
-    } else {
-        // Для остальных случаев используем стандартный alert
-        originalAlert(message);
-    }
-};
-</script>
+<!-- Нотификации — реализованы как toast через assests/js/notifications.js
+     (подключается выше). Функция window.showNotification(msg, type) доступна
+     из всех скриптов после загрузки этого файла. -->
 
 <?php echo generateSecurityScript('index.php', 300000); ?>
 </body>

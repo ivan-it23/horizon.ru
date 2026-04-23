@@ -94,6 +94,7 @@ try {
     <title>Личный кабинет</title>
     <link rel="stylesheet" href="assests/css/tokens.css?v=20260421">
     <script src="assests/js/themeManager.js?v=20260421"></script>
+    <script src="assests/js/notifications.js?v=20260421" defer></script>
     <link rel="stylesheet" href="StyleAccountingOfDevices.css?v=20260421">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
