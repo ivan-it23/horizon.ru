@@ -234,10 +234,23 @@
                 paramsButton.classList.remove('active');
 
                 if (compositionSection.dataset.empty === 'true') {
+                    // Защита от гонки: если по какой-то причине id прибора
+                    // не успел прокинуться в закрытие — не дёргаем API.
+                    const resolvedDeviceId = deviceId || selectedDeviceId || (device && device.id);
+                    const numericDeviceId  = parseInt(resolvedDeviceId, 10);
+                    if (!numericDeviceId || numericDeviceId < 1) {
+                        compositionSection.innerHTML = emptyStateHTML(
+                            'fa-microchip',
+                            'Сначала выберите прибор',
+                            'Чтобы увидеть состав прибора, выберите его в списке найденных приборов.'
+                        );
+                        return;
+                    }
+
                     fetch('front.php?c=device&a=composition', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                        body: 'device_id=' + encodeURIComponent(deviceId)
+                        body: 'device_id=' + encodeURIComponent(numericDeviceId)
                     })
                     .then(response => {
                         if (!response.ok) {
@@ -261,6 +274,18 @@
                         compositionSection.innerHTML = ''; // Очищаем перед заполнением
                         delete compositionSection.dataset.empty;
 
+                        // При ошибке от сервера не рендерим пустую таблицу и кнопки —
+                        // показываем только сообщение.
+                        if (data && data.error) {
+                            compositionSection.innerHTML = emptyStateHTML(
+                                'fa-triangle-exclamation',
+                                'Не удалось загрузить состав прибора',
+                                data.error,
+                                'error'
+                            );
+                            return;
+                        }
+
                         let table = document.createElement('table');
                         table.className = 'data-table device-structure-table';
                         table.style.tableLayout = 'fixed';
@@ -271,9 +296,7 @@
                         let tbodyComp = document.createElement('tbody');
                         tbodyComp.id = `composition_tbody_${deviceId}`; // Уникальный ID для tbody
 
-                        if (data.error) {
-                            compositionSection.innerHTML = `<p class="error-message">Ошибка: ${data.error}</p>`;
-                        } else if (data.length > 0) {
+                        if (data.length > 0) {
                             data.forEach(record => {
                                 let row = document.createElement('tr');
                                 row.dataset.boardName = record.board_name || `unknown_board_${Date.now()}`; // Уникальный идентификатор, если имя пустое
@@ -533,10 +556,14 @@
             ]));
 
             if (authorLastChangeInput) {
+                const numericDeviceIdForAuthor = parseInt(deviceId || selectedDeviceId || (device && device.id), 10);
+                if (!numericDeviceIdForAuthor || numericDeviceIdForAuthor < 1) {
+                    authorLastChangeInput.value = 'Нет данных';
+                } else {
                  fetch('front.php?c=deviceHistory&a=history', {
                      method: 'POST',
                      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                     body: `device_id=${deviceId}&history_type=parameters`
+                     body: `device_id=${numericDeviceIdForAuthor}&history_type=parameters`
                  })
                  .then(response => {
                      if (!response.ok) {
@@ -563,6 +590,7 @@
                      console.error('Ошибка при загрузке истории для получения автора изменения:', error);
                      if (authorLastChangeInput) authorLastChangeInput.value = 'Ошибка загрузки';
                  });
+                }
             }
 
             // --- Дополнительная информация (additional_info) ---

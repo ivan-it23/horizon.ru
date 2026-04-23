@@ -483,8 +483,16 @@ class DeviceHistoryController extends BaseController
 
             // Здесь уже $final_history_output сформирован в цикле foreach,
             // он содержит текущую версию + отфильтрованные исторические.
-            // Просто сортируем его по changed_at в убывающем порядке, чтобы текущая была первой.
+            // Сортируем так, чтобы актуальная версия (is_current_version=true)
+            // всегда была первой, а остальные — по убыванию даты.
+            // Без приоритета is_current_version «будущие» по changed_at
+            // исторические записи могли оказаться перед актуальной.
             usort($final_history_output, function($a, $b) {
+                $aCurrent = !empty($a['is_current_version']);
+                $bCurrent = !empty($b['is_current_version']);
+                if ($aCurrent !== $bCurrent) {
+                    return $aCurrent ? -1 : 1;
+                }
                 $timeA = strtotime($a['changed_at']);
                 $timeB = strtotime($b['changed_at']);
                 return $timeB - $timeA; // Сортировка по убыванию даты
