@@ -221,7 +221,7 @@ class DeviceController extends BaseController
 
         $deviceId = $this->validateInt($_POST['device_id'] ?? 0, 1);
         if (!$deviceId) {
-            $this->jsonResponse(['error' => 'Не указан идентификатор прибора']);
+            $this->jsonResponse(['error' => 'Не указан идентификатор прибора'], 400);
         }
 
         try {

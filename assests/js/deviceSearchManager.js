@@ -292,7 +292,7 @@
             
             // Отображаем данные прибора
             const selectedDeviceData = {
-                id: device.id,
+                deviceId: device.id,
                 serialNumber: device.serial_number,
                 caseNumber: device.case_number,
                 deviceType: device.device_type
