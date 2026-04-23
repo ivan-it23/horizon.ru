@@ -578,7 +578,7 @@ if ($is_logged_in) {
                 <div id="testingHistory"></div>
             </div>
 
-            <div id="toleranceModal" class="modal">
+            <div id="toleranceModal" class="modal modal--lg">
                 <input type="hidden" id="currentDeviceType" value=""> <div class="modal-dialog"> <div class="modal-content">
                         <div class="modal-header">
                             <h5 class="modal-title">Допусковые значения для <span id="deviceTypeInModal">-</span></h5>
@@ -850,7 +850,7 @@ if ($is_logged_in) {
                     <p class="info-message">Выберите тип файла для просмотра и управления.</p>
                 </div>
 
-                <div id="renameFileModal" class="modal">
+                <div id="renameFileModal" class="modal modal--sm">
                     <div class="modal-dialog">
                         <div class="modal-content">
                             <div class="modal-header">
@@ -887,6 +887,7 @@ if ($is_logged_in) {
 </main>
 
 <script src="assests/js/notifications.js"></script>
+<script src="assests/js/modalManager.js"></script>
 <script src="assests/js/utils.js"></script>
 <script src="assests/js/deviceStorage.js"></script>
 <script src="assests/js/tabManager.js"></script>
