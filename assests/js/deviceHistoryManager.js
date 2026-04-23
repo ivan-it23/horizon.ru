@@ -243,48 +243,51 @@
                         let hasChangesToShowForThisRecord = false; // Флаг, что в этой записи есть что показать (для режима "только изменения")
 
                         // Итерация по ключам из fieldDisplayNames для сохранения порядка и фильтрации
+                        // Важно: исторические записи в device_history хранят значения ДО изменения,
+                        // а diff_details[fieldKey] (пришедший с бэкенда) — значение, на которое это
+                        // поле было изменено (более новое, из следующей по времени записи).
+                        // Поэтому для изменённого поля основным (новым) значением считаем diff_details,
+                        // а «старым» в скобках — значение, лежащее в самой исторической записи.
                         Object.keys(fieldDisplayNames).forEach(fieldKey => {
-                            const currentValueInRecord = currentRecord[fieldKey];
-                            const oldValue = currentRecord.diff_details ? currentRecord.diff_details[fieldKey] : undefined;
+                            const oldValueInRecord = currentRecord[fieldKey]; // значение ДО изменения
+                            const newValueFromDiff = currentRecord.diff_details ? currentRecord.diff_details[fieldKey] : undefined; // значение ПОСЛЕ изменения
+                            const isFieldChanged   = newValueFromDiff !== undefined;
 
                             // Пропускаем поля, если они NULL/undefined/пустая строка и не являются изменёнными
                             if (
-                                (currentValueInRecord === null || currentValueInRecord === undefined || String(currentValueInRecord).trim() === '') &&
-                                oldValue === undefined
+                                (oldValueInRecord === null || oldValueInRecord === undefined || String(oldValueInRecord).trim() === '') &&
+                                !isFieldChanged
                             ) {
                                 return; // Пропускаем строку
                             }
 
                             // Если режим "только изменения" и поле не изменилось, пропускаем
-                            if (viewMode === 'changes' && oldValue === undefined && !isActualRecord) {
+                            if (viewMode === 'changes' && !isFieldChanged && !isActualRecord) {
                                 return;
                             }
 
-                            let displayValue = currentValueInRecord !== null && currentValueInRecord !== undefined ? htmlspecialchars(currentValueInRecord) : '-';
                             let rowClass = '';
                             let oldValueHtml = '';
+                            let displayValue;
 
-                            if (oldValue !== undefined) {
-                                rowClass = 'changed'; // Форматируем старое значение: если оно было NULL/undefined/пустая строка, показываем "пусто"
-                                const formattedOldValue = oldValue === null || oldValue === undefined || String(oldValue).trim() === '' ? 'пусто' : htmlspecialchars(oldValue);
+                            if (isFieldChanged) {
+                                rowClass = 'changed';
+                                // Основное отображение — новое значение (после изменения)
+                                displayValue = newValueFromDiff === null || newValueFromDiff === undefined || String(newValueFromDiff).trim() === ''
+                                    ? 'пусто'
+                                    : htmlspecialchars(newValueFromDiff);
+                                // В скобках (перечёркнутое) — старое значение (до изменения),
+                                // хранящееся в самой исторической записи.
+                                const formattedOldValue = oldValueInRecord === null || oldValueInRecord === undefined || String(oldValueInRecord).trim() === ''
+                                    ? 'пусто'
+                                    : htmlspecialchars(oldValueInRecord);
                                 oldValueHtml = `<span class="history-old-value"> (${formattedOldValue})</span>`;
                                 hasChangesToShowForThisRecord = true;
-                            } else if (
-                                isActualRecord &&
-                                currentValueInRecord !== null &&
-                                currentValueInRecord !== undefined &&
-                                String(currentValueInRecord).trim() !== ''
-                            ) {
-                                // Для актуальной записи, если значение не NULL, оно всегда отображается
-                            } else if (
-                                currentValueInRecord === null ||
-                                currentValueInRecord === undefined ||
-                                String(currentValueInRecord).trim() === ''
-                            ) {
-                                // Если значение NULL и не было изменено (oldValue === undefined),
-                                // и мы дошли до этого места, значит, или мы не в режиме "changes", или это актуальная запись.
-                                // В этом случае, если значение NULL, отображаем "-"
-                                displayValue = '-';
+                            } else {
+                                // Поле не менялось на этом шаге — просто отображаем значение записи (контекст).
+                                displayValue = oldValueInRecord !== null && oldValueInRecord !== undefined && String(oldValueInRecord).trim() !== ''
+                                    ? htmlspecialchars(oldValueInRecord)
+                                    : '-';
                             }
 
                             const row = document.createElement('tr');
@@ -470,18 +473,26 @@
                                     boardNameCell.textContent = htmlspecialchars(change.board_name || '-');
                                     row.appendChild(boardNameCell);
 
-                                    // Для остальных полей отображаем старое -> новое
+                                    // Для остальных полей отображаем НОВОЕ (после изменения) -> СТАРОЕ (до изменения).
+                                    // Семантика полей от бэкенда:
+                                    //   change.current_values[field]  — значение в этой (исторической) версии, т.е. СТАРОЕ;
+                                    //   change.previous_values[field] — значение в следующей, более новой версии, т.е. НОВОЕ.
                                     ['type', 'version', 'serial_number'].forEach(field => {
                                         const cell = document.createElement('td');
-                                        let displayValue = htmlspecialchars(change.current_values[field] || '-');
-                                        const previousValue = change.previous_values[field];
+                                        const oldValue = change.current_values[field];                  // до изменения
+                                        const newValue = change.previous_values ? change.previous_values[field] : undefined; // после изменения
 
-                                        if (previousValue !== undefined) {
-                                            const formattedOldValue = previousValue === null || previousValue === undefined || String(previousValue).trim() === '' ? 'пусто' : htmlspecialchars(previousValue);
+                                        if (newValue !== undefined) {
+                                            const formattedNewValue = newValue === null || newValue === undefined || String(newValue).trim() === ''
+                                                ? 'пусто'
+                                                : htmlspecialchars(newValue);
+                                            const formattedOldValue = oldValue === null || oldValue === undefined || String(oldValue).trim() === ''
+                                                ? 'пусто'
+                                                : htmlspecialchars(oldValue);
                                             cell.className = 'changed';
-                                            cell.innerHTML = `${displayValue}<span class="history-old-value"> (${formattedOldValue})</span>`;
+                                            cell.innerHTML = `${formattedNewValue}<span class="history-old-value"> (${formattedOldValue})</span>`;
                                         } else {
-                                            cell.textContent = displayValue;
+                                            cell.textContent = htmlspecialchars(oldValue || '-');
                                         }
                                         row.appendChild(cell);
                                     });
@@ -511,14 +522,16 @@
                             header.textContent = 'Дополнительная информация';
                             infoSection.appendChild(header);
 
-                            // Если infoChangedVersion, то рисуем две секции ("Новые сведения" + "Старые сведения")
+                            // Если infoChangedVersion, то рисуем две секции ("Новые сведения" + "Старые сведения").
+                            // versionAdditionalInfo       — значение в этой (исторической) версии, т.е. СТАРОЕ;
+                            // oldVersionAdditionalInfo    — значение в следующей, более новой версии, т.е. НОВОЕ.
                             if (infoChangedVersion) {
                                 const newInfoContainer = document.createElement('div');
                                 newInfoContainer.className = 'additional-info-sub-section';
                                 newInfoContainer.innerHTML = `
                                     <p class="additional-info-field-label">Новые сведения</p>
                                     <div class="additional-info-value-box new-value-highlight">
-                                        ${versionAdditionalInfo !== null && versionAdditionalInfo !== undefined && String(versionAdditionalInfo).trim() !== '' ? htmlspecialchars(versionAdditionalInfo).replace(/\r?\n/g, '<br>') : '-'}
+                                        ${oldVersionAdditionalInfo !== null && oldVersionAdditionalInfo !== undefined && String(oldVersionAdditionalInfo).trim() !== '' ? htmlspecialchars(oldVersionAdditionalInfo).replace(/\r?\n/g, '<br>') : '-'}
                                     </div>
                                 `;
                                 infoSection.appendChild(newInfoContainer);
@@ -528,7 +541,7 @@
                                 oldInfoContainer.innerHTML = `
                                     <p class="additional-info-field-label">Старые сведения</p>
                                     <div class="additional-info-value-box old-value-no-highlight">
-                                        ${oldVersionAdditionalInfo !== null && oldVersionAdditionalInfo !== undefined && String(oldVersionAdditionalInfo).trim() !== '' ? htmlspecialchars(oldVersionAdditionalInfo).replace(/\r?\n/g, '<br>') : 'пусто'}
+                                        ${versionAdditionalInfo !== null && versionAdditionalInfo !== undefined && String(versionAdditionalInfo).trim() !== '' ? htmlspecialchars(versionAdditionalInfo).replace(/\r?\n/g, '<br>') : 'пусто'}
                                     </div>
                                 `;
                                 infoSection.appendChild(oldInfoContainer);
