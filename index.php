@@ -6,6 +6,14 @@ $unread_count = 0; // Значение по умолчанию
 $is_logged_in = isset($_SESSION['user']['id']);
 $user_info = null;
 
+// KPI для дашборда (показываются только залогиненным)
+$dashboard = [
+    'devices_in_repair' => 0,
+    'unread_messages'   => 0,
+    'changes_7d'        => 0,
+    'total_devices'     => 0,
+];
+
 if ($is_logged_in) {
     $currentUserId = (int)$_SESSION['user']['id'];
     $user_info = $_SESSION['user']; // Сохраняем информацию о пользователе
@@ -28,7 +36,34 @@ if ($is_logged_in) {
         } else {
             error_log("index.php: Ошибка подготовки запроса для подсчета непрочитанных в хедере: " . $conn->error);
         }
-        // Не закрывайте $conn здесь, если он используется дальше на странице или в других включенных файлах
+
+        $dashboard['unread_messages'] = $unread_count;
+
+        // 1. Приборы, находящиеся сейчас в ремонте (release_date пустой)
+        if ($res = $conn->query("SELECT COUNT(*) AS c FROM repair_data WHERE release_date IS NULL OR release_date = '' OR release_date = '0000-00-00'")) {
+            $row = $res->fetch_assoc();
+            $dashboard['devices_in_repair'] = (int)($row['c'] ?? 0);
+            $res->free();
+        }
+
+        // 2. Изменения в БД за последние 7 дней (параметры + состав)
+        $changesSql = "SELECT (
+            (SELECT COUNT(*) FROM device_history WHERE changed_at >= (NOW() - INTERVAL 7 DAY))
+            +
+            (SELECT COUNT(*) FROM device_composition_history WHERE changed_at >= (NOW() - INTERVAL 7 DAY))
+        ) AS c";
+        if ($res = $conn->query($changesSql)) {
+            $row = $res->fetch_assoc();
+            $dashboard['changes_7d'] = (int)($row['c'] ?? 0);
+            $res->free();
+        }
+
+        // 3. Всего приборов в системе
+        if ($res = $conn->query("SELECT COUNT(*) AS c FROM device_identification")) {
+            $row = $res->fetch_assoc();
+            $dashboard['total_devices'] = (int)($row['c'] ?? 0);
+            $res->free();
+        }
     } else {
          error_log("index.php: Соединение с БД ($conn) недоступно или не является объектом mysqli для подсчета непрочитанных.");
          // Можно установить $conn в null или попытаться переподключиться, если это необходимо
@@ -124,6 +159,59 @@ if ($is_logged_in) {
             <p class="subtitle">Единая платформа для централизованного управления данными геофизических приборов компании.</p>
         </div>
     </section>
+
+    <?php if ($is_logged_in): ?>
+    <div class="main-container">
+        <section class="dashboard" aria-label="Сводка">
+            <header class="dashboard__header">
+                <h2 class="dashboard__title">Сводка по системе</h2>
+                <p class="dashboard__subtitle">Ключевые показатели на текущий момент</p>
+            </header>
+            <div class="dashboard__grid">
+                <a class="kpi-card kpi-card--link" href="AccountingOfDevices2.php#tab3">
+                    <div class="kpi-card__icon kpi-card__icon--warning" aria-hidden="true">
+                        <i class="fas fa-wrench"></i>
+                    </div>
+                    <div class="kpi-card__body">
+                        <div class="kpi-card__value"><?= (int)$dashboard['devices_in_repair'] ?></div>
+                        <div class="kpi-card__label">Приборы в ремонте</div>
+                        <div class="kpi-card__hint">Сейчас без даты выпуска</div>
+                    </div>
+                </a>
+                <a class="kpi-card kpi-card--link" href="AccountingOfDevices2.php">
+                    <div class="kpi-card__icon kpi-card__icon--info" aria-hidden="true">
+                        <i class="fas fa-envelope"></i>
+                    </div>
+                    <div class="kpi-card__body">
+                        <div class="kpi-card__value"><?= (int)$dashboard['unread_messages'] ?></div>
+                        <div class="kpi-card__label">Непрочитанные сообщения</div>
+                        <div class="kpi-card__hint">Во всех вкладках мессенджера</div>
+                    </div>
+                </a>
+                <div class="kpi-card">
+                    <div class="kpi-card__icon kpi-card__icon--accent" aria-hidden="true">
+                        <i class="fas fa-pen-to-square"></i>
+                    </div>
+                    <div class="kpi-card__body">
+                        <div class="kpi-card__value"><?= (int)$dashboard['changes_7d'] ?></div>
+                        <div class="kpi-card__label">Изменений за 7 дней</div>
+                        <div class="kpi-card__hint">В параметрах и составе приборов</div>
+                    </div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-card__icon kpi-card__icon--primary" aria-hidden="true">
+                        <i class="fas fa-microchip"></i>
+                    </div>
+                    <div class="kpi-card__body">
+                        <div class="kpi-card__value"><?= (int)$dashboard['total_devices'] ?></div>
+                        <div class="kpi-card__label">Всего приборов в БД</div>
+                        <div class="kpi-card__hint">Учтено на данный момент</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+    <?php endif; ?>
 
     <div class="main-container">
         <section class="device-type-selection">
