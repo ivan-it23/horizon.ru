@@ -39,31 +39,46 @@ if ($is_logged_in) {
 
         $dashboard['unread_messages'] = $unread_count;
 
-        // 1. Приборы, находящиеся сейчас в ремонте (release_date пустой)
-        if ($res = $conn->query("SELECT COUNT(*) AS c FROM repair_data WHERE release_date IS NULL OR release_date = '' OR release_date = '0000-00-00'")) {
-            $row = $res->fetch_assoc();
-            $dashboard['devices_in_repair'] = (int)($row['c'] ?? 0);
-            $res->free();
-        }
+        // Каждый KPI в try/catch: строгий MySQL-режим (STRICT_TRANS_TABLES)
+        // бросает mysqli_sql_exception, и без изоляции один сломанный запрос
+        // роняет всю страницу 500-й.
+        $runKpi = static function (mysqli $conn, string $sql): int {
+            try {
+                $res = $conn->query($sql);
+                if (!$res) {
+                    return 0;
+                }
+                $row = $res->fetch_assoc();
+                $res->free();
+                return (int)($row['c'] ?? 0);
+            } catch (\Throwable $e) {
+                error_log('index.php dashboard KPI failed: ' . $e->getMessage() . ' | SQL: ' . $sql);
+                return 0;
+            }
+        };
 
-        // 2. Изменения в БД за последние 7 дней (параметры + состав)
-        $changesSql = "SELECT (
-            (SELECT COUNT(*) FROM device_history WHERE changed_at >= (NOW() - INTERVAL 7 DAY))
-            +
-            (SELECT COUNT(*) FROM device_composition_history WHERE changed_at >= (NOW() - INTERVAL 7 DAY))
-        ) AS c";
-        if ($res = $conn->query($changesSql)) {
-            $row = $res->fetch_assoc();
-            $dashboard['changes_7d'] = (int)($row['c'] ?? 0);
-            $res->free();
-        }
+        // 1. Приборы, находящиеся сейчас в ремонте (release_date не заполнен).
+        // Сравниваем DATE только с NULL — сравнение с '' в строгом режиме бросает исключение.
+        $dashboard['devices_in_repair'] = $runKpi(
+            $conn,
+            "SELECT COUNT(*) AS c FROM repair_data WHERE release_date IS NULL"
+        );
 
-        // 3. Всего приборов в системе
-        if ($res = $conn->query("SELECT COUNT(*) AS c FROM device_identification")) {
-            $row = $res->fetch_assoc();
-            $dashboard['total_devices'] = (int)($row['c'] ?? 0);
-            $res->free();
-        }
+        // 2. Изменения в БД за последние 7 дней (параметры + состав).
+        $dashboard['changes_7d'] = $runKpi(
+            $conn,
+            "SELECT (
+                (SELECT COUNT(*) FROM device_history WHERE changed_at >= (NOW() - INTERVAL 7 DAY))
+                +
+                (SELECT COUNT(*) FROM device_composition_history WHERE changed_at >= (NOW() - INTERVAL 7 DAY))
+            ) AS c"
+        );
+
+        // 3. Всего приборов в системе.
+        $dashboard['total_devices'] = $runKpi(
+            $conn,
+            "SELECT COUNT(*) AS c FROM device_identification"
+        );
     } else {
          error_log("index.php: Соединение с БД ($conn) недоступно или не является объектом mysqli для подсчета непрочитанных.");
          // Можно установить $conn в null или попытаться переподключиться, если это необходимо

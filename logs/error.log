@@ -1,0 +1,2 @@
+[2026-04-23 10:06:56] Error: Database connection error: Access denied for user 'root'@'localhost' in /home/ubuntu/repos/horizon.ru/db_connection.php on line 22
+[2026-04-23 10:07:14] Error: Database connection error: Access denied for user 'root'@'localhost' in /home/ubuntu/repos/horizon.ru/db_connection.php on line 22
