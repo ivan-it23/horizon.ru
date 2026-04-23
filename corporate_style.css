@@ -525,6 +525,16 @@ img {
     border-color: rgba(0, 184, 196, 0.35);
 }
 
+:root[data-theme="dark"] .device-type-button.active {
+    background: linear-gradient(180deg, var(--color-surface) 0%, var(--color-surface-2) 100%);
+    border-color: rgba(27, 200, 212, 0.45);
+    box-shadow: 0 0 0 1px rgba(27, 200, 212, 0.12) inset, var(--shadow-sm);
+}
+
+:root[data-theme="dark"] .device-type-button.active > span:not(.status-badge) {
+    color: var(--color-text);
+}
+
 .device-type-button.active::after {
     content: "Доступно";
     position: absolute;

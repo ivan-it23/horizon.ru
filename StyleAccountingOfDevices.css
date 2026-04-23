@@ -2408,6 +2408,16 @@ body.modal-open {
     background: var(--color-primary-200);
 }
 
+:root[data-theme="dark"] .file-input::-webkit-file-upload-button {
+    background: linear-gradient(180deg, var(--color-primary-600) 0%, var(--color-primary-700) 100%);
+    border-color: var(--color-border-strong);
+    color: var(--color-text-invert);
+}
+
+:root[data-theme="dark"] .file-input::-webkit-file-upload-button:hover {
+    background: linear-gradient(180deg, var(--color-primary) 0%, var(--color-primary-600) 100%);
+}
+
 .upload-message {
     font-size: var(--fs-small);
     color: var(--color-text-muted);
