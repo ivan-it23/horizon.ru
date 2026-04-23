@@ -46,6 +46,7 @@ if ($is_logged_in) {
     <link rel="icon" href="images/favicon1.png" type="image/png">
     <link rel="stylesheet" href="assests/css/tokens.css">
     <script src="assests/js/themeManager.js"></script>
+    <script src="assests/js/modalManager.js" defer></script>
     <link rel="stylesheet" href="corporate_style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -164,7 +165,7 @@ if ($is_logged_in) {
 </footer>
 
 <!-- Модальное окно -->
-<div id="infoModal" class="modal">
+<div id="infoModal" class="modal modal--sm">
     <div class="modal-content">
         <span class="close-button">&times;</span>
         <div class="modal-icon"><i class="fas fa-info-circle"></i></div>

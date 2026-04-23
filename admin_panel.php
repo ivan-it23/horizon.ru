@@ -268,6 +268,7 @@ if ($is_logged_in && isset($user_info['id'])) {
     <title>Админ-панель</title>
     <link rel="stylesheet" href="assests/css/tokens.css">
     <script src="assests/js/themeManager.js"></script>
+    <script src="assests/js/modalManager.js" defer></script>
     <link rel="stylesheet" href="StyleAccountingOfDevices.css">
     <link rel="icon" href="images/favicon1.png" type="image/png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
@@ -490,7 +491,7 @@ if ($is_logged_in && isset($user_info['id'])) {
              <div id="sql-query-section" class="admin-section" style="display: none;">
                  <h2>Выполнение SQL-запроса</h2>
                  <button id="myBtn" class="button button-secondary mb-3">Выполнить SQL Запрос</button>
-                 <div id="myModal" class="modal">
+                 <div id="myModal" class="modal modal--lg">
                      <div class="modal-dialog">
                          <div class="modal-content">
                              <div class="modal-header">

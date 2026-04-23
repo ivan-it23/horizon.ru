@@ -1587,9 +1587,15 @@ body.modal-open {
 
 .modal-dialog {
     width: 100%;
-    max-width: 720px;
+    max-width: 640px; /* default ≈ .modal--md */
     margin: auto;
 }
+
+/* Размерные модификаторы: ставятся на корневом .modal */
+.modal.modal--sm .modal-dialog { max-width: 420px; }
+.modal.modal--md .modal-dialog { max-width: 640px; }
+.modal.modal--lg .modal-dialog { max-width: 960px; }
+.modal.modal--xl .modal-dialog { max-width: 1200px; }
 
 .modal-content {
     background-color: var(--color-surface);
@@ -1753,9 +1759,7 @@ body.modal-open {
 }
 
 /* ---- Модалка допусков (tolerance) ---- */
-#toleranceModal .modal-dialog {
-    max-width: 960px;
-}
+/* размер задан модификатором .modal--lg на корневом элементе */
 
 #toleranceTablesContainer {
     display: flex;
@@ -1786,9 +1790,7 @@ body.modal-open {
 }
 
 /* ---- Модалка переименования файла ---- */
-#renameFileModal .modal-dialog {
-    max-width: 520px;
-}
+/* размер задан модификатором .modal--sm на корневом элементе */
 
 #renameFileForm .form-group {
     margin-bottom: 0;
