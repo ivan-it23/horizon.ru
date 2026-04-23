@@ -179,7 +179,11 @@ if ($is_logged_in) {
     <div class="main-container">
         <section class="dashboard" aria-label="Сводка">
             <header class="dashboard__header">
-                <h2 class="dashboard__title">Сводка по системе</h2>
+                <span class="dashboard__eyebrow">Панель управления</span>
+                <h2 class="dashboard__title">
+                    <i class="fas fa-chart-column dashboard__title-icon" aria-hidden="true"></i>
+                    Сводка по системе
+                </h2>
                 <p class="dashboard__subtitle">Ключевые показатели на текущий момент</p>
             </header>
             <div class="dashboard__grid">
