@@ -12,7 +12,7 @@ class ResponseFormatter
      */
     public function formatDeviceInfo($device, $composition, $repairs): array
     {
-        $message = "📋 **ИНФОРМАЦИЯ О ПРИБОРЕ**\n\n";
+        $message = "**ИНФОРМАЦИЯ О ПРИБОРЕ**\n\n";
 
         $message .= "**ПАРАМЕТРЫ ПРИБОРА:**\n";
         $message .= "• Тип прибора: {$device['device_type']}\n";
@@ -83,7 +83,7 @@ class ResponseFormatter
         if (!empty($repairs)) {
             $message .= "\n**ИСТОРИЯ РЕМОНТОВ:**\n";
             foreach ($repairs as $repair) {
-                $message .= "🔧 **Ремонт от {$repair['admission_date']}**\n";
+                $message .= "**Ремонт от {$repair['admission_date']}**\n";
                 if (!empty($repair['repair_reason'])) {
                     $message .= "   Причина ремонта: {$repair['repair_reason']}\n";
                 }
@@ -112,7 +112,7 @@ class ResponseFormatter
      */
     public function formatFullDeviceInfo($data): array
     {
-        $message = "📋 **ПОЛНАЯ ИНФОРМАЦИЯ О ПРИБОРЕ**\n\n";
+        $message = "**ПОЛНАЯ ИНФОРМАЦИЯ О ПРИБОРЕ**\n\n";
 
         $device = $data['device'];
         $composition = $data['composition'];
@@ -193,7 +193,7 @@ class ResponseFormatter
         if (!empty($repairs)) {
             $message .= "\n**ИСТОРИЯ РЕМОНТОВ:**\n";
             foreach ($repairs as $repair) {
-                $message .= "🔧 **Ремонт от {$repair['admission_date']}**\n";
+                $message .= "**Ремонт от {$repair['admission_date']}**\n";
                 if (!empty($repair['repair_reason'])) {
                     $message .= "   Причина ремонта: {$repair['repair_reason']}\n";
                 }
@@ -218,7 +218,7 @@ class ResponseFormatter
         if (!empty($production_discontinuation)) {
             $message .= "\n**СВЕДЕНИЯ О ВЫХОДЕ ИЗ ПРОИЗВОДСТВА:**\n";
             foreach ($production_discontinuation as $pd) {
-                $message .= "🏭 **Дата выхода из производства:** {$pd['discontinuation_date']}\n";
+                $message .= "**Дата выхода из производства:** {$pd['discontinuation_date']}\n";
                 if (!empty($pd['creator_surname'])) {
                     $message .= "   Создатель записи: {$pd['creator_surname']}\n";
                 }
@@ -231,7 +231,7 @@ class ResponseFormatter
         if (!empty($testing_data)) {
             $message .= "\n**СВЕДЕНИЯ ОБ ИСПЫТАНИЯХ:**\n";
             foreach ($testing_data as $td) {
-                $message .= "🧪 **Дата испытания:** {$td['test_date']}\n";
+                $message .= "**Дата испытания:** {$td['test_date']}\n";
                 if (!empty($td['test_result'])) {
                     $message .= "   Результат испытания: {$td['test_result']}\n";
                 }
@@ -247,7 +247,7 @@ class ResponseFormatter
         if (!empty($inspection_data)) {
             $message .= "\n**СВЕДЕНИЯ О НЕРАЗРУШАЮЩЕМ КОНТРОЛЕ КОРПУСА:**\n";
             foreach ($inspection_data as $id) {
-                $message .= "🔍 **Дата контроля:** {$id['inspection_date']}\n";
+                $message .= "**Дата контроля:** {$id['inspection_date']}\n";
                 if (!empty($id['inspection_result'])) {
                     $message .= "   Результат контроля: {$id['inspection_result']}\n";
                 }
@@ -263,7 +263,7 @@ class ResponseFormatter
         if (!empty($termination_data)) {
             $message .= "\n**СВЕДЕНИЯ О ПРЕКРАЩЕНИИ ЭКСПЛУАТАЦИИ:**\n";
             foreach ($termination_data as $td) {
-                $message .= "🛑 **Дата прекращения эксплуатации:** {$td['termination_date']}\n";
+                $message .= "**Дата прекращения эксплуатации:** {$td['termination_date']}\n";
                 if (!empty($td['termination_reason'])) {
                     $message .= "   Причина прекращения: {$td['termination_reason']}\n";
                 }
@@ -279,7 +279,7 @@ class ResponseFormatter
         if (!empty($additional_data)) {
             $message .= "\n**ДОПОЛНИТЕЛЬНЫЕ СВЕДЕНИЯ:**\n";
             foreach ($additional_data as $ad) {
-                $message .= "📝 **Дата записи:** {$ad['additional_date']}\n";
+                $message .= "**Дата записи:** {$ad['additional_date']}\n";
                 if (!empty($ad['additional_content'])) {
                     $message .= "   Содержание: {$ad['additional_content']}\n";
                 }

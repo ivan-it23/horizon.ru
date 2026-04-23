@@ -9,7 +9,7 @@ return [
     'count_repairs'          => "Общее количество ремонтов: {count}.\n\nОтвет сформирован {timestamp}, пользователь: {user_name}. Подробнее: {log_link}",
 
     // Краткая информация о приборе
-    'device_info_short'      => "📋 **ИНФОРМАЦИЯ О ПРИБОРЕ**\n\n"
+    'device_info_short'      => "**ИНФОРМАЦИЯ О ПРИБОРЕ**\n\n"
                              . "**ПАРАМЕТРЫ ПРИБОРА:**\n"
                              . "• Тип прибора: {device_type}\n"
                              . "• Серийный номер: {serial_number}\n"
@@ -21,7 +21,7 @@ return [
                              . "Ответ сформирован {timestamp}, пользователь: {user_name}. Подробнее: {log_link}",
 
     // Полная информация о приборе
-    'device_info_full'       => "📋 **ПОЛНАЯ ИНФОРМАЦИЯ О ПРИБОРЕ**\n\n"
+    'device_info_full'       => "**ПОЛНАЯ ИНФОРМАЦИЯ О ПРИБОРЕ**\n\n"
                              . "**ПАРАМЕТРЫ ПРИБОРА:**\n"
                              . "• Тип прибора: {device_type}\n"
                              . "• Серийный номер: {serial_number}\n"
@@ -44,7 +44,7 @@ return [
                              . "Ответ сформирован {timestamp}, пользователь: {user_name}. Подробнее: {log_link}",
 
     // Статистика приборов
-    'device_statistics'      => "📊 **СТАТИСТИКА ПРИБОРОВ:**\n\n"
+    'device_statistics'      => "**СТАТИСТИКА ПРИБОРОВ:**\n\n"
                              . "**Общее количество приборов:** {total_devices}\n\n"
                              . "**Распределение по типам:**\n"
                              . "• LWD: {count_LWD} шт.\n"
@@ -54,11 +54,11 @@ return [
                              . "Ответ сформирован {timestamp}, пользователь: {user_name}. Подробнее: {log_link}",
 
     // Список приборов по типу
-    'list_devices_by_type'   => "📋 **СПИСОК ПРИБОРОВ ТИПА {device_type}:**\n\n{device_list}\n\n"
+    'list_devices_by_type'   => "**СПИСОК ПРИБОРОВ ТИПА {device_type}:**\n\n{device_list}\n\n"
                              . "Ответ сформирован {timestamp}, пользователь: {user_name}. Подробнее: {log_link}",
 
     // Последние ремонты
-    'recent_repairs'         => "🔧 **Последние ремонты:**\n\n{repairs_list}\n\n"
+    'recent_repairs'         => "**Последние ремонты:**\n\n{repairs_list}\n\n"
                              . "Ответ сформирован {timestamp}, пользователь: {user_name}. Подробнее: {log_link}",
 
     // Универсальный шаблон для обертки произвольных сообщений
