@@ -266,6 +266,67 @@ p { margin-bottom: var(--space-4); }
 
 .logout-link i { font-size: 0.95rem; }
 
+/* ─── Переключатель темы (светлая/тёмная) ─── */
+.theme-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    padding: 0;
+    background: transparent;
+    color: var(--color-text-muted);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    font-size: 1rem;
+    line-height: 1;
+    transition: color var(--t-fast) var(--ease-out),
+                background-color var(--t-fast) var(--ease-out),
+                border-color var(--t-fast) var(--ease-out);
+}
+
+.theme-toggle:hover {
+    color: var(--color-primary);
+    background-color: var(--color-primary-100);
+    border-color: var(--color-primary-100);
+}
+
+.theme-toggle .theme-toggle__icon { transition: opacity var(--t-fast) var(--ease-out); }
+.theme-toggle .theme-toggle__icon--dark { display: inline-block; }
+.theme-toggle .theme-toggle__icon--light { display: none; }
+
+:root[data-theme="dark"] .theme-toggle .theme-toggle__icon--dark { display: none; }
+:root[data-theme="dark"] .theme-toggle .theme-toggle__icon--light { display: inline-block; }
+
+/* ─── Точечные переопределения под тёмную тему ─── */
+:root[data-theme="dark"] .tab-item.active:not(.parent-tab) {
+    background: linear-gradient(180deg, var(--color-primary-100) 0%, var(--color-primary-200) 100%);
+}
+:root[data-theme="dark"] .sub-tabs .tab-item.active {
+    background: linear-gradient(180deg, var(--color-accent-100) 0%, #114750 100%);
+    color: var(--color-accent);
+}
+:root[data-theme="dark"] .history-diff-header--changed {
+    color: var(--color-warning);
+}
+:root[data-theme="dark"] .success-message { color: var(--color-success); }
+:root[data-theme="dark"] .warning-message { color: var(--color-warning); }
+:root[data-theme="dark"] .info-message    { color: var(--color-primary-500); }
+
+/* Скроллбары на тёмном (WebKit) */
+:root[data-theme="dark"] ::-webkit-scrollbar-thumb {
+    background: var(--color-border-strong);
+}
+:root[data-theme="dark"] ::-webkit-scrollbar-track {
+    background: var(--color-surface-2);
+}
+
+/* input/select/textarea на тёмном — корректный color-scheme */
+:root[data-theme="dark"] {
+    color-scheme: dark;
+}
+
 /* ---- Бейдж непрочитанных ---- */
 .unread-badge {
     position: absolute;
