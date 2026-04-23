@@ -52,10 +52,10 @@
 
         targetElement.innerHTML = `
             <div class="error-message session-expired">
-                <h3>⚠️ Сессия истекла</h3>
+                <h3><i class="fas fa-exclamation-triangle" aria-hidden="true"></i> Сессия истекла</h3>
                 <p>${message}</p>
                 <button onclick="SessionUtils.redirectToLogin()" class="button button-primary">
-                    � Вонйти в систему
+                    <i class="fas fa-sign-in-alt" aria-hidden="true"></i> Войти в систему
                 </button>
             </div>
         `;

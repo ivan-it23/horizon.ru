@@ -191,10 +191,15 @@
             className: `notification notification-${type}` 
         }, message);
         
-        const closeButton = createElement('button', { 
+        const closeIcon = createElement('i', {
+            className: 'fas fa-times',
+            'aria-hidden': 'true'
+        });
+        const closeButton = createElement('button', {
             className: 'notification-close',
-            title: 'Закрыть'
-        }, '×');
+            title: 'Закрыть',
+            'aria-label': 'Закрыть'
+        }, closeIcon);
         
         closeButton.addEventListener('click', () => {
             container.removeChild(notification);

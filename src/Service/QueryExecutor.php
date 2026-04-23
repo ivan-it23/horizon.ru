@@ -253,7 +253,7 @@ class QueryExecutor
             foreach ($repairs as $repair) {
                 $admissionDate = $repair['admission_date'] ? date('d.m.Y', strtotime($repair['admission_date'])) : 'Не указана';
                 $releaseDate = $repair['release_date'] ? date('d.m.Y', strtotime($repair['release_date'])) : 'Не указана';
-                $repairsList .= "🔧 **Прибор {$repair['serial_number']} (корпус {$repair['case_number']})**\n";
+                $repairsList .= "**Прибор {$repair['serial_number']} (корпус {$repair['case_number']})**\n";
                 $repairsList .= "   Причина ремонта: {$repair['repair_reason']}\n";
                 $repairsList .= "   Дата поступления: {$admissionDate}\n";
                 $repairsList .= "   Дата выпуска: {$releaseDate}\n";
@@ -357,7 +357,7 @@ class QueryExecutor
             $admissionDate = $repair['admission_date'] ? date('d.m.Y', strtotime($repair['admission_date'])) : 'Не указана';
             $releaseDate = $repair['release_date'] ? date('d.m.Y', strtotime($repair['release_date'])) : 'Ещё в ремонте';
 
-            $message = "🔧 **Последний ремонт в системе:**\n\n";
+            $message = "**Последний ремонт в системе:**\n\n";
             $message .= "**Прибор:** серийный номер {$repair['serial_number']}, корпус {$repair['case_number']}\n";
             $message .= "**Причина ремонта:** {$repair['repair_reason']}\n";
             $message .= "**Причина неисправности:** {$repair['failure_reason']}\n";
@@ -406,11 +406,11 @@ class QueryExecutor
                 return [
                     'success' => true,
                     'count' => 0,
-                    'message' => "✅ Сейчас нет приборов в ремонте. Все приборы выпущены!"
+                    'message' => "Сейчас нет приборов в ремонте. Все приборы выпущены."
                 ];
             }
 
-            $message = "🔧 **Приборы в ремонте (всего " . count($repairs) . "):**\n\n";
+            $message = "**Приборы в ремонте (всего " . count($repairs) . "):**\n\n";
             foreach ($repairs as $repair) {
                 $admissionDate = $repair['admission_date'] ? date('d.m.Y', strtotime($repair['admission_date'])) : 'Не указана';
                 $message .= "• Прибор {$repair['serial_number']} (корпус {$repair['case_number']})\n";
@@ -465,7 +465,7 @@ class QueryExecutor
                 ];
             }
 
-            $message = "🧪 **Последние испытания приборов:**\n\n";
+            $message = "**Последние испытания приборов:**\n\n";
             foreach ($tests as $test) {
                 $testDate = $test['test_date'] ? date('d.m.Y', strtotime($test['test_date'])) : 'Не указана';
                 $result = $test['test_result'] ?: 'Результат не указан';

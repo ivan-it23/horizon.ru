@@ -684,10 +684,10 @@
                     } else {
                         target.innerHTML = `
                             <div class="error-message session-expired">
-                                <h3>⚠️ Сессия истекла</h3>
+                                <h3><i class="fas fa-exclamation-triangle" aria-hidden="true"></i> Сессия истекла</h3>
                                 <p>Ваша сессия истекла. Для продолжения работы необходимо войти в систему заново.</p>
                                 <button onclick="window.location.href='index.php'" class="button button-primary">
-                                    🔐 Войти в систему
+                                    <i class="fas fa-sign-in-alt" aria-hidden="true"></i> Войти в систему
                                 </button>
                             </div>
                         `;
