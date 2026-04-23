@@ -45,6 +45,7 @@ if ($is_logged_in) {
     <title>Система учёта приборов АМК «Горизонт»</title>
     <link rel="icon" href="images/favicon1.png" type="image/png">
     <link rel="stylesheet" href="assests/css/tokens.css">
+    <script src="assests/js/themeManager.js"></script>
     <link rel="stylesheet" href="corporate_style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -64,6 +65,10 @@ if ($is_logged_in) {
             </ul>
         </nav>
         <div class="header-right">
+            <button type="button" id="themeToggle" class="theme-toggle" title="Переключить тему" aria-label="Переключить тему" aria-pressed="false">
+                <i class="fas fa-moon theme-toggle__icon theme-toggle__icon--dark" aria-hidden="true"></i>
+                <i class="fas fa-sun theme-toggle__icon theme-toggle__icon--light" aria-hidden="true"></i>
+            </button>
             <?php if ($is_logged_in && $user_info): ?>
                 <div class="user-info">
                     <?php
