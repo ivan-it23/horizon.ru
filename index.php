@@ -58,10 +58,17 @@ if ($is_logged_in) {
         };
 
         // 1. Приборы, находящиеся сейчас в ремонте (release_date не заполнен).
+        // Считаем уникальные приборы по паре (serial_number, case_number),
+        // чтобы прибор с несколькими открытыми записями не задваивался.
         // Сравниваем DATE только с NULL — сравнение с '' в строгом режиме бросает исключение.
         $dashboard['devices_in_repair'] = $runKpi(
             $conn,
-            "SELECT COUNT(*) AS c FROM repair_data WHERE release_date IS NULL"
+            "SELECT COUNT(*) AS c FROM ("
+            . " SELECT serial_number, case_number"
+            . " FROM repair_data"
+            . " WHERE release_date IS NULL"
+            . " GROUP BY serial_number, case_number"
+            . ") AS t"
         );
 
         // 2. Изменения в БД за последние 7 дней (параметры + состав).
