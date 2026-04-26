@@ -496,10 +496,12 @@
 
             // Группа 1: Идентификация
             paramsSection.appendChild(buildParamsGroup('Идентификация', 'fas fa-id-card', [
-                { key: 'id',            label: 'ID',              value: device.id,            readonly: true },
-                { key: 'device_type',   label: 'Тип прибора',     value: device.device_type,   readonly: true },
-                { key: 'serial_number', label: 'Серийный номер',  value: device.serial_number },
-                { key: 'case_number',   label: 'Номер корпуса',   value: device.case_number }
+                { key: 'id',                label: 'ID',                       value: device.id,                readonly: true },
+                { key: 'device_type',       label: 'Тип прибора',              value: device.device_type,       readonly: true },
+                { key: 'nominal_diameter',  label: 'Номинальный диаметр',      value: device.nominal_diameter,  readonly: true },
+                { key: 'transmitter_count', label: 'Количество передатчиков',  value: device.transmitter_count, readonly: true },
+                { key: 'serial_number',     label: 'Серийный номер',           value: device.serial_number },
+                { key: 'case_number',       label: 'Номер корпуса',            value: device.case_number }
             ]));
 
             // Группа 2: Геометрия
