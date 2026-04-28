@@ -353,7 +353,7 @@ if ($is_logged_in && $user_info) {
         <span class="app-footer__sep" aria-hidden="true">·</span>
         <span class="app-footer__cell">Версия 2.0</span>
         <span class="app-footer__sep" aria-hidden="true">·</span>
-        <a href="tel:+73476730510" class="app-footer__cell">IT-поддержка: +7 (34767) 3-05-10</a>
+        <a href="tel:+73476730510" class="app-footer__cell">Контактный телефон: +7 (34767) 3-05-10</a>
         <span class="app-footer__spacer"></span>
         <span class="app-footer__cell app-footer__cell--muted">© <?= date('Y') ?> ООО НПФ «АМК Горизонт»</span>
     </div>
@@ -386,7 +386,7 @@ if ($is_logged_in && $user_info) {
                 <span class="field__label">Логин</span>
                 <span class="field__control">
                     <i class="fas fa-user field__icon" aria-hidden="true"></i>
-                    <input type="text" name="username" autocomplete="username" placeholder="ivanov.ii" required aria-label="Логин">
+                    <input type="text" name="username" autocomplete="username" placeholder="ivanov_I" required aria-label="Логин">
                 </span>
             </label>
             <label class="field">
