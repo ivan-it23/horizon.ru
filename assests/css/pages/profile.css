@@ -1,0 +1,83 @@
+/* ================================================================
+   pages/profile.css — стили, специфичные для profile.php
+   ================================================================ */
+
+.profile-header {
+    margin-bottom: var(--space-4);
+}
+.profile-header__main {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.profile-header__title {
+    margin: 0;
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--color-text);
+    letter-spacing: -0.01em;
+}
+.profile-header__sub {
+    color: var(--color-text-muted);
+    font-size: 13px;
+}
+.profile-header__sub code {
+    font-family: var(--font-family-mono);
+    font-size: 12.5px;
+    padding: 1px 6px;
+    background: var(--color-surface-2);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    color: var(--color-text);
+}
+
+.no-messages {
+    color: var(--color-text-muted);
+    font-size: 14px;
+    padding: var(--space-5);
+    text-align: center;
+    background: var(--color-surface);
+    border: 1px dashed var(--color-border);
+    border-radius: var(--radius-md);
+    margin: 0;
+}
+.no-messages.error {
+    color: var(--color-danger);
+    border-color: color-mix(in srgb, var(--color-danger) 30%, var(--color-border));
+}
+
+.loading-placeholder {
+    color: var(--color-text-muted);
+    font-size: 13.5px;
+    padding: var(--space-5);
+    text-align: center;
+}
+
+/* Сообщения — таблица плотнее */
+.messages-table tbody td:first-child { font-weight: 500; }
+.messages-table .message-content {
+    max-width: 56ch;
+    color: var(--color-text);
+    line-height: 1.5;
+    white-space: pre-wrap;
+}
+
+/* Compose form: tabs-content уже даёт отступ; форма ограничена по ширине */
+.compose-form {
+    max-width: 640px;
+}
+
+/* Статус отправки сообщения */
+.send-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-left: var(--space-3);
+    font-size: 13px;
+    color: var(--color-text-muted);
+}
+.send-status--success { color: var(--color-success); }
+.send-status--error   { color: var(--color-danger); }
+
+/* tabs-content offset */
+.tabs-content { margin-top: var(--space-4); }

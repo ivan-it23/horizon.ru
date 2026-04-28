@@ -134,10 +134,10 @@ if ($is_logged_in && $user_info) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Система учёта приборов АМК «Горизонт»</title>
     <link rel="icon" href="images/favicon1.png" type="image/png">
-    <link rel="stylesheet" href="assests/css/tokens.css">
+    <link rel="stylesheet" href="assests/css/app.css?v=20260428">
+    <link rel="stylesheet" href="assests/css/pages/index.css?v=20260428">
     <script src="assests/js/themeManager.js"></script>
     <script src="assests/js/modalManager.js" defer></script>
-    <link rel="stylesheet" href="corporate_style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 </head>
@@ -149,40 +149,12 @@ if ($is_logged_in && $user_info) {
      Header → приветствие → KPI → выбор направления учёта → footer
      ────────────────────────────────────────────────────────────── -->
 
-<header class="app-header">
-    <div class="app-header__inner">
-        <a href="index.php" class="brand" aria-label="АМК «Горизонт» — на главную">
-            <span class="brand__mark" aria-hidden="true">АМК</span>
-            <span class="brand__name">
-                Горизонт<span class="brand__sub"> · Учёт приборов</span>
-            </span>
-        </a>
-
-        <div class="app-header__right">
-            <button type="button" id="themeToggle" class="icon-btn theme-toggle"
-                    title="Переключить тему" aria-label="Переключить тему" aria-pressed="false">
-                <i class="fas fa-moon theme-toggle__icon theme-toggle__icon--dark" aria-hidden="true"></i>
-                <i class="fas fa-sun theme-toggle__icon theme-toggle__icon--light" aria-hidden="true"></i>
-            </button>
-
-            <a href="profile.php" class="user-chip" title="Открыть профиль">
-                <span class="user-chip__avatar" aria-hidden="true"><?= htmlspecialchars($userInitials) ?></span>
-                <span class="user-chip__name"><?= htmlspecialchars($userFullName) ?></span>
-                <?php if ($unread_count > 0): ?>
-                    <span class="user-chip__badge" aria-label="<?= $unread_count ?> непрочитанных сообщений" title="Непрочитанные сообщения">
-                        <?= $unread_count ?>
-                    </span>
-                <?php endif; ?>
-            </a>
-
-            <form method="POST" action="front.php?c=auth&a=logout" class="logout-form">
-                <button type="submit" class="icon-btn icon-btn--ghost" title="Выйти из системы" aria-label="Выйти">
-                    <i class="fas fa-sign-out-alt" aria-hidden="true"></i>
-                </button>
-            </form>
-        </div>
-    </div>
-</header>
+<?php
+    // Шапка-трамплин — без горизонтальной навигации (см. partials/app_header.php).
+    $activeNav = 'index';
+    $showNav   = false;
+    include __DIR__ . '/partials/app_header.php';
+?>
 
 <main class="app-main">
     <div class="app-container">
@@ -346,18 +318,12 @@ if ($is_logged_in && $user_info) {
     </div>
 </main>
 
-<footer class="app-footer">
-    <div class="app-footer__inner">
-        <span class="status-dot status-dot--ok" aria-hidden="true"></span>
-        <span class="app-footer__cell">БД доступна · <?= $fmtNumber((int)$dashboard['total_devices']) ?> записей</span>
-        <span class="app-footer__sep" aria-hidden="true">·</span>
-        <span class="app-footer__cell">Версия 2.0</span>
-        <span class="app-footer__sep" aria-hidden="true">·</span>
-        <a href="tel:+73476730510" class="app-footer__cell">Контактный телефон: +7 (34767) 3-05-10</a>
-        <span class="app-footer__spacer"></span>
-        <span class="app-footer__cell app-footer__cell--muted">© <?= date('Y') ?> ООО НПФ «АМК Горизонт»</span>
-    </div>
-</footer>
+<?php
+    $dbStatus     = 'ok';
+    $dbStatusText = 'БД доступна · ' . $fmtNumber((int)$dashboard['total_devices']) . ' записей';
+    $appVersion   = 'v2.0';
+    include __DIR__ . '/partials/app_footer.php';
+?>
 
 <?php else: ?>
 <!-- ─────────────────────────────────────────────────────────────────
@@ -426,7 +392,7 @@ if ($is_logged_in && $user_info) {
                 <li><i class="fas fa-check"></i> ИИ-агент для запросов в базу на естественном языке</li>
             </ul>
             <div class="login-side__foot">
-                Версия 2.0 · IT-поддержка <a href="tel:+73476730510">+7 (34767) 3-05-10</a>
+                Версия 2.0 · Контактный телефон <a href="tel:+73476730510">+7 (34767) 3-05-10</a>
             </div>
         </div>
     </aside>

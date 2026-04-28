@@ -1,0 +1,63 @@
+/* ================================================================
+   kpi.css — плоская KPI-полоса (4 показателя в одну линейку)
+   ================================================================ */
+
+.kpi {
+    display: grid;
+    grid-template-columns: 1fr 1px 1fr 1px 1fr 1px 1fr;
+    align-items: stretch;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-xs);
+    overflow: hidden;
+}
+.kpi__item {
+    padding: var(--space-4) var(--space-5);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+.kpi__sep { background: var(--color-border); }
+.kpi__label {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+.kpi__row {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 10px;
+}
+.kpi__value {
+    font-size: 34px;
+    font-weight: 600;
+    line-height: 1.05;
+    letter-spacing: -0.01em;
+    color: var(--color-text);
+    font-variant-numeric: tabular-nums;
+}
+.kpi__value--warn   { color: var(--color-warning); }
+.kpi__value--danger { color: var(--color-danger); }
+.kpi__sub {
+    color: var(--color-text-muted);
+    font-size: 12.5px;
+    font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 1100px) {
+    .kpi { grid-template-columns: 1fr 1fr; }
+    .kpi__sep { display: none; }
+    .kpi__item { border-bottom: 1px solid var(--color-border); }
+    .kpi__item:nth-last-child(-n+2) { border-bottom: 0; }
+    .kpi__item:nth-child(odd) { border-right: 1px solid var(--color-border); }
+}
+@media (max-width: 600px) {
+    .kpi { grid-template-columns: 1fr; }
+    .kpi__item { border-right: 0 !important; }
+    .kpi__item:not(:last-child) { border-bottom: 1px solid var(--color-border); }
+    .kpi__value { font-size: 28px; }
+}

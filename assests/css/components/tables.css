@@ -1,0 +1,56 @@
+/* ================================================================
+   tables.css — единая таблица данных (.data-table)
+   ================================================================ */
+
+.table-responsive {
+    overflow-x: auto;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13.5px;
+    color: var(--color-text);
+    font-variant-numeric: tabular-nums;
+}
+.data-table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: var(--color-surface-2);
+    color: var(--color-text-muted);
+    text-align: left;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 11px;
+    letter-spacing: 0.04em;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--color-border);
+    white-space: nowrap;
+}
+.data-table tbody td {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--color-border);
+    vertical-align: top;
+    line-height: 1.45;
+}
+.data-table tbody tr:last-child td { border-bottom: 0; }
+.data-table tbody tr:hover {
+    background: var(--color-surface-2);
+}
+.data-table tbody td:first-child { font-family: var(--font-family-mono); font-size: 13px; }
+
+/* Пометки строк (по семантике) */
+.data-table tbody tr.is-warning { background: color-mix(in srgb, var(--color-warning) 8%, transparent); }
+.data-table tbody tr.is-danger  { background: color-mix(in srgb, var(--color-danger) 8%, transparent); }
+
+/* Inline-сообщение об отсутствии данных */
+.no-data {
+    padding: var(--space-5);
+    text-align: center;
+    color: var(--color-text-muted);
+    font-size: 13.5px;
+}

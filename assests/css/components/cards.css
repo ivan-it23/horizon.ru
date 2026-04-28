@@ -1,0 +1,170 @@
+/* ================================================================
+   cards.css — surface-карточки, panel, чипы, alert-блоки
+   ================================================================ */
+
+.card {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-xs);
+}
+.card__head {
+    padding: var(--space-4) var(--space-5);
+    border-bottom: 1px solid var(--color-border);
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--space-3);
+}
+.card__title {
+    margin: 0;
+    font-size: 15.5px;
+    font-weight: 600;
+    color: var(--color-text);
+}
+.card__sub {
+    margin: 4px 0 0;
+    color: var(--color-text-muted);
+    font-size: 12.5px;
+}
+.card__body {
+    padding: var(--space-5);
+}
+.card__body--tight   { padding: var(--space-4); }
+.card__body--roomy   { padding: var(--space-5) var(--space-5) var(--space-6); }
+.card__foot {
+    padding: var(--space-3) var(--space-5);
+    border-top: 1px solid var(--color-border);
+    background: var(--color-surface-2);
+    border-bottom-left-radius: var(--radius-md);
+    border-bottom-right-radius: var(--radius-md);
+}
+
+/* Сетка карточек/действий */
+.card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: var(--space-4);
+}
+
+/* Action card — иконка + заголовок + описание (используется на admin-panel). */
+.action-card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    padding: var(--space-4);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    color: var(--color-text);
+    text-decoration: none;
+    min-height: 120px;
+    transition: border-color var(--t-base) var(--ease-out),
+                box-shadow var(--t-base) var(--ease-out),
+                background-color var(--t-base) var(--ease-out),
+                transform var(--t-base) var(--ease-out);
+}
+.action-card:hover {
+    border-color: var(--color-primary);
+    background: var(--color-surface-2);
+    box-shadow: var(--shadow-md);
+    transform: translateY(-1px);
+    color: var(--color-text);
+}
+.action-card.is-active {
+    border-color: var(--color-primary);
+    background: var(--color-surface-2);
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-primary) 20%, transparent), var(--shadow-xs);
+}
+.action-card__icon {
+    width: 36px;
+    height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--color-surface-2);
+    border: 1px solid var(--color-border);
+    color: var(--color-primary);
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+}
+.action-card.is-active .action-card__icon {
+    background: var(--color-primary);
+    color: var(--color-text-invert);
+    border-color: var(--color-primary);
+}
+.action-card__title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--color-text);
+}
+.action-card__desc {
+    font-size: 12.5px;
+    color: var(--color-text-muted);
+    line-height: 1.5;
+}
+
+/* Chips */
+.chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 22px;
+    padding: 0 10px;
+    border: 1px solid var(--color-border);
+    background: var(--color-surface);
+    color: var(--color-text-muted);
+    border-radius: var(--radius-pill);
+    font-size: 11.5px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+.chip--success {
+    color: var(--color-success);
+    background: var(--color-success-100);
+    border-color: color-mix(in srgb, var(--color-success) 30%, var(--color-border));
+}
+.chip--success::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: var(--radius-full);
+    background: var(--color-success);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-success) 25%, transparent);
+}
+.chip--warning {
+    color: var(--color-warning);
+    background: var(--color-warning-100);
+    border-color: color-mix(in srgb, var(--color-warning) 30%, var(--color-border));
+}
+.chip--danger {
+    color: var(--color-danger);
+    background: var(--color-danger-100);
+    border-color: color-mix(in srgb, var(--color-danger) 30%, var(--color-border));
+}
+.chip--accent {
+    color: var(--color-accent-700);
+    background: color-mix(in srgb, var(--color-accent) 12%, var(--color-surface));
+    border-color: color-mix(in srgb, var(--color-accent) 30%, var(--color-border));
+}
+:root[data-theme="dark"] .chip--accent { color: var(--color-accent); }
+
+/* Alert / inline-сообщение */
+.alert {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-3);
+    padding: 10px 14px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--color-border);
+    background: var(--color-surface);
+    color: var(--color-text);
+    font-size: 13.5px;
+    line-height: 1.5;
+}
+.alert__icon { flex-shrink: 0; margin-top: 1px; }
+.alert--success { background: var(--color-success-100); border-color: color-mix(in srgb, var(--color-success) 30%, var(--color-border)); color: var(--color-success); }
+.alert--warning { background: var(--color-warning-100); border-color: color-mix(in srgb, var(--color-warning) 30%, var(--color-border)); color: var(--color-warning); }
+.alert--danger  { background: var(--color-danger-100);  border-color: color-mix(in srgb, var(--color-danger)  30%, var(--color-border)); color: var(--color-danger); }
+.alert--info    { background: var(--color-primary-100); border-color: color-mix(in srgb, var(--color-primary) 30%, var(--color-border)); color: var(--color-primary); }
