@@ -91,168 +91,130 @@ try {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Личный кабинет</title>
-    <link rel="stylesheet" href="assests/css/tokens.css?v=20260421">
-    <script src="assests/js/themeManager.js?v=20260421"></script>
-    <script src="assests/js/notifications.js?v=20260421" defer></script>
-    <script src="assests/js/modalManager.js?v=20260422" defer></script>
-    <link rel="stylesheet" href="StyleAccountingOfDevices.css?v=20260421">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="StyleForProfile.css?v=20260421">
+    <title>Личный кабинет — АМК «Горизонт»</title>
     <link rel="icon" href="images/favicon1.png" type="image/png">
+    <link rel="stylesheet" href="assests/css/app.css?v=20260428">
+    <link rel="stylesheet" href="assests/css/pages/profile.css?v=20260428">
+    <script src="assests/js/themeManager.js?v=20260428"></script>
+    <script src="assests/js/notifications.js?v=20260428" defer></script>
+    <script src="assests/js/modalManager.js?v=20260428" defer></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 </head>
 <body>
-<header class="site-header">
-    <div class="header-container">
-        <div class="header-left">
-            <a href="index.php" class="logo-link">
-                <img src="images/favicon.png" alt="Логотип АМК Горизонт" class="logo-img" onerror="this.style.display='none'; this.alt='Ошибка загрузки логотипа';">
-            </a>
-        </div>
-        <nav class="header-nav">
-            <ul>
-                <li><a href="index.php">Главная</a></li>
-                <li>
-                    <a href="AccountingOfDevices2.php" class="<?= basename($_SERVER['PHP_SELF']) == 'AccountingOfDevices2.php' ? 'active' : '' ?>">Учёт приборов</a>
-                </li>
 
-                <?php // Отображение ссылки на админ-панель только для администраторов
-                if (isset($user_info['is_admin']) && $user_info['is_admin']): ?>
-                    <li>
-                        <a href="admin_panel.php">Админ-панель</a>
-                    </li>
-                <?php endif; ?>
-            </ul>
-        </nav>
-        <div class="header-right">
-            <button type="button" id="themeToggle" class="theme-toggle" title="Переключить тему" aria-label="Переключить тему" aria-pressed="false">
-                <i class="fas fa-moon theme-toggle__icon theme-toggle__icon--dark" aria-hidden="true"></i>
-                <i class="fas fa-sun theme-toggle__icon theme-toggle__icon--light" aria-hidden="true"></i>
-            </button>
-            <?php // Проверяем, авторизован ли пользователь
-            if ($is_logged_in && $user_info):
-                $userInitials = mb_strtoupper(
-                    mb_substr($user_info['lastname']  ?? '', 0, 1) .
-                    mb_substr($user_info['firstname'] ?? '', 0, 1)
-                );
-                ?>
-                <div class="user-info">
-                    <div class="user-link-container">
-                        <a href="profile.php" class="user-profile-link" title="Перейти в профиль">
-                            <span class="user-icon" aria-hidden="true"><?= htmlspecialchars($userInitials) ?></span>
-                            <span class="user-name">
-                                <?= htmlspecialchars($user_info['lastname'] . " " . mb_substr($user_info['firstname'], 0, 1) . "." . mb_substr($user_info['middlename'], 0, 1) . ".") ?>
-                            </span>
-                        </a>
-                        <span id="unread-count-badge" class="unread-badge <?= $unread_count > 0 ? 'visible' : '' ?>" title="Непрочитанные сообщения">
-                            <?= $unread_count ?>
-                        </span>
-                    </div>
-                    <form method="POST" action="front.php?c=auth&a=logout" class="logout-form">
-                        <button type="submit" class="logout-link" title="Выйти из системы">
-                            <i class="fas fa-sign-out-alt"></i> <span class="logout-text">Выход</span>
-                        </button>
-                    </form>
-                </div>
-            <?php else: // Если пользователь не авторизован, показываем форму входа ?>
-                <form class="auth-form" method="POST" action="front.php?c=auth&a=login">
-                    <div class="input-wrapper">
-                        <input type="text" name="username" placeholder="Логин" required aria-label="Логин">
-                    </div>
-                    <div class="input-wrapper">
-                        <input type="password" name="password" placeholder="Пароль" required aria-label="Пароль">
-                    </div>
-                    <button type="submit" class="login-button">Войти</button>
-                </form>
-            <?php endif; ?>
-        </div>
-        <button class="mobile-menu-toggle" aria-label="Открыть меню">
-            <i class="fas fa-bars"></i>
-        </button>
-    </div>
-</header>
+<?php
+    $activeNav = 'profile';
+    $showNav   = true;
+    include __DIR__ . '/partials/app_header.php';
 
+    $userFullName = trim(
+        ($user_info['lastname']  ?? '') . ' ' .
+        ($user_info['firstname'] ?? '') . ' ' .
+        ($user_info['middlename'] ?? '')
+    );
+    $userRole = !empty($user_info['is_admin']) ? 'Администратор' : 'Сотрудник';
+?>
 
-<main class="profile-main">
-    <div class="accounting-container">
-        <div class="profile-header">
-            <i class="fas fa-envelope" aria-hidden="true"></i>
-            <h1>Личный кабинет: Сообщения</h1>
-        </div>
+<main class="app-main">
+    <div class="app-container">
 
-        <div class="tab-buttons" role="tablist">
-            <button class="tab-button active" data-tab="inbox-tab" role="tab" aria-selected="true"><i class="fas fa-inbox"></i> Входящие</button>
-            <button class="tab-button" data-tab="sent-tab" role="tab" aria-selected="false"><i class="fas fa-paper-plane"></i> Отправленные</button>
-            <button class="tab-button" data-tab="compose-tab" role="tab" aria-selected="false"><i class="fas fa-pen-to-square"></i> Написать</button>
-        </div>
-
-        <div class="tabs-content">
-            <div id="inbox-tab" class="tab-pane active" role="tabpanel">
-                <h2 class="profile-section-title"><i class="fas fa-inbox"></i>Входящие сообщения</h2>
-                <?php if (empty($inbox_messages)): ?>
-                    <p class="no-messages">У вас ещё нет входящих сообщений.</p>
-                <?php else: ?>
-                    <div class="table-responsive">
-                        <table class="data-table messages-table">
-                            <thead>
-                                <tr>
-                                    <th>Отправитель</th>
-                                    <th>Дата</th>
-                                    <th>Сообщение</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                            <?php foreach ($inbox_messages as $msg): ?>
-                                <tr>
-                                    <td data-label="Отправитель"><?= htmlspecialchars($msg['lastname'] . ' ' . $msg['firstname'] . ' ' . $msg['middlename']) ?></td>
-                                    <td data-label="Дата"><?= htmlspecialchars($msg['sent_at']) ?></td>
-                                    <td data-label="Сообщение"><div class="message-content"><?= nl2br(htmlspecialchars($msg['message'])) ?></div></td>
-                                </tr>
-                            <?php endforeach; ?>
-                            </tbody>
-                        </table>
-                    </div>
-                <?php endif; ?>
+        <header class="profile-header">
+            <div class="profile-header__main">
+                <span class="eyebrow">Личный кабинет</span>
+                <h1 class="profile-header__title"><?= htmlspecialchars($userFullName ?: ($user_info['username'] ?? '')) ?></h1>
+                <span class="profile-header__sub">
+                    <?= htmlspecialchars($userRole) ?>
+                    <?php if (!empty($user_info['username'])): ?>
+                        · логин <code><?= htmlspecialchars($user_info['username']) ?></code>
+                    <?php endif; ?>
+                </span>
             </div>
+        </header>
 
-            <div id="sent-tab" class="tab-pane" role="tabpanel">
-                <h2 class="profile-section-title"><i class="fas fa-paper-plane"></i>Отправленные сообщения</h2>
-                <div id="sent-messages-content">
-                    <div class="loading-placeholder">
-                        <i class="fas fa-spinner fa-spin"></i> Загрузка отправленных сообщений...
-                    </div>
+        <div class="card">
+            <div class="card__head">
+                <div>
+                    <h2 class="card__title">Сообщения</h2>
+                    <p class="card__sub">Внутренний обмен сообщениями между сотрудниками системы.</p>
                 </div>
             </div>
+            <div class="card__body">
+                <div class="tabs" role="tablist">
+                    <button class="tab-button active" data-tab="inbox-tab" role="tab" aria-selected="true"><i class="fas fa-inbox" aria-hidden="true"></i> Входящие</button>
+                    <button class="tab-button" data-tab="sent-tab" role="tab" aria-selected="false"><i class="fas fa-paper-plane" aria-hidden="true"></i> Отправленные</button>
+                    <button class="tab-button" data-tab="compose-tab" role="tab" aria-selected="false"><i class="fas fa-pen-to-square" aria-hidden="true"></i> Новое сообщение</button>
+                </div>
 
-            <div id="compose-tab" class="tab-pane" role="tabpanel">
-                <h2 class="profile-section-title"><i class="fas fa-pen-to-square"></i>Новое сообщение</h2>
-                <form id="compose-form">
-                    <div class="form-group">
-                        <label for="recipient-select">Получатель</label>
-                        <select id="recipient-select" name="to_id" class="input-field" required>
-                            <option value="">Загрузка пользователей...</option>
-                        </select>
+                <div class="tabs-content">
+                    <div id="inbox-tab" class="tab-pane active" role="tabpanel">
+                        <?php if (empty($inbox_messages)): ?>
+                            <p class="no-messages">У вас нет входящих сообщений.</p>
+                        <?php else: ?>
+                            <div class="table-responsive">
+                                <table class="data-table messages-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Отправитель</th>
+                                            <th>Дата</th>
+                                            <th>Сообщение</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                    <?php foreach ($inbox_messages as $msg): ?>
+                                        <tr>
+                                            <td data-label="Отправитель"><?= htmlspecialchars($msg['lastname'] . ' ' . $msg['firstname'] . ' ' . $msg['middlename']) ?></td>
+                                            <td data-label="Дата" class="mono"><?= htmlspecialchars($msg['sent_at']) ?></td>
+                                            <td data-label="Сообщение"><div class="message-content"><?= nl2br(htmlspecialchars($msg['message'])) ?></div></td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                    </tbody>
+                                </table>
+                            </div>
+                        <?php endif; ?>
                     </div>
-                    <div class="form-group">
-                        <label for="message-text">Сообщение</label>
-                        <textarea id="message-text" name="message" class="param-textarea" required></textarea>
+
+                    <div id="sent-tab" class="tab-pane" role="tabpanel">
+                        <div id="sent-messages-content">
+                            <div class="loading-placeholder">
+                                <i class="fas fa-spinner fa-spin" aria-hidden="true"></i> Загрузка отправленных сообщений...
+                            </div>
+                        </div>
                     </div>
-                    <button type="submit" id="send-button" class="button button-primary">
-                        <i class="fas fa-paper-plane"></i> Отправить
-                    </button>
-                    <div id="send-status" class="d-none" role="status"></div>
-                </form>
+
+                    <div id="compose-tab" class="tab-pane" role="tabpanel">
+                        <form id="compose-form" class="compose-form stack stack--sm" autocomplete="off">
+                            <label class="field">
+                                <span class="field__label">Получатель</span>
+                                <select id="recipient-select" name="to_id" required>
+                                    <option value="">Загрузка пользователей…</option>
+                                </select>
+                            </label>
+                            <label class="field">
+                                <span class="field__label">Сообщение</span>
+                                <textarea id="message-text" name="message" class="field__textarea" required placeholder="Текст сообщения…"></textarea>
+                            </label>
+                            <div>
+                                <button type="submit" id="send-button" class="btn btn--primary">
+                                    <i class="fas fa-paper-plane" aria-hidden="true"></i>
+                                    <span>Отправить</span>
+                                </button>
+                                <span id="send-status" role="status" hidden></span>
+                            </div>
+                        </form>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 </main>
 
-<footer class="site-footer">
-    <div class="footer-container">
-        <p>© <?= date('Y') ?> ООО НПФ "АМК ГОРИЗОНТ"</p>
-    </div>
-</footer>
+<?php
+    $dbStatus     = 'ok';
+    $dbStatusText = 'БД доступна';
+    $appVersion   = 'v2.0';
+    include __DIR__ . '/partials/app_footer.php';
+?>
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
@@ -445,9 +407,9 @@ try {
 
             // Блокируем кнопку на время отправки
             sendButton.disabled = true;
-            sendButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Отправка...';
-            sendStatus.style.display = 'none'; // Скрываем предыдущий статус
-            sendStatus.className = ''; // Сбрасываем классы статуса
+            sendButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> <span>Отправка…</span>';
+            sendStatus.hidden = true;
+            sendStatus.className = '';
 
             const formData = new FormData(composeForm);
 
@@ -467,8 +429,8 @@ try {
                 .then(data => {
                     if (data.success) {
                         sendStatus.innerHTML = '<i class="fas fa-check-circle"></i> Сообщение успешно отправлено!';
-                        sendStatus.className = 'success'; // Используем класс для стилизации
-                        composeForm.reset(); // Очищаем форму
+                        sendStatus.className = 'send-status send-status--success';
+                        composeForm.reset();
                         // Можно добавить обновление вкладки "Отправленные", если она активна
                         // Небольшая задержка перед перезагрузкой, чтобы пользователь увидел сообщение об успехе
                         setTimeout(() => {
@@ -479,23 +441,21 @@ try {
 
                     } else {
                         sendStatus.innerHTML = '<i class="fas fa-exclamation-circle"></i> Ошибка отправки: ' + (data.error || 'Неизвестная ошибка.');
-                        sendStatus.className = 'error';
+                        sendStatus.className = 'send-status send-status--error';
                     }
                 })
                 .catch(error => {
                     console.error('Ошибка отправки сообщения:', error);
                     sendStatus.innerHTML = '<i class="fas fa-exclamation-circle"></i> Произошла ошибка сети или сервера. ' + error.message;
-                    sendStatus.className = 'error';
+                    sendStatus.className = 'send-status send-status--error';
                 })
                 .finally(() => {
-                    // Разблокируем кнопку и возвращаем исходный текст
                     sendButton.disabled = false;
-                    sendButton.innerHTML = '<i class="fas fa-paper-plane"></i> Отправить';
-                    sendStatus.style.display = 'block'; // Показываем статус
-                    // Скрываем сообщение через 5 секунд, если это не ошибка
-                    if (sendStatus.classList.contains('success')) {
+                    sendButton.innerHTML = '<i class="fas fa-paper-plane"></i> <span>Отправить</span>';
+                    sendStatus.hidden = false;
+                    if (sendStatus.classList.contains('send-status--success')) {
                         setTimeout(() => {
-                            sendStatus.style.display = 'none';
+                            sendStatus.hidden = true;
                             sendStatus.className = '';
                         }, 5000);
                     }
@@ -520,25 +480,28 @@ try {
             return str.replace(/(\r\n|\n\r|\r|\n)/g, '<br />\n');
         }
 
-        // --- Инициализация мобильного меню ---
+        // --- Мобильное меню: в новой шапке всё видимо или сворачивается в CSS;
+        // старые селекторы оставлены для совместимости, если их нет — просто пропускаем.
         const mobileMenuToggle = document.querySelector('.mobile-menu-toggle');
         const headerNav = document.querySelector('.header-nav');
         const headerRight = document.querySelector('.header-right');
-
-        mobileMenuToggle.addEventListener('click', function() {
-            headerNav.classList.toggle('mobile-active');
-            headerRight.classList.toggle('mobile-active');
-            document.body.classList.toggle('menu-open'); // Для блокировки скролла
-            // Меняем иконку бургера на крестик и обратно
-            const icon = this.querySelector('i');
-            if (headerNav.classList.contains('mobile-active')) {
-                icon.classList.remove('fa-bars');
-                icon.classList.add('fa-times');
-            } else {
-                icon.classList.remove('fa-times');
-                icon.classList.add('fa-bars');
-            }
-        });
+        if (mobileMenuToggle && headerNav && headerRight) {
+            mobileMenuToggle.addEventListener('click', function() {
+                headerNav.classList.toggle('mobile-active');
+                headerRight.classList.toggle('mobile-active');
+                document.body.classList.toggle('menu-open');
+                const icon = this.querySelector('i');
+                if (icon) {
+                    if (headerNav.classList.contains('mobile-active')) {
+                        icon.classList.remove('fa-bars');
+                        icon.classList.add('fa-times');
+                    } else {
+                        icon.classList.remove('fa-times');
+                        icon.classList.add('fa-bars');
+                    }
+                }
+            });
+        }
 
 
         // --- Инициализация ---

@@ -1,0 +1,50 @@
+/* ================================================================
+   footer.css — статус-бар приложения
+   ================================================================ */
+
+.app-footer {
+    margin-top: auto;
+    border-top: 1px solid var(--color-border);
+    background: var(--color-surface);
+}
+.app-footer__inner {
+    max-width: var(--container-max);
+    margin: 0 auto;
+    padding: 8px var(--container-pad);
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: 12.5px;
+    color: var(--color-text-muted);
+    flex-wrap: wrap;
+    font-variant-numeric: tabular-nums;
+}
+.app-footer__cell { color: var(--color-text-muted); }
+a.app-footer__cell:hover { color: var(--color-primary); }
+.app-footer__sep    { color: var(--color-border-strong); }
+.app-footer__spacer { flex: 1; }
+.app-footer__cell--muted { color: var(--color-text-muted); }
+
+.status-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: var(--radius-full);
+    background: var(--color-text-muted);
+    margin-right: 6px;
+}
+.status-dot--ok {
+    background: var(--color-success);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-success) 18%, transparent);
+}
+.status-dot--warn { background: var(--color-warning); }
+.status-dot--err  { background: var(--color-danger); }
+
+@media (max-width: 720px) {
+    .app-footer__inner {
+        font-size: 11.5px;
+        gap: 4px var(--space-2);
+    }
+    .app-footer__spacer { display: none; }
+    .app-footer__cell--muted { width: 100%; margin-top: 4px; }
+}

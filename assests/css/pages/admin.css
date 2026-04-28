@@ -1,0 +1,129 @@
+/* ================================================================
+   pages/admin.css — стили, специфичные для admin_panel.php.
+   Базовые компоненты тянутся из app.css.
+   ================================================================ */
+
+/* Сетка действий — переиспользует .action-card из cards.css */
+.admin-actions {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: var(--space-3);
+}
+
+/* Активная панель (скрытые секции): добавляем .is-active для показа */
+.admin-section { display: none; }
+.admin-section.is-active { display: block; }
+
+.admin-section__head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-3);
+    margin-bottom: var(--space-4);
+}
+.admin-section__title {
+    margin: 0;
+    font-size: 17px;
+    font-weight: 600;
+    color: var(--color-text);
+}
+
+/* Список таблиц БД (chips-grid) */
+.table-list-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 8px;
+    margin-top: var(--space-3);
+}
+.table-name-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background: var(--color-surface);
+    color: var(--color-text-muted);
+    font-family: var(--font-family-mono);
+    font-size: 12.5px;
+    transition: border-color var(--t-fast) var(--ease-out),
+                color var(--t-fast) var(--ease-out),
+                background-color var(--t-fast) var(--ease-out);
+}
+.table-name-link::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: var(--radius-full);
+    background: var(--color-border-strong);
+}
+.table-name-link:hover {
+    border-color: var(--color-primary);
+    color: var(--color-text);
+}
+.table-name-link.active {
+    border-color: var(--color-primary);
+    color: var(--color-text);
+    background: var(--color-surface-2);
+}
+.table-name-link.active::before { background: var(--color-primary); }
+
+/* Заголовок над таблицей с данными */
+.admin-table-title {
+    margin: var(--space-4) 0 var(--space-3);
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--color-text);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+.admin-table-title code {
+    font-family: var(--font-family-mono);
+    background: var(--color-surface-2);
+    padding: 2px 8px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--color-border);
+    font-size: 12.5px;
+}
+
+/* SQL-форма */
+.sql-form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+.sql-textarea {
+    min-height: 140px;
+    font-family: var(--font-family-mono);
+    font-size: 13px;
+}
+
+/* Сетка: форма слева, результаты справа (или ниже на мобильнике) */
+.admin-form-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 460px) minmax(0, 1fr);
+    gap: var(--space-5);
+}
+@media (max-width: 900px) {
+    .admin-form-grid { grid-template-columns: 1fr; }
+}
+
+/* code-теги внутри подзаголовков (eyebrow, описания карточек) */
+.card__sub code {
+    font-family: var(--font-family-mono);
+    font-size: 12px;
+    padding: 1px 6px;
+    background: var(--color-surface-2);
+    border: 1px solid var(--color-border);
+    border-radius: 4px;
+    color: var(--color-text);
+}
+
+/* Заглушка пустой/обрезанной таблицы */
+.data-table tbody td.no-data {
+    text-align: center;
+    color: var(--color-text-muted);
+    font-style: italic;
+    padding: var(--space-5);
+}

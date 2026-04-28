@@ -1,0 +1,184 @@
+/* ================================================================
+   header.css — единая шапка приложения
+   ================================================================ */
+
+.app-header {
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    background-color: var(--color-surface);
+    border-bottom: 1px solid var(--color-border);
+}
+
+.app-header__inner {
+    max-width: var(--container-max);
+    margin: 0 auto;
+    padding: 0 var(--container-pad);
+    height: 56px;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: var(--space-5);
+}
+
+/* Когда навигации нет (трамплин), колонок две. */
+.app-header__inner--no-nav {
+    grid-template-columns: 1fr auto;
+}
+
+/* ---- Brand ---- */
+.brand {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-3);
+    color: var(--color-text);
+}
+.brand:hover { color: var(--color-text); }
+
+.brand__mark {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    background: linear-gradient(135deg, var(--color-primary-700), var(--color-primary));
+    color: var(--color-text-invert);
+    font-weight: 700;
+    font-size: 11.5px;
+    letter-spacing: 0.04em;
+    border-radius: var(--radius-sm);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08), var(--shadow-xs);
+}
+.brand__mark--lg {
+    width: 56px;
+    height: 56px;
+    font-size: 16px;
+    border-radius: var(--radius-md);
+}
+.brand__name {
+    font-weight: 600;
+    font-size: 15px;
+    letter-spacing: 0.01em;
+}
+.brand__sub {
+    color: var(--color-text-muted);
+    font-weight: 500;
+}
+
+/* ---- Навигация ---- */
+.app-nav {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin-left: var(--space-4);
+}
+.app-nav__item {
+    display: inline-flex;
+    align-items: center;
+    height: 32px;
+    padding: 0 12px;
+    border-radius: var(--radius-sm);
+    font-size: 13.5px;
+    font-weight: 500;
+    color: var(--color-text-muted);
+    border: 1px solid transparent;
+    transition: color var(--t-fast) var(--ease-out),
+                background-color var(--t-fast) var(--ease-out);
+    white-space: nowrap;
+}
+.app-nav__item:hover {
+    color: var(--color-text);
+    background: var(--color-surface-2);
+}
+.app-nav__item.is-active {
+    color: var(--color-text);
+    background: var(--color-surface-2);
+    border-color: var(--color-border);
+}
+
+/* ---- Правая зона (тема, user-chip, logout) ---- */
+.app-header__right {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    justify-self: end;
+}
+
+/* ---- User chip ---- */
+.user-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 12px 4px 4px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-pill);
+    background: var(--color-surface);
+    color: var(--color-text);
+    font-size: 13px;
+    transition: border-color var(--t-fast) var(--ease-out),
+                background-color var(--t-fast) var(--ease-out),
+                color var(--t-fast) var(--ease-out);
+    max-width: 280px;
+}
+.user-chip:hover {
+    border-color: var(--color-border-strong);
+    background: var(--color-surface-2);
+    color: var(--color-text);
+}
+.user-chip__avatar {
+    width: 26px;
+    height: 26px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--color-primary-700);
+    color: var(--color-text-invert);
+    border-radius: var(--radius-full);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    flex-shrink: 0;
+}
+.user-chip__name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+}
+.user-chip__badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    margin-left: 2px;
+    background: var(--color-danger);
+    color: var(--color-text-invert);
+    border-radius: var(--radius-pill);
+    font-size: 11px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
+
+.logout-form { display: inline-flex; }
+
+/* ---- Адаптив шапки ---- */
+@media (max-width: 900px) {
+    .app-header__inner {
+        height: auto;
+        padding: var(--space-3) var(--container-pad);
+        grid-template-columns: 1fr auto;
+        row-gap: var(--space-3);
+    }
+    .app-nav {
+        grid-column: 1 / -1;
+        margin-left: 0;
+        overflow-x: auto;
+        gap: 4px;
+        padding-bottom: 4px;
+    }
+}
+@media (max-width: 720px) {
+    .user-chip__name { max-width: 140px; }
+}
