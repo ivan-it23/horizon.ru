@@ -34,3 +34,20 @@
     border-color: var(--color-border);
     color: var(--color-text);
 }
+
+/* ------------------------------------------------------------------
+   Вкладки: новый components/tabs.css ставит на .tabs `overflow-x: auto`
+   (для горизонтальной прокрутки на профиле); CSS-спека превращает это
+   в неявное `overflow-y: auto`, и при пиксельном overflow по высоте
+   у обёртки `.tabs > .tab-list` (pill-стиль с `flex-wrap: wrap`)
+   справа появляется паразитный вертикальный скроллбар.
+   На странице учёта pill-вкладки рендерятся старым CSS — нейтрализуем
+   все «новые» свойства .tabs, чтобы вернуть прежнее поведение.
+   ------------------------------------------------------------------ */
+.main-content .tabs,
+.accounting-container .tabs {
+    display: block;
+    gap: 0;
+    border-bottom: 0;
+    overflow: visible;
+}
