@@ -154,3 +154,123 @@
     color: var(--color-text-muted);
     line-height: 1.45;
 }
+
+/* ==================================================================
+   Вкладки прибора (Идентификационные данные · Производство ▾ ·
+   Эксплуатация ▾ · Файлы)
+   Этап 2b: визуально перевести pill-style + градиент-акценты на
+   плоский корпоративный стиль. Логика и markup сохраняются
+   полностью — выпадающие подвкладки (.parent-tab + .sub-tabs)
+   продолжают работать через accounting.js, JS-классы (.active,
+   .parent-tab, .sub-tabs) не трогаются.
+   ================================================================== */
+
+/* Контейнер ряда вкладок: убираем pill-обёртку с тенью и большим
+   border-radius, оставляем тонкую полоску-разделитель снизу. */
+.accounting-container .tab-list {
+    padding: 0;
+    background: transparent;
+    border: 0;
+    border-bottom: 1px solid var(--color-border);
+    border-radius: 0;
+    box-shadow: none;
+    gap: 0;
+    flex-wrap: wrap;
+}
+
+/* Базовая вкладка — плоская, без округлений. */
+.accounting-container .tab-list > .tab-item {
+    padding: 11px 18px;
+    border-radius: 0;
+    font-weight: 500;
+    color: var(--color-text-muted);
+    background: transparent;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px; /* перекрываем border-bottom самого .tab-list */
+    transition: color var(--t-fast) var(--ease-out),
+                border-color var(--t-fast) var(--ease-out);
+}
+
+.accounting-container .tab-list > .tab-item:hover {
+    background: transparent;
+    color: var(--color-text);
+}
+
+/* Активная top-level вкладка: акцент через нижний border + цвет текста.
+   Старый ::after (2px градиентная полоса с отступами 18px) выключаем. */
+.accounting-container .tab-list > .tab-item.active:not(.parent-tab) {
+    color: var(--color-text);
+    background: transparent;
+    border-bottom-color: var(--color-accent);
+    font-weight: 600;
+    box-shadow: none;
+}
+.accounting-container .tab-list > .tab-item.active:not(.parent-tab)::after {
+    display: none;
+    content: none;
+}
+
+/* Родительская вкладка-выпадайка: тот же плоский вид; «открыта» =
+   primary-цвет текста + accent-нижняя черта, без teal-100 заливки. */
+.accounting-container .tab-list > .parent-tab.active {
+    background: transparent;
+    color: var(--color-primary);
+    border-bottom-color: var(--color-accent);
+}
+
+.accounting-container .sub-tab-icon {
+    margin-left: 2px;
+    color: var(--color-text-muted);
+}
+.accounting-container .parent-tab.active .sub-tab-icon {
+    color: var(--color-primary);
+}
+
+/* Выпадающее меню подвкладок: чище и сдержаннее. */
+.accounting-container .sub-tabs {
+    min-width: 240px;
+    margin-top: 4px;
+    padding: 4px;
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-md);
+    background: var(--color-surface);
+}
+
+/* Подвкладки внутри выпадайки. */
+.accounting-container .sub-tabs > .tab-item {
+    padding: 9px 12px;
+    border-radius: 0;
+    border-left: 2px solid transparent;
+    color: var(--color-text);
+    font-weight: 500;
+    background: transparent;
+    transition: background-color var(--t-fast) var(--ease-out),
+                color var(--t-fast) var(--ease-out),
+                border-color var(--t-fast) var(--ease-out);
+}
+
+.accounting-container .sub-tabs > .tab-item:hover {
+    background: var(--color-surface-2);
+    color: var(--color-text);
+}
+
+/* Активная подвкладка — без градиента; primary-текст + accent-полоса слева. */
+.accounting-container .sub-tabs > .tab-item.active {
+    background: var(--color-surface-2);
+    color: var(--color-primary);
+    border-left-color: var(--color-accent);
+    font-weight: 600;
+    box-shadow: none;
+}
+
+/* Тёмная тема — старые правила (:root[data-theme="dark"] .tab-item.active) гасим. */
+:root[data-theme="dark"] .accounting-container .tab-list > .tab-item.active:not(.parent-tab) {
+    background: transparent;
+    color: var(--color-text);
+    border-bottom-color: var(--color-accent);
+}
+:root[data-theme="dark"] .accounting-container .sub-tabs > .tab-item.active {
+    background: var(--color-surface-2);
+    color: var(--color-accent);
+    border-left-color: var(--color-accent);
+}
