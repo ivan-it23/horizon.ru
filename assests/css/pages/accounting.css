@@ -1,0 +1,36 @@
+/* ================================================================
+   pages/accounting.css — точечные правила для AccountingOfDevices2.php.
+
+   Этап 1 (инфраструктура): тело страницы по-прежнему стилизуется
+   старым StyleAccountingOfDevices.css. Этот файл существует только
+   для того, чтобы:
+     · «погасить» конфликты старых правил с новой шапкой/подвалом
+       (partials/app_header.php, partials/app_footer.php);
+     · не дублировать стилевую правду в двух местах.
+
+   На последующих этапах (формы, таблицы, layout) сюда будут
+   переноситься страничные стили из StyleAccountingOfDevices.css.
+   ================================================================ */
+
+/* ------------------------------------------------------------------
+   Шапка: старый StyleAccountingOfDevices.css определяет .theme-toggle
+   (38×38, --radius-md, teal hover) и подменяет ghost-вид .icon-btn.
+   Возвращаем новой шапке её "ghost"-кнопку.
+   ------------------------------------------------------------------ */
+.app-header .theme-toggle,
+.app-header .icon-btn {
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: var(--radius-sm);
+    color: var(--color-text-muted);
+}
+
+.app-header .theme-toggle:hover,
+.app-header .icon-btn:hover {
+    background: var(--color-surface-2);
+    border-color: var(--color-border);
+    color: var(--color-text);
+}

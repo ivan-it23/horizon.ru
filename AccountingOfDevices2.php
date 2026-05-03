@@ -49,88 +49,24 @@ if ($is_logged_in) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Учёт приборов индукционного каротажа АМК «Горизонт»</title>
     <link rel="icon" href="images/favicon1.png" type="image/png">
-    <link rel="stylesheet" href="assests/css/tokens.css">
-    <script src="assests/js/themeManager.js"></script>
+    <link rel="stylesheet" href="assests/css/app.css?v=20260428">
     <link rel="stylesheet" href="StyleAccountingOfDevices.css">
+    <link rel="stylesheet" href="assests/css/pages/accounting.css?v=20260428">
     <link rel="stylesheet" href="ai_agent/css/ai_agent.css">
+    <script src="assests/js/themeManager.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
 </head>
 <body 
     data-user-fullname="<?= isset($user_info) ? htmlspecialchars($user_info['lastname'] . ' ' . $user_info['firstname'] . ' ' . $user_info['middlename']) : '' ?>"
     data-is-admin="<?= isset($user_info['is_admin']) && $user_info['is_admin'] ? 'true' : 'false' ?>">
 
-<header class="site-header">
-    <div class="header-container">
-        <div class="header-left">
-            <a href="index.php" class="logo-link">
-                <img src="images/favicon.png" alt="Логотип АМК Горизонт" class="logo-img" onerror="this.style.display='none'; this.alt='Ошибка загрузки логотипа';">
-            </a>
-        </div>
-        <nav class="header-nav">
-            <ul>
-                <li><a href="index.php"> Главная</a></li>
-                <li>
-                    <a href="AccountingOfDevices2.php" class="<?= basename($_SERVER['PHP_SELF']) == 'AccountingOfDevices2.php' ? 'active' : '' ?>"> Учёт приборов
-                    </a>
-                </li>
-                <?php if (isset($user_info['is_admin']) && $user_info['is_admin']): ?>
-                    <li>
-                        <a href="admin_panel.php"> Админ-панель</a>
-                    </li>
-                <?php endif; ?>
-            </ul>
-        </nav>
-        <div class="header-right">
-            <button type="button" id="themeToggle" class="theme-toggle" title="Переключить тему" aria-label="Переключить тему" aria-pressed="false">
-                <i class="fas fa-moon theme-toggle__icon theme-toggle__icon--dark" aria-hidden="true"></i>
-                <i class="fas fa-sun theme-toggle__icon theme-toggle__icon--light" aria-hidden="true"></i>
-            </button>
-            <?php if ($is_logged_in && $user_info): ?>
-                <div class="user-info">
-                    <?php
-                        $userInitials = mb_strtoupper(
-                            mb_substr($user_info['lastname']  ?? '', 0, 1) .
-                            mb_substr($user_info['firstname'] ?? '', 0, 1)
-                        );
-                    ?>
-                    <div class="user-link-container">
-                        <a href="profile.php" class="user-profile-link" title="Перейти в профиль">
-                            <span class="user-icon" aria-hidden="true"><?= htmlspecialchars($userInitials) ?></span>
-                            <span class="user-name">
-                                <?= htmlspecialchars($user_info['lastname'] . " " . mb_substr($user_info['firstname'], 0, 1) . "." . mb_substr($user_info['middlename'], 0, 1) . ".") ?>
-                            </span>
-                        </a>
-                        <span id="unread-count-badge-accounting" class="unread-badge <?= $unread_count > 0 ? 'visible' : '' ?>" title="Непрочитанные сообщения">
-                            <?= $unread_count ?>
-                        </span>
-                    </div>
-                    <form method="POST" action="front.php?c=auth&a=logout" class="logout-form">
-                        <button type="submit" class="logout-link" title="Выйти из системы">
-                            <i class="fas fa-sign-out-alt"></i> <span class="logout-text">Выход</span>
-                        </button>
-                    </form>
-                </div>
-            <?php else: ?>
-                <form class="auth-form" method="POST" action="front.php?c=auth&a=login">
-                    <div class="input-wrapper">
-                        <i class="fas fa-user input-icon" aria-hidden="true"></i>
-                        <input type="text" name="username" placeholder="Логин" required aria-label="Логин">
-                    </div>
-                    <div class="input-wrapper">
-                        <i class="fas fa-lock input-icon" aria-hidden="true"></i>
-                        <input type="password" name="password" placeholder="Пароль" required aria-label="Пароль">
-                    </div>
-                    <button type="submit" class="login-button">Войти</button>
-                </form>
-            <?php endif; ?>
-        </div>
-        <button class="mobile-menu-toggle" aria-label="Открыть меню">
-            <i class="fas fa-bars"></i>
-        </button>
-    </div>
-</header>
-
+<?php
+    $activeNav = 'accounting';
+    $showNav   = true;
+    include __DIR__ . '/partials/app_header.php';
+?>
 
 <main class="main-content">
     <div class="accounting-container">
@@ -905,11 +841,11 @@ if ($is_logged_in) {
 <script src="assests/js/deviceViewer.js"></script>
 <script src="assests/js/deviceUpdater.js"></script>
 <script src="assests/js/accounting.js"></script>
-<footer class="site-footer">
-    <div class="footer-container">
-        <p>&copy; 2024 АМК «Горизонт». Все права защищены.</p>
-    </div>
-</footer>
+<?php
+    $dbStatus     = (isset($conn) && $conn instanceof mysqli) ? 'ok' : 'err';
+    $dbStatusText = $dbStatus === 'ok' ? 'БД доступна' : 'Проблема с БД';
+    include __DIR__ . '/partials/app_footer.php';
+?>
 
 <!-- Подключение шаблона AI-агента -->
 <?php include 'ai_agent/templates/accounting_ai_interface.php'; ?>
