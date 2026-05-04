@@ -496,6 +496,85 @@
     box-shadow: none;
 }
 
+/* ==================================================================
+   Этап 3a — список найденных приборов как .data-table.
+   JS (deviceSearchManager.renderDeviceList) теперь рендерит <table>
+   вместо grid-карточек. Здесь убираем легаси-стили `.device-list-item`
+   (grid-карточка с gradient::before) и оформляем строки таблицы.
+   ================================================================== */
+
+/* Гасим карточные правила старого .device-list-item, которые
+   применяются к <tr class="device-list-item"> и ломают вид. */
+.accounting-container tr.device-list-item {
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    padding: 0;
+    box-shadow: none;
+    display: table-row;
+    flex-direction: initial;
+    gap: 0;
+    isolation: auto;
+    transform: none;
+}
+.accounting-container tr.device-list-item::before { content: none; display: none; }
+.accounting-container .device-list-items-container {
+    display: block;
+    grid-template-columns: none;
+    gap: 0;
+    margin: 0;
+}
+
+/* Сама таблица результатов поиска */
+.accounting-container .device-list-table {
+    margin-top: var(--space-3);
+}
+.accounting-container .device-list-table tbody tr {
+    cursor: pointer;
+    transition: background-color var(--t-fast) var(--ease-out);
+}
+
+/* Sticky-шапка: работает, когда родитель скроллится (или окно).
+   На длинных списках заголовки колонок остаются на виду. */
+.accounting-container .device-list-table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background-color: var(--color-surface-2);
+}
+
+/* Моноширинные колонки — серийник и номер корпуса (промышленный look). */
+.accounting-container .device-list-table .col-serial,
+.accounting-container .device-list-table .col-case {
+    font-family: var(--font-family-mono);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0;
+    white-space: nowrap;
+}
+.accounting-container .device-list-table .col-type {
+    color: var(--color-text-muted);
+}
+
+/* Hover поверх legacy `.data-table tr:hover { background: primary-100 }`
+   делаем нейтральным, чтобы строки не «зеленели» теалом. */
+.accounting-container .data-table > tbody > tr:hover > * {
+    background-color: var(--color-surface-2);
+}
+
+/* Выделенная строка */
+.accounting-container .device-list-table tbody tr.selected > * {
+    background-color: var(--color-accent-100, rgba(56, 189, 248, 0.12));
+    box-shadow: inset 2px 0 0 var(--color-accent);
+}
+
+/* Тёмная тема */
+:root[data-theme="dark"] .accounting-container .device-list-table thead th {
+    background-color: var(--color-surface-2);
+}
+:root[data-theme="dark"] .accounting-container .device-list-table tbody tr.selected > * {
+    background-color: rgba(56, 189, 248, 0.18);
+}
+
 /* ---- Тёмная тема ----
    Старая тёмная тема не имеет отдельных правил для .button-* / inputs,
    но поскольку наши новые цвета используют CSS-переменные, корректно

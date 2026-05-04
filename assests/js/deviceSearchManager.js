@@ -325,52 +325,50 @@
     }
     
     /**
-     * Отрисовывает список найденных приборов
+     * Отрисовывает список найденных приборов в виде data-table.
      * @param {Array} devices Массив найденных приборов
      * @param {HTMLElement} container Элемент-контейнер для списка
      */
     function renderDeviceList(devices, container) {
         // Заголовок списка
         const listTitle = document.createElement('h4');
-        listTitle.textContent = 'Найденные приборы:';
+        listTitle.textContent = 'Найденные приборы';
         listTitle.className = 'table-section-header';
         container.appendChild(listTitle);
-        
-        // Контейнер для элементов
-        const listContainer = document.createElement('div');
-        listContainer.className = 'device-list-items-container';
-        container.appendChild(listContainer);
-        
+
+        // Таблица результатов поиска
+        const table = document.createElement('table');
+        table.className = 'data-table device-list-table';
+        table.innerHTML = `
+            <thead>
+                <tr>
+                    <th class="col-serial">Серийный №</th>
+                    <th class="col-case">Корпус №</th>
+                    <th class="col-type">Тип</th>
+                </tr>
+            </thead>
+        `;
+        const listContainer = document.createElement('tbody');
+        table.appendChild(listContainer);
+        container.appendChild(table);
+
         devices.forEach(device => {
-            const deviceItem = document.createElement('div');
-            deviceItem.className = 'device-list-item';
+            const deviceItem = document.createElement('tr');
+            // Сохраняем класс .device-list-item для обратной совместимости с
+            // потенциально подписанным внешним кодом, плюс новый .device-list-row.
+            deviceItem.className = 'device-list-row device-list-item';
             deviceItem.dataset.deviceId = device.id;
             deviceItem.dataset.serialNumber = device.serial_number;
             deviceItem.dataset.caseNumber = device.case_number;
             deviceItem.dataset.deviceType = device.device_type;
-            
+
             deviceItem.innerHTML = `
-                <div class="device-info-item">
-                    <span class="device-info-label">
-                        <i class="fas fa-barcode"></i> Серийный №:
-                    </span>
-                    <span class="device-info-value">${htmlspecialchars(device.serial_number || '-')}</span>
-                </div>
-                <div class="device-info-item">
-                    <span class="device-info-label">
-                        <i class="fas fa-cube"></i> Корпус №:
-                    </span>
-                    <span class="device-info-value">${htmlspecialchars(device.case_number || '-')}</span>
-                </div>
-                <div class="device-info-item">
-                    <span class="device-info-label">
-                        <i class="fas fa-microchip"></i> Тип:
-                    </span>
-                    <span class="device-info-value">${htmlspecialchars(device.device_type || '-')}</span>
-                </div>
+                <td class="col-serial">${htmlspecialchars(device.serial_number || '—')}</td>
+                <td class="col-case">${htmlspecialchars(device.case_number || '—')}</td>
+                <td class="col-type">${htmlspecialchars(device.device_type || '—')}</td>
             `;
-            
-            // Клик на найденный прибор
+
+            // Клик по строке таблицы — выбор прибора
             deviceItem.addEventListener('click', function() {
                 const selectedDeviceData = {
                     deviceId: this.dataset.deviceId,
@@ -424,9 +422,9 @@
                 // Разблокируем вкладки 2–8
                 enableAllTabs();
                 
-                // Подсветка выбранного элемента списка
+                // Подсветка выбранной строки
                 listContainer
-                  .querySelectorAll('.device-list-item')
+                  .querySelectorAll('.device-list-row')
                   .forEach(item => item.classList.remove('selected'));
                 this.classList.add('selected');
             });
