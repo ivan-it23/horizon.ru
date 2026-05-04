@@ -575,6 +575,244 @@
     background-color: rgba(56, 189, 248, 0.18);
 }
 
+/* ==================================================================
+   Этап 3b — истории (вкладки 2/4/5/6/7) в виде flat data-table.
+   CSS-only: маркап и JS не трогаются. Превращаем «детский» аккордеон
+   ремонтов и карточки .history-item в плоский ряд табличных строк
+   с моноширинными датами, без gradient-подложек и тяжёлых теней.
+   ================================================================== */
+
+/* ---- Контейнер ремонтной истории (tab-4) - превращаем в "таблицу" ---- */
+.accounting-container .repair-history-container {
+    gap: 0;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background-color: var(--color-surface);
+    overflow: hidden;
+    box-shadow: none;
+}
+
+/* ---- Карточка одной записи ремонта - "строка таблицы" ---- */
+.accounting-container .repair-accordion-item {
+    border: 0;
+    border-bottom: 1px solid var(--color-border);
+    border-radius: 0;
+    box-shadow: none;
+    background-color: transparent;
+    overflow: visible;
+}
+.accounting-container .repair-accordion-item:last-child {
+    border-bottom: 0;
+}
+.accounting-container .repair-accordion-item:hover {
+    border-color: var(--color-border);
+    box-shadow: none;
+}
+.accounting-container .repair-accordion-item.expanded {
+    border-color: var(--color-border);
+    box-shadow: none;
+    background-color: var(--color-surface-2);
+}
+
+/* ---- Заголовок (сводная "строка") ---- */
+.accounting-container .repair-accordion-header {
+    padding: 12px 16px;
+    background-color: transparent;
+    gap: var(--space-4);
+    transition: background-color var(--t-fast) var(--ease-out);
+}
+.accounting-container .repair-accordion-header:hover {
+    background-color: var(--color-surface-2);
+    background-image: none;
+}
+.accounting-container .repair-accordion-item.expanded .repair-accordion-header {
+    background: transparent;
+    background-image: none;
+    border-bottom: 1px solid var(--color-border);
+}
+
+/* Дата + автор - моноширинный, табличный */
+.accounting-container .accordion-title {
+    font-family: var(--font-family-mono);
+    font-variant-numeric: tabular-nums;
+    font-weight: 500;
+    font-size: 13px;
+    color: var(--color-text);
+    letter-spacing: 0;
+}
+.accounting-container .accordion-reason {
+    color: var(--color-text-muted);
+    font-size: 13px;
+    font-weight: 400;
+}
+.accounting-container .accordion-reason strong {
+    color: var(--color-text);
+    font-weight: 500;
+}
+.accounting-container .accordion-icon {
+    color: var(--color-text-muted);
+    font-size: 12px;
+}
+.accounting-container .repair-accordion-item.expanded .accordion-icon {
+    color: var(--color-text);
+}
+
+/* ---- Тело раскрытия ---- */
+.accounting-container .repair-accordion-body {
+    padding: var(--space-4) var(--space-5);
+    background-color: var(--color-surface);
+}
+.accounting-container .repair-actions {
+    margin-top: var(--space-3);
+    gap: var(--space-2);
+}
+
+/* ---- История правок внутри раскрытого ремонта ---- */
+.accounting-container .edit-history-details {
+    margin-top: var(--space-4);
+    padding-top: var(--space-3);
+    border-top: 1px solid var(--color-border);
+}
+.accounting-container .edit-history-details h4 {
+    font-size: 12.5px;
+    font-weight: 600;
+    margin: 0 0 var(--space-3);
+    color: var(--color-text);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+.accounting-container .history-sub-item {
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    padding: var(--space-3);
+    margin: var(--space-2) 0;
+}
+.accounting-container .history-sub-header {
+    font-family: var(--font-family-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: 12.5px;
+    font-weight: 500;
+    color: var(--color-text-muted);
+    border-bottom: 1px solid var(--color-border);
+    padding-bottom: 6px;
+    margin-bottom: var(--space-2);
+}
+.accounting-container .history-old-value {
+    color: var(--color-text-muted);
+    text-decoration: line-through;
+    font-size: 0.9em;
+    background: transparent;
+}
+.accounting-container .history-new-value {
+    color: var(--color-text);
+    font-weight: 500;
+    background-color: rgba(56, 189, 248, 0.15);
+    padding: 1px 6px;
+    border-radius: 3px;
+}
+.accounting-container .history-textarea-comparison textarea {
+    min-height: 60px;
+    background-color: var(--color-surface-2);
+}
+.accounting-container .change-label {
+    font-size: 11px;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* ---- Истории на табах 2/3/5/6/7 ---- */
+
+/* Контейнер всей ленты истории (#productionHistory, #testingHistory,
+   #inspectionHistory, #terminationHistory) - превращаем в "таблицу". */
+.accounting-container #productionHistory:not(:empty),
+.accounting-container #testingHistory:not(:empty),
+.accounting-container #inspectionHistory:not(:empty),
+.accounting-container #terminationHistory:not(:empty) {
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background-color: var(--color-surface);
+    overflow: hidden;
+}
+
+/* Каждый record - "строка таблицы" */
+.accounting-container #productionHistory > .history-item,
+.accounting-container #testingHistory > .history-item,
+.accounting-container #inspectionHistory > .history-item,
+.accounting-container #terminationHistory > .history-item {
+    margin: 0;
+    padding: var(--space-3) var(--space-4);
+    border: 0;
+    border-bottom: 1px solid var(--color-border);
+    border-radius: 0;
+    background-color: transparent;
+    box-shadow: none;
+}
+.accounting-container #productionHistory > .history-item:last-child,
+.accounting-container #testingHistory > .history-item:last-child,
+.accounting-container #inspectionHistory > .history-item:last-child,
+.accounting-container #terminationHistory > .history-item:last-child {
+    border-bottom: 0;
+}
+
+/* Заголовок записи (дата+автор) - моноширинный */
+.accounting-container .history-item .history-header,
+.accounting-container .history-item > caption.history-header {
+    padding: 0 0 var(--space-2) 0;
+    margin: 0 0 var(--space-2);
+    border-bottom: 1px dashed var(--color-border);
+    color: var(--color-text);
+    font-size: 13px;
+    font-family: var(--font-family-mono);
+    font-variant-numeric: tabular-nums;
+    font-weight: 500;
+    text-align: left;
+}
+
+/* Внутренняя таблица ключ-значение */
+.accounting-container .history-item .history-subtable {
+    margin: 0;
+    border: 0;
+    box-shadow: none;
+    background: transparent;
+    border-radius: 0;
+}
+.accounting-container .history-item .history-subtable td {
+    padding: 4px 0;
+    border-bottom: 0;
+    vertical-align: top;
+    font-size: 13px;
+}
+.accounting-container .history-item .history-subtable tr td:first-child {
+    color: var(--color-text-muted);
+    width: 240px;
+    padding-right: var(--space-3);
+}
+.accounting-container .history-item .history-subtable tr:hover > * {
+    background: transparent;
+}
+.accounting-container .history-textarea-display {
+    white-space: pre-wrap;
+    word-break: break-word;
+    color: var(--color-text);
+    font-size: 13px;
+}
+.accounting-container .history-field-label {
+    margin: 6px 0 2px;
+    color: var(--color-text-muted);
+    font-size: 12.5px;
+    font-weight: 500;
+}
+
+/* ---- Тёмная тема для 3b ---- */
+:root[data-theme="dark"] .accounting-container .repair-accordion-item.expanded {
+    background-color: var(--color-surface-2);
+}
+:root[data-theme="dark"] .accounting-container .history-new-value {
+    background-color: rgba(56, 189, 248, 0.22);
+}
+
 /* ---- Тёмная тема ----
    Старая тёмная тема не имеет отдельных правил для .button-* / inputs,
    но поскольку наши новые цвета используют CSS-переменные, корректно
