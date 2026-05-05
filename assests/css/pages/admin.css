@@ -28,17 +28,20 @@
     color: var(--color-text);
 }
 
-/* Список таблиц БД (chips-grid) */
+/* Список таблиц БД (chips-grid).
+   Минимум 220px на колонку — иначе длинные имена вроде
+   device_composition_history / tolerances_cartographer переполняют пилюлю. */
 .table-list-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
     gap: 8px;
     margin-top: var(--space-3);
 }
 .table-name-link {
-    display: inline-flex;
+    display: flex;
     align-items: center;
     gap: 8px;
+    min-width: 0;
     padding: 8px 12px;
     border: 1px solid var(--color-border);
     border-radius: var(--radius-sm);
@@ -46,12 +49,18 @@
     color: var(--color-text-muted);
     font-family: var(--font-family-mono);
     font-size: 12.5px;
+    line-height: 1.3;
+    /* Длинные имена с подчёркиваниями ломаются по символам, чтобы
+       никогда не выходили за рамку пилюли. */
+    word-break: break-all;
+    overflow-wrap: anywhere;
     transition: border-color var(--t-fast) var(--ease-out),
                 color var(--t-fast) var(--ease-out),
                 background-color var(--t-fast) var(--ease-out);
 }
 .table-name-link::before {
     content: '';
+    flex-shrink: 0;
     width: 6px;
     height: 6px;
     border-radius: var(--radius-full);
