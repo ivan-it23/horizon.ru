@@ -822,3 +822,204 @@
 :root[data-theme="dark"] .accounting-container .input-field.readonly-field {
     background-color: var(--color-surface-2);
 }
+
+/* ====================================================================
+   Этап 3c — файлы в виде data-table.
+   Раньше файлы рисовались списком .file-list/.file-item-карточек
+   (flex-блоки с псевдо-иконкой fa-file и hover-translate). Теперь
+   fileManager.js генерирует <table class="data-table files-table">,
+   и нам нужно: (1) погасить старые правила .file-item (flex, border,
+   ::before-иконка) для табличного контекста, (2) добавить sticky-шапку,
+   моноширинные дату/тип, компактные иконочные кнопки в колонке действий.
+   Все правила скоупим под .accounting-container.
+   ==================================================================== */
+
+/* Сброс старого .file-item-карточечного вида в табличном контексте */
+.accounting-container tr.file-item {
+    display: table-row;
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    padding: 0;
+    box-shadow: none;
+    transform: none;
+    transition: background-color var(--t-fast) var(--ease-out);
+}
+.accounting-container tr.file-item::before {
+    content: none;
+}
+
+/* Сброс старого .file-list (был flex-column со списочной маркировкой) */
+.accounting-container table.file-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: table;
+    flex-direction: initial;
+    gap: 0;
+    width: 100%;
+    table-layout: auto;
+}
+
+/* Контейнер таблицы — единая полоса с рамкой и закруглением (как 3a/3b) */
+.accounting-container .files-table-wrap {
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background-color: var(--color-surface);
+    overflow: hidden;
+    margin-top: var(--space-3);
+}
+.accounting-container .files-table-wrap > .data-table.files-table {
+    margin: 0;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    background: transparent;
+}
+
+/* Sticky-шапка */
+.accounting-container .files-table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background-color: var(--color-surface-2);
+    font-size: var(--fs-xs);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--color-text-muted);
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--color-border);
+    white-space: nowrap;
+}
+
+/* Ячейки */
+.accounting-container .files-table tbody td {
+    padding: 10px 16px;
+    vertical-align: middle;
+    font-size: 13px;
+    color: var(--color-text);
+    border-bottom: 1px solid var(--color-border);
+}
+.accounting-container .files-table tbody tr:last-child td {
+    border-bottom: 0;
+}
+
+/* Hover на строке */
+.accounting-container .files-table tbody tr:hover > td {
+    background-color: var(--color-surface-2);
+}
+
+/* Колонка «Имя» — основной текст, ellipsis при переполнении */
+.accounting-container .files-table .col-name {
+    width: auto;
+    max-width: 480px;
+}
+.accounting-container .files-table .file-name {
+    display: inline-block;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    vertical-align: bottom;
+    font-weight: 500;
+    color: var(--color-text);
+    font-size: 13px;
+}
+
+/* Колонка «Тип» — компактный chip с расширением */
+.accounting-container .files-table .col-type {
+    width: 96px;
+    white-space: nowrap;
+}
+.accounting-container .files-table .file-type {
+    display: inline-block;
+    padding: 2px 8px;
+    background-color: var(--color-surface-2);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    font-family: var(--font-family-mono);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    color: var(--color-text-muted);
+}
+
+/* Колонка «Дата» — моноширинная, табличные цифры */
+.accounting-container .files-table .col-date {
+    width: 200px;
+    white-space: nowrap;
+}
+.accounting-container .files-table .file-date {
+    font-family: var(--font-family-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: 12px;
+    color: var(--color-text-muted);
+}
+
+/* Колонка «Действия» — справа, кнопки в ряд */
+.accounting-container .files-table .col-actions {
+    width: 1%;
+    white-space: nowrap;
+    text-align: right;
+}
+.accounting-container .files-table .file-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    justify-content: flex-end;
+}
+
+/* Компактные иконочные кнопки (в строке таблицы 36px высоковато) */
+.accounting-container .files-table .file-actions .button-icon,
+.accounting-container .files-table .file-actions .download-link {
+    min-width: 28px;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--color-border);
+    background-color: var(--color-surface);
+    color: var(--color-text-muted);
+    font-size: 12px;
+    transition: background-color var(--t-fast) var(--ease-out),
+                color var(--t-fast) var(--ease-out),
+                border-color var(--t-fast) var(--ease-out);
+}
+.accounting-container .files-table .file-actions .button-icon:hover,
+.accounting-container .files-table .file-actions .download-link:hover {
+    background-color: var(--color-surface-2);
+    color: var(--color-text);
+    border-color: var(--color-border-strong, var(--color-border));
+}
+.accounting-container .files-table .file-actions .button-icon.text-danger:hover {
+    background-color: rgba(220, 38, 38, 0.08);
+    color: var(--color-danger, #dc2626);
+    border-color: rgba(220, 38, 38, 0.3);
+}
+
+/* file-area-controls — заголовок секции списка над таблицей */
+.accounting-container .file-area-controls {
+    border-bottom: 0;
+    padding-bottom: 0;
+    margin-bottom: var(--space-2);
+}
+.accounting-container .file-area-controls h4 {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-text);
+    text-transform: none;
+    letter-spacing: 0;
+}
+
+/* Тёмная тема */
+:root[data-theme="dark"] .accounting-container .files-table thead th {
+    background-color: var(--color-surface-2);
+}
+:root[data-theme="dark"] .accounting-container .files-table tbody tr:hover > td {
+    background-color: var(--color-surface-2);
+}
+:root[data-theme="dark"] .accounting-container .files-table .file-type {
+    background-color: var(--color-surface-2);
+    border-color: var(--color-border-strong, var(--color-border));
+}
