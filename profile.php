@@ -93,7 +93,7 @@ try {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Личный кабинет — АМК «Горизонт»</title>
     <link rel="icon" href="images/favicon1.png" type="image/png">
-    <link rel="stylesheet" href="assests/css/app.css?v=20260428">
+    <link rel="stylesheet" href="assests/css/app.css?v=20260507">
     <link rel="stylesheet" href="assests/css/pages/profile.css?v=20260428">
     <script src="assests/js/themeManager.js?v=20260428"></script>
     <script src="assests/js/notifications.js?v=20260428" defer></script>
