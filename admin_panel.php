@@ -288,7 +288,7 @@ $adminActions = [
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Админ-панель — АМК «Горизонт»</title>
     <link rel="icon" href="images/favicon1.png" type="image/png">
-    <link rel="stylesheet" href="assests/css/app.css?v=20260507">
+    <link rel="stylesheet" href="assests/css/app.css?v=20260508">
     <link rel="stylesheet" href="assests/css/pages/admin.css?v=20260505">
     <script src="assests/js/themeManager.js"></script>
     <script src="assests/js/modalManager.js" defer></script>
