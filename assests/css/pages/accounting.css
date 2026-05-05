@@ -1108,3 +1108,184 @@
     background-color: var(--color-surface-2);
     border-color: var(--color-border-strong, var(--color-border));
 }
+
+/* ====================================================================
+   B2 — Модалка допусков (#toleranceModal). Сама модалка использует
+   составной layout (.modal--lg .modal-dialog > .modal-content >
+   .modal-header / .modal-body / .modal-footer), он уже выровнен в
+   PR #41 (общий компонент). Здесь причёсываем содержимое:
+   tolerance-section / tolerance-table / tolerance-input — у них
+   раньше не было собственных стилей и они отображались дефолтным
+   браузерным <table>, плюс заголовок секции имел градиентную полоску.
+   ==================================================================== */
+
+/* Заголовок параметра ("Третья гармоника (дБн)" и т.п.) — плоский
+   eyebrow с тонкой левой полоской вместо градиента. */
+#toleranceTablesContainer h4.section-title {
+    margin: 0 0 var(--space-3);
+    padding: 0 0 0 var(--space-3);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-text);
+    border-bottom: 0;
+    text-transform: none;
+    letter-spacing: 0;
+    line-height: 1.4;
+    box-shadow: inset 2px 0 0 var(--color-primary);
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+#toleranceTablesContainer h4.section-title::before {
+    content: none;
+    background: none;
+    width: 0;
+    height: 0;
+}
+
+/* Секция параметра */
+#toleranceTablesContainer .tolerance-section {
+    margin: 0 0 var(--space-5);
+    padding: var(--space-4);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background-color: var(--color-surface);
+}
+#toleranceTablesContainer .tolerance-section:last-child {
+    margin-bottom: 0;
+}
+
+/* Контейнер таблицы внутри секции (overflow-x для узких экранов) */
+#toleranceTablesContainer .tolerance-section .overflow-x-auto {
+    margin: 0 0 var(--space-3);
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+}
+#toleranceTablesContainer .tolerance-section .overflow-x-auto:last-child {
+    margin-bottom: 0;
+}
+
+/* Сама таблица допусков. Раньше не имела стилей — рисовалась дефолтным
+   браузерным table (без рамок, моноширинности, выравнивания). */
+.tolerance-table {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: transparent;
+    font-size: var(--fs-xs);
+    margin: 0;
+}
+
+/* caption — заголовок частоты ("400 кГц"), eyebrow в стиле data-table */
+.tolerance-table > caption {
+    caption-side: top;
+    text-align: left;
+    padding: 8px var(--space-3);
+    font-family: var(--font-family-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    background-color: var(--color-surface-2);
+    border-bottom: 1px solid var(--color-border);
+}
+
+/* Заголовки колонок (1..5) — приглушённый mono */
+.tolerance-table thead th {
+    padding: 6px 8px;
+    background-color: var(--color-surface-2);
+    color: var(--color-text-muted);
+    font-family: var(--font-family-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    text-align: center;
+    border-bottom: 1px solid var(--color-border);
+    border-right: 1px solid var(--color-border);
+}
+.tolerance-table thead th:last-child {
+    border-right: 0;
+}
+
+/* Ячейки с двумя input min/max */
+.tolerance-table tbody td {
+    padding: 6px 8px;
+    background-color: var(--color-surface);
+    border-right: 1px solid var(--color-border);
+    vertical-align: middle;
+    text-align: center;
+}
+.tolerance-table tbody td:last-child {
+    border-right: 0;
+}
+.tolerance-table tbody td br {
+    display: block;
+    content: '';
+    margin-bottom: 4px;
+}
+
+/* Поля min/max — компактные mono number inputs */
+.tolerance-input {
+    display: block;
+    width: 100%;
+    min-width: 64px;
+    padding: 4px 6px;
+    margin: 0 0 4px;
+    font-family: var(--font-family-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: 12px;
+    line-height: 1.3;
+    color: var(--color-text);
+    background-color: var(--color-surface-2);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    text-align: center;
+    appearance: textfield;
+    -moz-appearance: textfield;
+    transition: border-color var(--t-fast) var(--ease-out),
+                box-shadow var(--t-fast) var(--ease-out);
+}
+.tolerance-input::-webkit-outer-spin-button,
+.tolerance-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+.tolerance-input:last-child {
+    margin-bottom: 0;
+}
+.tolerance-input:hover {
+    border-color: var(--color-border-strong, var(--color-text-muted));
+}
+.tolerance-input:focus,
+.tolerance-input:focus-visible {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 2px rgba(34, 100, 219, 0.18);
+}
+.tolerance-input::placeholder {
+    color: var(--color-text-muted);
+    opacity: 0.6;
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+/* Тёмная тема */
+:root[data-theme="dark"] #toleranceTablesContainer .tolerance-section {
+    background-color: var(--color-surface);
+}
+:root[data-theme="dark"] .tolerance-table > caption,
+:root[data-theme="dark"] .tolerance-table thead th {
+    background-color: var(--color-surface-2);
+}
+:root[data-theme="dark"] .tolerance-table tbody td {
+    background-color: var(--color-surface);
+}
+:root[data-theme="dark"] .tolerance-input {
+    background-color: var(--color-surface-2);
+}
