@@ -656,7 +656,6 @@ $adminActions = [
 <?php
     $dbStatus     = 'ok';
     $dbStatusText = 'БД доступна';
-    $appVersion   = 'v2.0';
     include __DIR__ . '/partials/app_footer.php';
 ?>
 
