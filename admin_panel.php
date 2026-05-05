@@ -289,7 +289,7 @@ $adminActions = [
     <title>Админ-панель — АМК «Горизонт»</title>
     <link rel="icon" href="images/favicon1.png" type="image/png">
     <link rel="stylesheet" href="assests/css/app.css?v=20260428">
-    <link rel="stylesheet" href="assests/css/pages/admin.css?v=20260428">
+    <link rel="stylesheet" href="assests/css/pages/admin.css?v=20260505">
     <script src="assests/js/themeManager.js"></script>
     <script src="assests/js/modalManager.js" defer></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
