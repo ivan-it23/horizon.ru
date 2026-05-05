@@ -237,7 +237,12 @@ document.addEventListener('DOMContentLoaded', function () {
                     // Очищаем область отображения файлов
                     const fileDisplayArea = tab8Pane.querySelector('#file-display-area');
                     if (fileDisplayArea) {
-                        fileDisplayArea.innerHTML = '<p class="info-message">Выберите тип файла для просмотра и управления.</p>';
+                        fileDisplayArea.innerHTML = emptyStateHTML(
+                            'fa-folder-open',
+                            'Выберите тип файла',
+                            'Сверху выберите категорию (Термопрофиль, Фото, ремонт и т.\u00a0д.), чтобы увидеть список файлов этого типа.',
+                            'compact'
+                        );
                     }
                 }
             }

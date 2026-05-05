@@ -23,7 +23,12 @@
     /* ------------------------------------------------------------------ */
     async function loadFilesForType(fieldType) {
         currentFieldType = fieldType;
-        fileDisplayArea.innerHTML = '<p class="info-message">Загрузка файлов...</p>';
+        fileDisplayArea.innerHTML = emptyStateHTML(
+            'fa-spinner fa-spin',
+            'Загрузка файлов…',
+            null,
+            'loading'
+        );
 
         const serialNumber = document.getElementById('serialNumberTab8').textContent.trim();
         const caseNumber   = document.getElementById('caseNumberTab8').textContent.trim();

@@ -49,9 +49,9 @@ if ($is_logged_in) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Учёт приборов индукционного каротажа АМК «Горизонт»</title>
     <link rel="icon" href="images/favicon1.png" type="image/png">
-    <link rel="stylesheet" href="assests/css/app.css?v=20260428">
+    <link rel="stylesheet" href="assests/css/app.css?v=20260429">
     <link rel="stylesheet" href="StyleAccountingOfDevices.css">
-    <link rel="stylesheet" href="assests/css/pages/accounting.css?v=20260428">
+    <link rel="stylesheet" href="assests/css/pages/accounting.css?v=20260429">
     <link rel="stylesheet" href="ai_agent/css/ai_agent.css">
     <script src="assests/js/themeManager.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
@@ -656,7 +656,11 @@ if ($is_logged_in) {
 
                 <!-- Основной контейнер: динамическое содержимое (список файлов, форма загрузки и т.д.) -->
                 <div id="file-display-area" class="mt-4 file-display-wrapper">
-                    <p class="info-message">Выберите тип файла для просмотра и управления.</p>
+                    <div class="empty-state empty-state--compact">
+                        <i class="empty-state__icon fas fa-folder-open" aria-hidden="true"></i>
+                        <h4 class="empty-state__title">Выберите тип файла</h4>
+                        <p class="empty-state__hint">Сверху выберите категорию (Термопрофиль, Фото, ремонт и т.&nbsp;д.), чтобы увидеть список файлов этого типа.</p>
+                    </div>
                 </div>
 
                 <div id="renameFileModal" class="modal modal--sm">

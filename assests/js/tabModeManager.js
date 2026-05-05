@@ -95,14 +95,23 @@
             showHistoryButton.addEventListener('click', () => {
                 createForm.style.display = 'none';
                 historyDiv.style.display = 'block';
-                historyDiv.innerHTML = '<p>Загрузка истории...</p>';
+                historyDiv.innerHTML = emptyStateHTML(
+                    'fa-spinner fa-spin',
+                    'Загрузка истории…',
+                    null,
+                    'loading'
+                );
 
                 const info = (typeof getSelectedDeviceInfo === 'function') ? getSelectedDeviceInfo() : {};
                 const serialNumber = info.serialNumber || null;
                 const caseNumber   = info.caseNumber   || null;
 
                 if (!serialNumber || !caseNumber) {
-                    historyDiv.innerHTML = '<p class="info-message">Выберите прибор на вкладке "Идентификационные данные" для просмотра истории.</p>';
+                    historyDiv.innerHTML = emptyStateHTML(
+                        'fa-microchip',
+                        'Прибор не выбран',
+                        'Откройте вкладку «Идентификационные данные» и выберите прибор — после этого здесь появится его история.'
+                    );
                     return;
                 }
 
@@ -148,7 +157,11 @@
                         // ---------- Generic renderer (по умолчанию) ----------------
                         const arr = Array.isArray(data) ? data : (data.history || []);
                         if (!arr.length) {
-                            historyDiv.innerHTML = '<p class="info-message">История не найдена</p>';
+                            historyDiv.innerHTML = emptyStateHTML(
+                                'fa-history',
+                                'История не найдена',
+                                'Для этого прибора в выбранной категории пока нет записей.'
+                            );
                         } else {
                             arr.forEach(rec => {
                                 const historyItemDiv = document.createElement('div');
@@ -260,7 +273,11 @@
     function renderProductionDiscontinuationHistory(apiData, targetDiv) {
         const historyArr = apiData.history || [];
         if (!Array.isArray(historyArr) || historyArr.length === 0) {
-            targetDiv.innerHTML = '<p class="info-message">История не найдена</p>';
+            targetDiv.innerHTML = emptyStateHTML(
+                'fa-history',
+                'История не найдена',
+                'Для этого прибора в выбранной категории пока нет записей.'
+            );
             return;
         }
         historyArr.forEach(rec => {
@@ -297,7 +314,11 @@
     function renderInspectionHistory(apiData, targetDiv) {
         const arr = Array.isArray(apiData) ? apiData : (apiData.history || []);
         if (!arr.length) {
-            targetDiv.innerHTML = '<p class="info-message">История не найдена</p>';
+            targetDiv.innerHTML = emptyStateHTML(
+                'fa-history',
+                'История не найдена',
+                'Для этого прибора в выбранной категории пока нет записей.'
+            );
             return;
         }
         arr.forEach(rec => {
@@ -350,7 +371,11 @@
     function renderTerminationHistory(apiData, targetDiv) {
         const arr = Array.isArray(apiData) ? apiData : (apiData.history || []);
         if (!arr.length) {
-            targetDiv.innerHTML = '<p class="info-message">История не найдена</p>';
+            targetDiv.innerHTML = emptyStateHTML(
+                'fa-history',
+                'История не найдена',
+                'Для этого прибора в выбранной категории пока нет записей.'
+            );
             return;
         }
         arr.forEach(rec => {
@@ -398,7 +423,11 @@
     function renderAdditionalHistory(apiData, targetDiv) {
         const arr = Array.isArray(apiData) ? apiData : (apiData.history || []);
         if (!arr.length) {
-            targetDiv.innerHTML = '<p class="info-message">История не найдена</p>';
+            targetDiv.innerHTML = emptyStateHTML(
+                'fa-history',
+                'История не найдена',
+                'Для этого прибора в выбранной категории пока нет записей.'
+            );
             return;
         }
         arr.forEach(rec => {

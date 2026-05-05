@@ -281,7 +281,11 @@
         targetDiv.innerHTML = '';
 
         if (!Array.isArray(historyData) || historyData.length === 0) {
-            targetDiv.innerHTML = '<p class="info-message">История испытаний не найдена.</p>';
+            targetDiv.innerHTML = emptyStateHTML(
+                'fa-history',
+                'История испытаний не найдена',
+                'Для этого прибора ещё не было записей об испытаниях.'
+            );
             return;
         }
 
@@ -289,7 +293,11 @@
         const currentSelectedDeviceType = deviceTypeElem ? deviceTypeElem.textContent : '';
 
         if (!currentSelectedDeviceType || currentSelectedDeviceType === '-') {
-            targetDiv.innerHTML = '<p class="info-message">Выберите прибор на вкладке "Идентификационные данные" для просмотра истории.</p>';
+            targetDiv.innerHTML = emptyStateHTML(
+                'fa-microchip',
+                'Прибор не выбран',
+                'Откройте вкладку «Идентификационные данные» и выберите прибор — после этого здесь появится его история.'
+            );
             return;
         }
 
