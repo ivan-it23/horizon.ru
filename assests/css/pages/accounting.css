@@ -698,10 +698,11 @@
     padding-bottom: 6px;
     margin-bottom: var(--space-2);
 }
-/* B1 — монохромный inline-diff. Ячейка-обёртка подсвечивается тонко
-   через .changed-field, старое значение даётся серым с line-through и
-   моноширинным префиксом «−», новое — обычным текстом с префиксом «+».
-   Без жёлтых/красных/циановых подложек. */
+/* B1 — монохромный inline-diff в стиле value-change (а не git +/−).
+   Старое значение перечёркнуто и приглушено, новое — обычный текст.
+   Без маркеров «+/−» (для значений семантика «значение изменилось»,
+   а не «строка добавлена/удалена»). Ячейка .changed-field помечается
+   тонкой полоской слева, без жёлтой warning-подложки. */
 .accounting-container .changed-field {
     background-color: transparent;
     box-shadow: inset 2px 0 0 var(--color-border-strong, var(--color-border));
@@ -718,12 +719,6 @@
     background: transparent;
     padding: 0;
 }
-.accounting-container .history-old-value::before {
-    content: '−\00a0';
-    color: var(--color-text-muted);
-    text-decoration: none;
-    font-weight: 600;
-}
 .accounting-container .history-new-value {
     display: inline-block;
     color: var(--color-text);
@@ -734,29 +729,21 @@
     background: transparent;
     padding: 0;
 }
-.accounting-container .history-new-value::before {
-    content: '+\00a0';
-    color: var(--color-text);
-    font-weight: 600;
-}
 
-/* deviceHistoryManager использует .history-old-value как «(prev)» рядом с
-   текущим значением — там префикс «−» неуместен; маркер ставим только
-   когда old-value стоит вне нового значения (после стрелки `&rarr;`). */
-.accounting-container .history-new-value + .history-old-value::before {
-    content: '';
-}
+/* deviceHistoryManager: «новое (старое)» в одной ячейке */
 .accounting-container .history-new-value + .history-old-value {
     margin-left: 6px;
     opacity: 0.85;
 }
-
-/* «→» между значениями — приглушаем */
+/* repairManager: «старое → новое» в одной ячейке */
 .accounting-container .history-old-value + .history-new-value {
     margin-left: 6px;
 }
 
-/* Многострочный diff (textarea-сравнение) */
+/* Многострочный diff (textarea-сравнение). Сдержанные тинты —
+   красноватый для старых сведений, зеленоватый для новых, без
+   неоновых подложек: ≤6% альфа + 2px бордер слева. Это
+   стандартный паттерн корпоративных code-review-инструментов. */
 .accounting-container .history-textarea-comparison {
     display: flex;
     flex-direction: column;
@@ -765,7 +752,6 @@
 }
 .accounting-container .history-textarea-comparison textarea {
     min-height: 60px;
-    background-color: var(--color-surface-2);
     border: 1px solid var(--color-border);
     border-radius: var(--radius-sm);
     font-family: var(--font-family-mono);
@@ -774,6 +760,7 @@
     padding: 8px 10px;
     color: var(--color-text);
     resize: vertical;
+    transition: background-color var(--t-fast) var(--ease-out);
 }
 .accounting-container .change-label {
     font-size: 11px;
@@ -785,6 +772,22 @@
 }
 .accounting-container .change-label:first-child {
     margin-top: 0;
+}
+/* Парная пара «label + textarea»: старая (красноватая), новая (зелёная) */
+.accounting-container .history-textarea-comparison .change-label:nth-of-type(1) {
+    color: #2e7d32;
+}
+.accounting-container .history-textarea-comparison .change-label:nth-of-type(1) + textarea {
+    background-color: rgba(46, 125, 50, 0.05);
+    border-left: 2px solid rgba(46, 125, 50, 0.4);
+}
+.accounting-container .history-textarea-comparison .change-label:nth-of-type(2) {
+    color: #b3261e;
+}
+.accounting-container .history-textarea-comparison .change-label:nth-of-type(2) + textarea {
+    background-color: rgba(179, 38, 30, 0.05);
+    border-left: 2px solid rgba(179, 38, 30, 0.4);
+    color: var(--color-text-muted);
 }
 
 /* ---- Истории на табах 2/3/5/6/7 ---- */
@@ -878,8 +881,21 @@
     box-shadow: inset 2px 0 0 var(--color-border-strong, var(--color-border));
 }
 :root[data-theme="dark"] .accounting-container .history-textarea-comparison textarea {
-    background-color: var(--color-surface);
     border-color: var(--color-border);
+}
+:root[data-theme="dark"] .accounting-container .history-textarea-comparison .change-label:nth-of-type(1) {
+    color: #66bb6a;
+}
+:root[data-theme="dark"] .accounting-container .history-textarea-comparison .change-label:nth-of-type(1) + textarea {
+    background-color: rgba(102, 187, 106, 0.08);
+    border-left-color: rgba(102, 187, 106, 0.45);
+}
+:root[data-theme="dark"] .accounting-container .history-textarea-comparison .change-label:nth-of-type(2) {
+    color: #ef9a9a;
+}
+:root[data-theme="dark"] .accounting-container .history-textarea-comparison .change-label:nth-of-type(2) + textarea {
+    background-color: rgba(239, 154, 154, 0.08);
+    border-left-color: rgba(239, 154, 154, 0.45);
 }
 
 /* ---- Тёмная тема ----
