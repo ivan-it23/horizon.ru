@@ -1570,3 +1570,42 @@
 :root[data-theme="dark"] .warning-message {
     background-color: rgba(250, 204, 21, 0.08);
 }
+
+/* ====================================================================
+   Карточка идентификации прибора в шапках вкладок 2-8 (.device-info-box).
+   Раньше: градиентный фон, мягкая тень, толстая 4px градиентная полоса
+   слева (primary→accent, неоново-голубая). Слишком «детский» вид,
+   сбивающийся с остальной плоской дизайн-системы.
+   Сейчас: плоский surface-фон, без тени, тонкая 2px primary-полоса
+   слева, скромные радиусы. FA-иконки приглушены до text-muted (та же
+   логика, что и .empty-state__icon).
+   ==================================================================== */
+
+.device-info-box {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    box-shadow: none;
+    padding: var(--space-3) var(--space-4);
+}
+
+.device-info-box::before {
+    width: 2px;
+    background: var(--color-primary);
+}
+
+.device-info-label i {
+    color: var(--color-text-muted);
+    opacity: 0.8;
+}
+
+/* Тёмная тема: на тёмном фоне primary даёт лёгкое неоновое свечение,
+   немного приглушаем, чтобы не «горело». */
+:root[data-theme="dark"] .device-info-box {
+    background: var(--color-surface-2);
+    border-color: var(--color-border);
+}
+:root[data-theme="dark"] .device-info-box::before {
+    background: var(--color-primary);
+    opacity: 0.85;
+}
