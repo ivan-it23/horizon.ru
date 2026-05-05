@@ -22,9 +22,13 @@
         const userListSection    = $(".msgr-user-list-section",    modal);
         const messageFormSection = $(".msgr-message-form-section", modal);
         const modalTitle         = $(".msgr-modal-title",         modal);
+        const sendBtn            = $(".msgr-send-btn",            modal);
+        const backBtn            = $(".msgr-back-btn",            modal);
         if (userListSection)    userListSection.style.display    = "block";
         if (messageFormSection) messageFormSection.style.display = "none";
         if (modalTitle)         modalTitle.textContent = "Выберите получателя сообщения";
+        if (sendBtn)            sendBtn.style.display = "none";
+        if (backBtn)            backBtn.style.display = "none";
         selectedRecipientId = null;
     }
 
@@ -84,6 +88,8 @@
         const recipientNameSpan  = $(".msgr-recipient-name",       modal);
         const modalTitle         = $(".msgr-modal-title",         modal);
         const textarea           = $(".msgr-text",                modal);
+        const sendBtn            = $(".msgr-send-btn",            modal);
+        const backBtn            = $(".msgr-back-btn",            modal);
 
         if (recipientNameSpan) {
             recipientNameSpan.textContent = `${user.lastname} ${user.firstname} ${user.middlename || ""}`;
@@ -91,6 +97,8 @@
         if (userListSection)    userListSection.style.display    = "none";
         if (messageFormSection) messageFormSection.style.display = "block";
         if (modalTitle)         modalTitle.textContent           = "Новое сообщение";
+        if (sendBtn)            sendBtn.style.display = "";
+        if (backBtn)            backBtn.style.display = "";
         if (textarea) {
             textarea.value = "";
             textarea.focus();
@@ -143,19 +151,40 @@
     /* ------------------------------------------------------------------ */
     /*  Открытие / закрытие модального окна                               */
     /* ------------------------------------------------------------------ */
-    function openModalFromIcon(icon) {
-        const modal = icon.parentElement.querySelector(".msgr-modal");
+    /**
+     * Возвращает единственный мессенджер-модальный экземпляр на странице
+     * (#messengerModal на уровне body). Раньше разметка дублировалась в
+     * каждой вкладке (.mode-buttons > .msgr-modal), и это приводило к
+     * захвату модалки в стек-контекст sticky-шапки.
+     */
+    function getMessengerModal() {
+        return document.getElementById("messengerModal");
+    }
+
+    function openModalFromIcon(/* icon */) {
+        const modal = getMessengerModal();
         if (!modal) {
-            console.warn("MessageManager: не найдено модальное окно для иконки.");
+            console.warn("MessageManager: глобальное модальное окно #messengerModal не найдено.");
             return;
         }
-        modal.style.display = "flex"; // flex – для центрирования
+        modal.classList.add("is-visible");
+        document.body.classList.add("modal-open");
         loadUserListIntoModal(modal);
     }
 
     function closeModal(modal) {
+        modal = modal || getMessengerModal();
         if (!modal) return;
-        modal.style.display = "none";
+        modal.classList.remove("is-visible");
+        document.body.classList.remove("modal-open");
+        const textarea = $(".msgr-text", modal);
+        if (textarea) textarea.value = "";
+        resetModalState(modal);
+    }
+
+    function backToUserList(modal) {
+        modal = modal || getMessengerModal();
+        if (!modal) return;
         const textarea = $(".msgr-text", modal);
         if (textarea) textarea.value = "";
         resetModalState(modal);
@@ -204,7 +233,11 @@
     /*  Инициализация                                                     */
     /* ------------------------------------------------------------------ */
     function init() {
-        // 1) Открытие модалки по клику на конверт
+        const modal = getMessengerModal();
+        if (!modal) return;
+
+        // 1) Открытие модалки по клику на конверт (иконки разбросаны по
+        //    разным вкладкам, но все ведут к одной модалке).
         $$(".msgr-open-icon").forEach(icon => {
             icon.addEventListener("click", evt => {
                 evt.stopPropagation();
@@ -212,23 +245,25 @@
             });
         });
 
-        // 2) Закрытие по кнопке и по клику вне контента
-        $$(".msgr-modal").forEach(modal => {
-            const closeBtn = $(".msgr-close", modal);
-            if (closeBtn) closeBtn.addEventListener("click", () => closeModal(modal));
+        // 2) Закрытие по крестику / кнопке Отмена / клику по подложке
+        const closeBtn  = $(".msgr-close",      modal);
+        const cancelBtn = $(".msgr-cancel-btn", modal);
+        const backBtn   = $(".msgr-back-btn",   modal);
+        if (closeBtn)  closeBtn.addEventListener("click",  () => closeModal(modal));
+        if (cancelBtn) cancelBtn.addEventListener("click", () => closeModal(modal));
+        if (backBtn)   backBtn.addEventListener("click",   () => backToUserList(modal));
 
-            modal.addEventListener("click", evt => {
-                const content = $(".msgr-modal-content", modal);
-                if (content && !content.contains(evt.target)) {
-                    closeModal(modal);
-                }
-            });
+        modal.addEventListener("click", evt => {
+            // Клик по подложке (.modal), но не по содержимому (.modal-dialog/.modal-content)
+            const dialog = $(".modal-dialog", modal);
+            if (dialog && !dialog.contains(evt.target)) {
+                closeModal(modal);
+            }
         });
 
         // 3) Отправка сообщений
-        $$(".msgr-send-btn").forEach(btn => {
-            btn.addEventListener("click", () => handleSendClick(btn));
-        });
+        const sendBtn = $(".msgr-send-btn", modal);
+        if (sendBtn) sendBtn.addEventListener("click", () => handleSendClick(sendBtn));
     }
 
     // Авто-инициализация после загрузки DOM
