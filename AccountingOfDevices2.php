@@ -49,7 +49,7 @@ if ($is_logged_in) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Учёт приборов индукционного каротажа АМК «Горизонт»</title>
     <link rel="icon" href="images/favicon1.png" type="image/png">
-    <link rel="stylesheet" href="assests/css/app.css?v=20260507">
+    <link rel="stylesheet" href="assests/css/app.css?v=20260508">
     <link rel="stylesheet" href="StyleAccountingOfDevices.css">
     <link rel="stylesheet" href="assests/css/pages/accounting.css?v=20260506">
     <link rel="stylesheet" href="ai_agent/css/ai_agent.css">
