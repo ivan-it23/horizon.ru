@@ -125,24 +125,45 @@
                 'compact'
             ));
         } else {
-            const ul = document.createElement('ul');
-            ul.className = 'file-list';
+            const tableWrap = document.createElement('div');
+            tableWrap.className = 'files-table-wrap';
+
+            const table = document.createElement('table');
+            table.className = 'data-table files-table file-list';
+
+            const thead = document.createElement('thead');
+            thead.innerHTML = `
+                <tr>
+                    <th class="col-name">Имя файла</th>
+                    <th class="col-type">Тип</th>
+                    <th class="col-date">Дата загрузки</th>
+                    <th class="col-actions">Действия</th>
+                </tr>`;
+            table.appendChild(thead);
+
+            const tbody = document.createElement('tbody');
             currentFiles.forEach(f => {
-                const li = document.createElement('li');
-                li.className = 'file-item';
-                li.innerHTML = `
-                    <div class="file-info">
-                        <span class="file-name">${Utils.htmlspecialchars(f.file_name)}</span>
-                        <span class="file-date">Загружен: ${new Date(f.created_at).toLocaleString('ru-RU')}</span>
-                    </div>
-                    <div class="file-actions"></div>`;
-                const actionsDiv = li.querySelector('.file-actions');
+                const tr = document.createElement('tr');
+                tr.className = 'file-item';
+                tr.dataset.fileId = f.id;
+                tr.innerHTML = `
+                    <td class="col-name">
+                        <span class="file-name" title="${Utils.htmlspecialchars(f.file_name)}">${Utils.htmlspecialchars(f.file_name)}</span>
+                    </td>
+                    <td class="col-type"><span class="file-type">${getFileExt(f.file_name)}</span></td>
+                    <td class="col-date">
+                        <span class="file-date">${new Date(f.created_at).toLocaleString('ru-RU')}</span>
+                    </td>
+                    <td class="col-actions">
+                        <div class="file-actions"></div>
+                    </td>`;
+                const actionsDiv = tr.querySelector('.file-actions');
+
                 const downloadLink = document.createElement('a');
                 downloadLink.href  = `front.php?c=File&a=download&id=${f.id}`;
                 downloadLink.title = 'Скачать';
                 downloadLink.className = 'download-link button-icon';
-                downloadLink.innerHTML  = '<i class="fas fa-download"></i> <span class="d-none d-md-inline">Скачать</span>';
-                // Уведомление при начале скачивания
+                downloadLink.innerHTML  = '<i class="fas fa-download"></i>';
                 downloadLink.addEventListener('click', () => {
                     if (typeof window.showNotification === 'function') {
                         window.showNotification('Загрузка файла начата', 'info');
@@ -151,6 +172,7 @@
                     }
                 });
                 actionsDiv.appendChild(downloadLink);
+
                 if (currentIsAdmin) {
                     const renameBtn = document.createElement('button');
                     renameBtn.className = 'rename-icon button-icon';
@@ -167,10 +189,22 @@
                     actionsDiv.appendChild(renameBtn);
                     actionsDiv.appendChild(delBtn);
                 }
-                ul.appendChild(li);
+                tbody.appendChild(tr);
             });
-            fileDisplayArea.appendChild(ul);
+            table.appendChild(tbody);
+            tableWrap.appendChild(table);
+            fileDisplayArea.appendChild(tableWrap);
         }
+    }
+
+    /* ------------------------------------------------------------------ */
+    /*  Хелпер: тип файла по расширению                                   */
+    /* ------------------------------------------------------------------ */
+    function getFileExt(fileName) {
+        if (!fileName || typeof fileName !== 'string') return '—';
+        const dot = fileName.lastIndexOf('.');
+        if (dot < 0 || dot === fileName.length - 1) return '—';
+        return fileName.slice(dot + 1).toUpperCase();
     }
 
     /* ------------------------------------------------------------------ */
