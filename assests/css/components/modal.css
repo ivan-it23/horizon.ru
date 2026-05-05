@@ -24,9 +24,8 @@
     opacity: 1;
 }
 
-/* Container (modal-content и modal-dialog ведут себя одинаково) */
-.modal-content,
-.modal-dialog {
+/* Container — простой вариант (.modal > .modal-content) */
+.modal-content {
     background-color: var(--color-surface);
     margin: var(--space-5);
     padding: var(--space-7) var(--space-6) var(--space-6);
@@ -42,27 +41,57 @@
     transition: transform var(--t-base) var(--ease-out),
                 opacity var(--t-base) var(--ease-out);
 }
+
+/* Container — составной вариант (.modal > .modal-dialog > .modal-content > .modal-header/body/footer).
+   .modal-dialog здесь — внешняя «карточка», а вложенный .modal-content становится прозрачной обёрткой
+   (паддинги дают .modal-header / .modal-body / .modal-footer). Без этого получалась «карточка в карточке»
+   и форма обрезалась по ширине. */
+.modal-dialog {
+    background-color: var(--color-surface);
+    margin: var(--space-5);
+    padding: 0;
+    border: 1px solid var(--color-border);
+    width: 100%;
+    max-width: 480px;
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lg);
+    text-align: left;
+    position: relative;
+    overflow: hidden;
+    transform: translateY(8px) scale(0.96);
+    opacity: 0;
+    transition: transform var(--t-base) var(--ease-out),
+                opacity var(--t-base) var(--ease-out);
+}
+.modal-dialog > .modal-content {
+    background: transparent;
+    box-shadow: none;
+    border: 0;
+    margin: 0;
+    padding: 0;
+    max-width: none;
+    width: auto;
+    border-radius: 0;
+    text-align: left;
+    transform: none;
+    opacity: 1;
+}
+
 .modal.is-visible .modal-content,
 .modal.is-visible .modal-dialog {
     transform: translateY(0) scale(1);
     opacity: 1;
 }
 
-/* Большое модальное окно (SQL) */
+/* Маленькое составное модальное окно (rename file) */
+.modal--sm .modal-dialog {
+    max-width: min(520px, 92vw);
+}
+
+/* Большое модальное окно (SQL / tolerance) */
 .modal--lg .modal-content,
 .modal--lg .modal-dialog {
     max-width: min(960px, 92vw);
-    text-align: left;
-    padding: 0;
-}
-.modal--lg .modal-dialog .modal-content {
-    background: transparent;
-    box-shadow: none;
-    border: 0;
-    margin: 0;
-    padding: 0;
-    transform: none;
-    opacity: 1;
 }
 
 .modal-header {
@@ -83,6 +112,14 @@
     text-align: left;
     max-height: 70vh;
     overflow: auto;
+}
+.modal-footer {
+    padding: var(--space-4) var(--space-5);
+    border-top: 1px solid var(--color-border);
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--space-2);
+    flex-wrap: wrap;
 }
 
 /* Закрытие */
