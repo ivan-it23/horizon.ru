@@ -698,28 +698,93 @@
     padding-bottom: 6px;
     margin-bottom: var(--space-2);
 }
+/* B1 — монохромный inline-diff. Ячейка-обёртка подсвечивается тонко
+   через .changed-field, старое значение даётся серым с line-through и
+   моноширинным префиксом «−», новое — обычным текстом с префиксом «+».
+   Без жёлтых/красных/циановых подложек. */
+.accounting-container .changed-field {
+    background-color: transparent;
+    box-shadow: inset 2px 0 0 var(--color-border-strong, var(--color-border));
+    padding-left: 10px;
+}
 .accounting-container .history-old-value {
+    display: inline-block;
     color: var(--color-text-muted);
     text-decoration: line-through;
-    font-size: 0.9em;
+    text-decoration-color: var(--color-text-muted);
+    font-family: var(--font-family-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: 12.5px;
     background: transparent;
+    padding: 0;
+}
+.accounting-container .history-old-value::before {
+    content: '−\00a0';
+    color: var(--color-text-muted);
+    text-decoration: none;
+    font-weight: 600;
 }
 .accounting-container .history-new-value {
+    display: inline-block;
     color: var(--color-text);
+    font-family: var(--font-family-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: 12.5px;
     font-weight: 500;
-    background-color: rgba(56, 189, 248, 0.15);
-    padding: 1px 6px;
-    border-radius: 3px;
+    background: transparent;
+    padding: 0;
+}
+.accounting-container .history-new-value::before {
+    content: '+\00a0';
+    color: var(--color-text);
+    font-weight: 600;
+}
+
+/* deviceHistoryManager использует .history-old-value как «(prev)» рядом с
+   текущим значением — там префикс «−» неуместен; маркер ставим только
+   когда old-value стоит вне нового значения (после стрелки `&rarr;`). */
+.accounting-container .history-new-value + .history-old-value::before {
+    content: '';
+}
+.accounting-container .history-new-value + .history-old-value {
+    margin-left: 6px;
+    opacity: 0.85;
+}
+
+/* «→» между значениями — приглушаем */
+.accounting-container .history-old-value + .history-new-value {
+    margin-left: 6px;
+}
+
+/* Многострочный diff (textarea-сравнение) */
+.accounting-container .history-textarea-comparison {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: var(--space-2) 0;
 }
 .accounting-container .history-textarea-comparison textarea {
     min-height: 60px;
     background-color: var(--color-surface-2);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    font-family: var(--font-family-mono);
+    font-size: 12.5px;
+    line-height: 1.45;
+    padding: 8px 10px;
+    color: var(--color-text);
+    resize: vertical;
 }
 .accounting-container .change-label {
     font-size: 11px;
     color: var(--color-text-muted);
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.06em;
+    font-weight: 600;
+    margin-top: 6px;
+}
+.accounting-container .change-label:first-child {
+    margin-top: 0;
 }
 
 /* ---- Истории на табах 2/3/5/6/7 ---- */
@@ -809,8 +874,12 @@
 :root[data-theme="dark"] .accounting-container .repair-accordion-item.expanded {
     background-color: var(--color-surface-2);
 }
-:root[data-theme="dark"] .accounting-container .history-new-value {
-    background-color: rgba(56, 189, 248, 0.22);
+:root[data-theme="dark"] .accounting-container .changed-field {
+    box-shadow: inset 2px 0 0 var(--color-border-strong, var(--color-border));
+}
+:root[data-theme="dark"] .accounting-container .history-textarea-comparison textarea {
+    background-color: var(--color-surface);
+    border-color: var(--color-border);
 }
 
 /* ---- Тёмная тема ----
