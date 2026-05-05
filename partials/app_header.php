@@ -35,10 +35,7 @@ $isAdmin = !empty($user_info['is_admin']);
     <div class="app-header__inner<?= $showNav ? '' : ' app-header__inner--no-nav' ?>">
         <a href="index.php" class="brand" aria-label="АМК Горизонт — главная">
             <span class="brand__mark">АМК</span>
-            <span>
-                <span class="brand__name">Горизонт</span>
-                <span class="brand__sub">— учёт приборов</span>
-            </span>
+            <span class="brand__name">Горизонт</span>
         </a>
 
         <?php if ($showNav): ?>

@@ -321,7 +321,6 @@ if ($is_logged_in && $user_info) {
 <?php
     $dbStatus     = 'ok';
     $dbStatusText = 'БД доступна · ' . $fmtNumber((int)$dashboard['total_devices']) . ' записей';
-    $appVersion   = 'v2.0';
     include __DIR__ . '/partials/app_footer.php';
 ?>
 
@@ -392,7 +391,7 @@ if ($is_logged_in && $user_info) {
                 <li><i class="fas fa-check"></i> ИИ-агент для запросов в базу на естественном языке</li>
             </ul>
             <div class="login-side__foot">
-                Версия 2.0 · Контактный телефон <a href="tel:+73476730510">+7 (34767) 3-05-10</a>
+                Контактный телефон <a href="tel:+73476730510">+7 (34767) 3-05-10</a>
             </div>
         </div>
     </aside>
