@@ -148,7 +148,12 @@
 
         // Функция загрузки и отображения истории (вызывается при первом показе и при переключении)
         function loadHistory(historyType) {
-            historyContentDiv.innerHTML = '<p>Загрузка истории...</p>'; // Индикатор загрузки
+            historyContentDiv.innerHTML = emptyStateHTML(
+                'fa-spinner fa-spin',
+                'Загрузка истории…',
+                null,
+                'loading'
+            );
 
             // Определяем режим просмотра (только для параметров)
             const viewMode = historyType === 'parameters' ?

@@ -120,7 +120,12 @@
         // Очищаем предыдущие результаты и историю
         if (deviceHistoryDiv) deviceHistoryDiv.innerHTML = '';
         if (searchResultDiv) searchResultDiv.innerHTML = '';
-        if (deviceListDiv) deviceListDiv.innerHTML = '<p>Поиск приборов...</p>'; // Индикатор загрузки
+        if (deviceListDiv) deviceListDiv.innerHTML = emptyStateHTML(
+            'fa-spinner fa-spin',
+            'Поиск приборов…',
+            null,
+            'loading'
+        );
         
         fetch('front.php?c=device&a=filter', {
             method: 'POST',
@@ -156,9 +161,12 @@
         .catch(error => {
             console.error('Ошибка при поиске приборов:', error);
             if (deviceListDiv) {
-                deviceListDiv.innerHTML = `<p class="error-message">
-                    Произошла ошибка при поиске приборов: ${error.message}
-                </p>`;
+                deviceListDiv.innerHTML = emptyStateHTML(
+                    'fa-triangle-exclamation',
+                    'Не удалось загрузить список',
+                    'Произошла ошибка при поиске приборов: ' + error.message,
+                    'error'
+                );
             }
             resetDeviceSelection();
         });
@@ -175,13 +183,23 @@
         // Проверка наличия хотя бы одного параметра
         if (!searchSerialNumber && !searchCaseNumber) {
             if (searchResultDiv) {
-                searchResultDiv.innerHTML = '<p class="warning-message">Пожалуйста, укажите серийный номер или номер корпуса</p>';
+                searchResultDiv.innerHTML = emptyStateHTML(
+                    'fa-circle-info',
+                    'Укажите параметр поиска',
+                    'Введите серийный номер или номер корпуса, чтобы найти конкретный прибор.',
+                    'compact'
+                );
             }
             return;
         }
         
         if (searchResultDiv) {
-            searchResultDiv.innerHTML = '<p class="info-message"><i class="fas fa-spinner fa-spin"></i> Идёт поиск...</p>';
+            searchResultDiv.innerHTML = emptyStateHTML(
+                'fa-spinner fa-spin',
+                'Идёт поиск…',
+                null,
+                'loading'
+            );
         }
         
         // Подготавливаем параметры запроса

@@ -166,7 +166,12 @@ const RepairManager = (function() {
      * Загрузка и отображение истории ремонтов
      */
     function loadAndDisplayRepairHistory() {
-        historyDiv.innerHTML = '<p>Загрузка истории ремонтов...</p>';
+        historyDiv.innerHTML = emptyStateHTML(
+            'fa-spinner fa-spin',
+            'Загрузка истории ремонтов…',
+            null,
+            'loading'
+        );
 
         fetch('front.php?c=repair&a=history', {
             method: 'POST',
@@ -177,11 +182,20 @@ const RepairManager = (function() {
         .then(data => {
             historyDiv.innerHTML = ''; // Очистка
             if (data.error) {
-                historyDiv.innerHTML = `<p class="error-message">${data.error}</p>`;
+                historyDiv.innerHTML = emptyStateHTML(
+                    'fa-triangle-exclamation',
+                    'Не удалось загрузить историю',
+                    data.error,
+                    'error'
+                );
                 return;
             }
             if (data.length === 0) {
-                historyDiv.innerHTML = '<p class="info-message">Для этого прибора еще не было ремонтов.</p>';
+                historyDiv.innerHTML = emptyStateHTML(
+                    'fa-wrench',
+                    'Ремонтов не было',
+                    'Для этого прибора ещё нет записей о ремонтах.'
+                );
                 return;
             }
 
@@ -191,7 +205,12 @@ const RepairManager = (function() {
         })
         .catch(error => {
             console.error('Ошибка загрузки истории ремонтов:', error);
-            historyDiv.innerHTML = `<p class="error-message">Не удалось загрузить историю.</p>`;
+            historyDiv.innerHTML = emptyStateHTML(
+                'fa-triangle-exclamation',
+                'Не удалось загрузить историю',
+                'Проверьте соединение и попробуйте ещё раз.',
+                'error'
+            );
         });
     }
 
@@ -327,7 +346,12 @@ const RepairManager = (function() {
     function displayEditHistory(history, currentRecord, container) {
         container.innerHTML = '<h4>История правок для этой записи</h4>';
         if (history.length === 0) {
-            container.innerHTML += '<p class="info-message">Для этой записи еще не было изменений.</p>';
+            container.insertAdjacentHTML('beforeend', emptyStateHTML(
+                'fa-pen-to-square',
+                'Правок не было',
+                'Эту запись о ремонте никто не редактировал — история изменений пуста.',
+                'compact'
+            ));
             return;
         }
 

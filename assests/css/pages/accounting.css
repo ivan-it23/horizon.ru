@@ -1396,3 +1396,177 @@
     background-color: rgba(96, 165, 250, 0.12);
     color: var(--color-primary);
 }
+
+/* ====================================================================
+   B4 — Empty states / info-banners.
+   Унификация всех «здесь пока пусто», «загрузка…», «ошибка» и
+   info/warning/success/error-баннеров под один корпоративный язык.
+   Базовые .empty-state* и .info-message объявлены в
+   StyleAccountingOfDevices.css; здесь — только overrides и новые
+   модификаторы, согласованные с дизайн-системой.
+   ==================================================================== */
+
+/* Чуть мягче базовая «карточка пустоты» — серый surface-2 + dashed
+   border-strong иногда визуально шумит на белом фоне. */
+.empty-state {
+    background-color: var(--color-surface);
+    border: 1px dashed var(--color-border-strong);
+    color: var(--color-text-muted);
+    padding: var(--space-5) var(--space-4);
+}
+
+.empty-state__icon {
+    color: var(--color-text-muted);
+    opacity: 0.55;
+}
+
+.empty-state__title {
+    font-weight: 600;
+    color: var(--color-text);
+}
+
+.empty-state--compact {
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    gap: var(--space-3);
+    padding: var(--space-3) var(--space-4);
+    text-align: left;
+}
+
+.empty-state--compact .empty-state__icon {
+    font-size: 1.25rem;
+    margin-bottom: 0;
+}
+
+.empty-state--compact .empty-state__title {
+    font-size: 0.95rem;
+}
+
+.empty-state--compact .empty-state__hint {
+    font-size: 0.85rem;
+}
+
+/* Inline «Загрузка …» — без dashed-рамки, прозрачный фон,
+   не отвлекает от спиннера. */
+.empty-state--loading {
+    background-color: transparent;
+    border: 0;
+    padding: var(--space-4);
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    color: var(--color-text-muted);
+}
+
+.empty-state--loading .empty-state__icon {
+    margin-bottom: 0;
+    font-size: 1.1rem;
+    color: var(--color-primary);
+    opacity: 1;
+}
+
+.empty-state--loading .empty-state__title {
+    font-weight: 500;
+    font-size: 0.92rem;
+    color: var(--color-text-muted);
+}
+
+/* Сдержанный error-вариант: тонкая красная полоска слева вместо
+   полной красной заливки. */
+.empty-state--error {
+    background-color: rgba(220, 53, 69, 0.04);
+    border: 1px solid var(--color-border);
+    border-left: 3px solid var(--color-danger);
+    border-radius: var(--radius-md);
+}
+
+.empty-state--error .empty-state__icon {
+    color: var(--color-danger);
+    opacity: 0.85;
+}
+
+.empty-state--error .empty-state__title {
+    color: var(--color-danger);
+}
+
+/* ----- Inline-баннеры (info/error/warning/success) -----
+   Раньше у баннеров был сплошной цветной фон, что выглядело
+   «детски». Делаем плоско: 4-6% тинт + 3px цветная полоска слева,
+   как принято в Bitbucket/GitLab. */
+
+.info-message,
+.error-message,
+.success-message,
+.warning-message {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-2);
+    padding: var(--space-3) var(--space-4);
+    border: 1px solid var(--color-border);
+    border-left-width: 3px;
+    border-radius: var(--radius-sm);
+    font-size: var(--fs-small);
+    line-height: 1.5;
+    color: var(--color-text);
+    margin: var(--space-3) 0;
+}
+
+.info-message {
+    background-color: rgba(34, 100, 219, 0.05);
+    border-left-color: var(--color-primary);
+}
+.info-message::before {
+    color: var(--color-primary);
+}
+
+.error-message {
+    background-color: rgba(220, 53, 69, 0.05);
+    border-left-color: var(--color-danger);
+    color: var(--color-text);
+}
+.error-message::before {
+    color: var(--color-danger);
+}
+
+.success-message {
+    background-color: rgba(40, 167, 69, 0.05);
+    border-left-color: var(--color-success);
+    color: var(--color-text);
+}
+.success-message::before {
+    color: var(--color-success);
+}
+
+.warning-message {
+    background-color: rgba(255, 193, 7, 0.06);
+    border-left-color: var(--color-warning);
+    color: var(--color-text);
+}
+.warning-message::before {
+    color: var(--color-warning);
+}
+
+/* Тёмная тема */
+:root[data-theme="dark"] .empty-state {
+    background-color: var(--color-surface-2);
+    border-color: var(--color-border);
+}
+:root[data-theme="dark"] .empty-state--error {
+    background-color: rgba(248, 113, 113, 0.08);
+    border-color: var(--color-border);
+    border-left-color: var(--color-danger);
+}
+:root[data-theme="dark"] .info-message {
+    background-color: rgba(96, 165, 250, 0.08);
+}
+:root[data-theme="dark"] .error-message {
+    background-color: rgba(248, 113, 113, 0.08);
+}
+:root[data-theme="dark"] .success-message {
+    background-color: rgba(74, 222, 128, 0.08);
+}
+:root[data-theme="dark"] .warning-message {
+    background-color: rgba(250, 204, 21, 0.08);
+}
