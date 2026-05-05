@@ -1289,3 +1289,110 @@
 :root[data-theme="dark"] .tolerance-input {
     background-color: var(--color-surface-2);
 }
+
+/* ====================================================================
+   B3 — Мессенджер (#messengerModal). Раньше .msgr-modal жил локально
+   внутри каждой .mode-buttons (×6) и использовал свой набор стилей,
+   из-за чего:
+     1) .tab-header-container (sticky, z-index: 10) создавал стек-
+        контекст и .app-header (sticky, z-index: 40) перекрывал
+        заголовок модалки;
+     2) логика дублировалась 6 раз и расходилась с .modal в дизайн-
+        системе (.modal — z-index: 2000, центровка через flex).
+   Теперь экземпляр один на странице, на уровне body, и использует
+   компонент .modal/.modal-dialog/.modal-content/.modal-header/
+   .modal-body/.modal-footer. Здесь — только точечные оверрайды
+   .msgr-* для содержимого тела модалки.
+   ==================================================================== */
+
+#messengerModal .modal-body.msgr-modal-body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    padding: var(--space-4) var(--space-5);
+}
+
+/* Список получателей — компактная карточка со скроллом (как .data-table-container
+   в этапе 3a, но без шапки таблицы). */
+#messengerModal .msgr-user-list-section {
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background-color: var(--color-surface);
+    overflow-y: auto;
+    max-height: min(420px, 56vh);
+}
+
+#messengerModal .msgr-user-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+#messengerModal .msgr-user-list li {
+    padding: 9px var(--space-4);
+    border-bottom: 1px solid var(--color-border);
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--color-text);
+    line-height: 1.35;
+    transition: background-color var(--t-fast) var(--ease-out),
+                color var(--t-fast) var(--ease-out);
+}
+#messengerModal .msgr-user-list li:last-child {
+    border-bottom: 0;
+}
+#messengerModal .msgr-user-list li:hover {
+    background-color: var(--color-surface-2);
+    color: var(--color-text);
+}
+#messengerModal .msgr-user-list li.selected {
+    background-color: rgba(34, 100, 219, 0.08);
+    color: var(--color-primary);
+    font-weight: 600;
+    box-shadow: inset 2px 0 0 var(--color-primary);
+}
+
+/* Форма ввода текста сообщения (вторая фаза, после выбора получателя) */
+#messengerModal .msgr-message-form-section {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+#messengerModal .msgr-message-meta {
+    font-size: 12px;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-weight: 600;
+}
+
+#messengerModal .msgr-message-meta .msgr-recipient-name {
+    color: var(--color-text);
+    text-transform: none;
+    letter-spacing: 0;
+    font-weight: 600;
+    margin-left: 4px;
+}
+
+#messengerModal .msgr-text {
+    width: 100%;
+    min-height: 140px;
+    resize: vertical;
+    font-family: inherit;
+    font-size: 13.5px;
+    line-height: 1.5;
+}
+
+/* Tемная тема — list-section на dark surface */
+:root[data-theme="dark"] #messengerModal .msgr-user-list-section {
+    background-color: var(--color-surface);
+    border-color: var(--color-border);
+}
+:root[data-theme="dark"] #messengerModal .msgr-user-list li:hover {
+    background-color: var(--color-surface-2);
+}
+:root[data-theme="dark"] #messengerModal .msgr-user-list li.selected {
+    background-color: rgba(96, 165, 250, 0.12);
+    color: var(--color-primary);
+}

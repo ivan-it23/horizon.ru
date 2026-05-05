@@ -349,27 +349,6 @@ if ($is_logged_in) {
                     <button type="button" id="showCreateFormTab2" class="button button-secondary"><i class="fas fa-plus"></i> Создать</button>
                     <button type="button" id="showHistoryTab2" class="button button-secondary"><i class="fas fa-history"></i> История</button>
                     <i class="fas fa-envelope msgr-open-icon" title="Отправить сообщение"></i>
-
-                    <div class="msgr-modal">
-                        <div class="msgr-modal-content">
-                            <span class="msgr-close">&times;</span>
-
-                            <h3 class="msgr-modal-title">Выберите получателя сообщения</h3>
-
-                            <div class="msgr-modal-body-content">
-                                <div class="msgr-user-list-section">
-                                    <ul class="msgr-user-list">
-                                        <li>Загрузка пользователей...</li> </ul>
-                                </div>
-
-                                <div class="msgr-message-form-section" style="display: none;">
-                                    <h4>Сообщение для: <span class="msgr-recipient-name"></span></h4>
-                                    <textarea class="msgr-text" rows="5" placeholder="Текст сообщения"></textarea>
-                                    <button class="button button-primary msgr-send-btn">Отправить</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
                 </div>
                 </div>
                 <form id="newProductionDiscontinuation">
@@ -398,27 +377,6 @@ if ($is_logged_in) {
                     <button type="button" id="showHistoryTab3" class="button button-secondary"><i class="fas fa-history"></i> История</button>
                     <button type="button" id="showToleranceModal" class="button button-secondary"><i class="fas fa-sliders-h"></i> Допуски</button>
                     <i class="fas fa-envelope msgr-open-icon" title="Отправить сообщение"></i>
-
-                    <div class="msgr-modal">
-                        <div class="msgr-modal-content">
-                            <span class="msgr-close">&times;</span>
-
-                            <h3 class="msgr-modal-title">Выберите получателя сообщения</h3>
-
-                            <div class="msgr-modal-body-content">
-                                <div class="msgr-user-list-section">
-                                    <ul class="msgr-user-list">
-                                        <li>Загрузка пользователей...</li> </ul>
-                                </div>
-
-                                <div class="msgr-message-form-section" style="display: none;">
-                                    <h4>Сообщение для: <span class="msgr-recipient-name"></span></h4>
-                                    <textarea class="msgr-text" rows="5" placeholder="Текст сообщения"></textarea>
-                                    <button class="button button-primary msgr-send-btn">Отправить</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
                 </div>
                 </div>
                 <form id="newTestingData">
@@ -547,29 +505,7 @@ if ($is_logged_in) {
                 <div class="mode-buttons">
                     <button type="button" id="showCreateFormTab4" class="button button-secondary"><i class="fas fa-plus"></i> Создать новую запись о ремонте</button>
                     <button type="button" id="showHistoryTab4" class="button button-secondary"><i class="fas fa-history"></i> История ремонтов</button>
-                    <i class="fas fa-envelope msgr-open-icon" title="Отправить сообщение"></i>
-                    <!-- Модальное окно для сообщений (логика остается прежней) -->
-                    <div class="msgr-modal">
-                        <div class="msgr-modal-content">
-                            <span class="msgr-close">&times;</span>
-
-                            <h3 class="msgr-modal-title">Выберите получателя сообщения</h3>
-
-                            <div class="msgr-modal-body-content">
-                                <div class="msgr-user-list-section">
-                                    <ul class="msgr-user-list">
-                                        <li>Загрузка пользователей...</li> </ul>
-                                </div>
-
-                                <div class="msgr-message-form-section" style="display: none;">
-                                    <h4>Сообщение для: <span class="msgr-recipient-name"></span></h4>
-                                    <textarea class="msgr-text" rows="5" placeholder="Текст сообщения"></textarea>
-                                    <button class="button button-primary msgr-send-btn">Отправить</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                    <i class="fas fa-envelope msgr-open-icon" title="Отправить сообщение"></i>                </div>
                 </div>
 
                 <!-- Форма для создания НОВОЙ записи о ремонте (изначально скрыта) -->
@@ -610,27 +546,6 @@ if ($is_logged_in) {
                     <button type="button" id="showCreateFormTab5" class="button button-secondary"><i class="fas fa-plus"></i> Создать</button>
                     <button type="button" id="showHistoryTab5" class="button button-secondary"><i class="fas fa-history"></i> История</button>
                     <i class="fas fa-envelope msgr-open-icon" title="Отправить сообщение"></i>
-
-                    <div class="msgr-modal">
-                        <div class="msgr-modal-content">
-                            <span class="msgr-close">&times;</span>
-
-                            <h3 class="msgr-modal-title">Выберите получателя сообщения</h3>
-
-                            <div class="msgr-modal-body-content">
-                                <div class="msgr-user-list-section">
-                                    <ul class="msgr-user-list">
-                                        <li>Загрузка пользователей...</li> </ul>
-                                </div>
-
-                                <div class="msgr-message-form-section" style="display: none;">
-                                    <h4>Сообщение для: <span class="msgr-recipient-name"></span></h4>
-                                    <textarea class="msgr-text" rows="5" placeholder="Текст сообщения"></textarea>
-                                    <button class="button button-primary msgr-send-btn">Отправить</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
                 </div>
                 </div>
                 <form id="newInspectionData">
@@ -659,27 +574,6 @@ if ($is_logged_in) {
                     <button type="button" id="showCreateFormTab6" class="button button-secondary"><i class="fas fa-plus"></i> Создать</button>
                     <button type="button" id="showHistoryTab6" class="button button-secondary"><i class="fas fa-history"></i> История</button>
                     <i class="fas fa-envelope msgr-open-icon" title="Отправить сообщение"></i>
-
-                    <div class="msgr-modal">
-                        <div class="msgr-modal-content">
-                            <span class="msgr-close">&times;</span>
-
-                            <h3 class="msgr-modal-title">Выберите получателя сообщения</h3>
-
-                            <div class="msgr-modal-body-content">
-                                <div class="msgr-user-list-section">
-                                    <ul class="msgr-user-list">
-                                        <li>Загрузка пользователей...</li> </ul>
-                                </div>
-
-                                <div class="msgr-message-form-section" style="display: none;">
-                                    <h4>Сообщение для: <span class="msgr-recipient-name"></span></h4>
-                                    <textarea class="msgr-text" rows="5" placeholder="Текст сообщения"></textarea>
-                                    <button class="button button-primary msgr-send-btn">Отправить</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
                 </div>
                 </div>
                 <form id="newTerminationData">
@@ -708,27 +602,6 @@ if ($is_logged_in) {
                     <button type="button" id="showCreateFormTab7" class="button button-secondary"><i class="fas fa-plus"></i> Создать</button>
                     <button type="button" id="showHistoryTab7" class="button button-secondary"><i class="fas fa-history"></i> История</button>
                     <i class="fas fa-envelope msgr-open-icon" title="Отправить сообщение"></i>
-
-                    <div class="msgr-modal">
-                        <div class="msgr-modal-content">
-                            <span class="msgr-close">&times;</span>
-
-                            <h3 class="msgr-modal-title">Выберите получателя сообщения</h3>
-
-                            <div class="msgr-modal-body-content">
-                                <div class="msgr-user-list-section">
-                                    <ul class="msgr-user-list">
-                                        <li>Загрузка пользователей...</li> </ul>
-                                </div>
-
-                                <div class="msgr-message-form-section" style="display: none;">
-                                    <h4>Сообщение для: <span class="msgr-recipient-name"></span></h4>
-                                    <textarea class="msgr-text" rows="5" placeholder="Текст сообщения"></textarea>
-                                    <button class="button button-primary msgr-send-btn">Отправить</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
                 </div>
                 </div>
                 <form id="newAdditionalData">
@@ -821,6 +694,39 @@ if ($is_logged_in) {
 
     </div>
 </main>
+
+<!-- Глобальный мессенджер. Один экземпляр на странице — открывается
+     любой иконкой-конвертом с разных вкладок через MessageManager.
+     Расположен на уровне body, чтобы не попадать в стек-контекст
+     sticky-шапки (.tab-header-container z-index: 10) и .app-header
+     (sticky z-index: 40), которые иначе перекрывали бы заголовок
+     модалки. -->
+<div id="messengerModal" class="modal modal--md msgr-modal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title msgr-modal-title">Выберите получателя сообщения</h5>
+                <button type="button" class="modal-close-button msgr-close" aria-label="Close">&times;</button>
+            </div>
+            <div class="modal-body msgr-modal-body">
+                <div class="msgr-user-list-section">
+                    <ul class="msgr-user-list">
+                        <li>Загрузка пользователей...</li>
+                    </ul>
+                </div>
+                <div class="msgr-message-form-section" style="display: none;">
+                    <div class="msgr-message-meta">Сообщение для: <span class="msgr-recipient-name"></span></div>
+                    <textarea class="msgr-text input-field" rows="5" placeholder="Текст сообщения..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="button button-secondary msgr-back-btn" style="display: none;"><i class="fas fa-arrow-left"></i> К списку</button>
+                <button type="button" class="button button-secondary msgr-cancel-btn">Отмена</button>
+                <button type="button" class="button button-primary msgr-send-btn" style="display: none;"><i class="fas fa-paper-plane"></i> Отправить</button>
+            </div>
+        </div>
+    </div>
+</div>
 
 <script src="assests/js/notifications.js"></script>
 <script src="assests/js/modalManager.js"></script>
