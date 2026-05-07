@@ -11,6 +11,57 @@ class AiAgentController extends BaseController
     private array $llmDebug = [];
 
     /**
+     * Кэш содержимого ai_agent_instructions.md (читается один раз за процесс).
+     * null — ещё не читали, '' — файл отсутствует или пуст.
+     */
+    private static ?string $agentInstructionsCache = null;
+
+    /**
+     * Возвращает текст руководства агента из ai_agent_instructions.md.
+     * Файл подгружается в системный промпт LLM, чтобы поведенческие правила
+     * (формат ответов, запреты, шаблоны SQL и т. п.) реально влияли на ответ.
+     * При отсутствии или нечитаемости файла возвращает пустую строку, не падая.
+     */
+    private function getAgentInstructions(): string
+    {
+        if (self::$agentInstructionsCache !== null) {
+            return self::$agentInstructionsCache;
+        }
+
+        $path = __DIR__ . '/../../ai_agent/ai_agent_instructions.md';
+        if (!is_file($path) || !is_readable($path)) {
+            error_log('[AI Agent] ai_agent_instructions.md not found or not readable: ' . $path);
+            self::$agentInstructionsCache = '';
+            return self::$agentInstructionsCache;
+        }
+
+        $content = @file_get_contents($path);
+        if ($content === false) {
+            error_log('[AI Agent] Failed to read ai_agent_instructions.md');
+            self::$agentInstructionsCache = '';
+            return self::$agentInstructionsCache;
+        }
+
+        self::$agentInstructionsCache = trim($content);
+        return self::$agentInstructionsCache;
+    }
+
+    /**
+     * Оборачивает текст руководства агента в маркированный блок для системного промпта.
+     * Если файл недоступен — возвращает пустую строку (системный промпт не разрастается).
+     */
+    private function getAgentInstructionsBlock(): string
+    {
+        $instructions = $this->getAgentInstructions();
+        if ($instructions === '') {
+            return '';
+        }
+        return "=== РУКОВОДСТВО ИИ-АГЕНТА (ai_agent_instructions.md) ===\n"
+            . $instructions
+            . "\n=== КОНЕЦ РУКОВОДСТВА ===\n\n";
+    }
+
+    /**
      * Обрабатывает AJAX-запросы к ИИ-агенту
      */
     public function chat(): void
@@ -261,13 +312,16 @@ class AiAgentController extends BaseController
         }
 
         // ШАГ 1: Просим LLM сгенерировать SQL-запросы (короткий промпт, низкая температура)
-        $step1SystemContext = "Ты составляешь SQL-запросы для БД АМК ГОРИЗОНТ.\n\n" .
+        $instructionsBlock = $this->getAgentInstructionsBlock();
+        $step1SystemContext = $instructionsBlock .
+            "Вы составляете SQL-запросы для БД АМК «Горизонт».\n\n" .
             "Структура БД:\n{$dbContext}{$deviceContextStr}\n\n" .
             "ПРАВИЛА:\n" .
-            "1. Каждый запрос оберни в тег: <sql>ЗАПРОС</sql>\n" .
+            "1. Каждый запрос оборачивайте в тег: <sql>ЗАПРОС</sql>\n" .
             "2. ТОЛЬКО SELECT-запросы.\n" .
             "3. Минимум текста до/после запросов.\n" .
-            "4. Если вопрос не требует БД — ответь кратко без SQL.\n\n" .
+            "4. Если вопрос не требует БД — отвечайте кратко без SQL.\n" .
+            "5. Соблюдайте запреты из руководства (поля users.password и uploaded_files.file_data в SELECT не включать).\n\n" .
             "Пример:\n<sql>SELECT device_type, COUNT(*) FROM device_identification GROUP BY device_type</sql>";
 
         $step1Messages = [
@@ -656,12 +710,14 @@ class AiAgentController extends BaseController
             $resultsContext .= "\n";
         }
 
-        $step2SystemContext = "Ты ИИ-агент АМК ГОРИЗОНТ. Отвечай коротко и по делу на основе данных из БД.\n" .
+        $step2SystemContext = $this->getAgentInstructionsBlock() .
+            "Вы — ИИ-агент системы учёта приборов АМК «Горизонт». Сформируйте ответ на основе данных из БД.\n" .
             "ПРАВИЛА:\n" .
-            "1. Используй Markdown (заголовки, списки, таблицы).\n" .
-            "2. НЕ ПРИДУМЫВАЙ данные.\n" .
-            "3. Не дублируй SQL-запросы в ответе.\n" .
-            "4. Будь лаконичен: только нужные данные и краткий вывод.";
+            "1. Используйте Markdown (заголовки уровня ###, маркированные списки, таблицы при необходимости).\n" .
+            "2. Не придумывайте данные — используйте только то, что пришло из SQL-результата.\n" .
+            "3. Не дублируйте SQL-запросы в ответе.\n" .
+            "4. Отвечайте лаконично, в нейтрально-деловом тоне, без эмодзи.\n" .
+            "5. При выводе таблиц старайтесь не превышать 4–5 колонок: длинные многоколоночные таблицы плохо читаются в drawer-чате; вместо этого используйте маркированные списки или несколько компактных таблиц.";
 
         $step2Messages = [
             ['role' => 'system', 'content' => $step2SystemContext],
@@ -797,7 +853,8 @@ class AiAgentController extends BaseController
     {
         $this->sseEmit('status', ['message' => 'Формирую ответ...']);
 
-        $systemPrompt = "Вы — корпоративный ИИ-ассистент системы учёта приборов АМК «Горизонт».\n" .
+        $systemPrompt = $this->getAgentInstructionsBlock() .
+            "Вы — корпоративный ИИ-ассистент системы учёта приборов АМК «Горизонт».\n" .
             "Отвечайте на вопросы пользователя по программированию, математике, общим темам и справке по системе.\n" .
             "ПРАВИЛА:\n" .
             "1. Используйте Markdown для форматирования (заголовки, списки, блоки кода).\n" .

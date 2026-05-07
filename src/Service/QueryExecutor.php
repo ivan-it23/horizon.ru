@@ -439,11 +439,11 @@ class QueryExecutor
     private function getDevicesInTesting(): array
     {
         try {
-            $sql = "SELECT t.serial_number, t.case_number, t.test_date, t.test_result, t.creator_surname,
+            $sql = "SELECT t.serial_number, t.case_number, t.created_at, t.test_result, t.creator,
                            d.device_type
                     FROM testing_data t
                     LEFT JOIN device_identification d ON t.serial_number = d.serial_number
-                    ORDER BY t.test_date DESC
+                    ORDER BY t.created_at DESC
                     LIMIT 10";
             $stmt = $this->conn->prepare($sql);
             if (!$stmt) {
@@ -467,12 +467,12 @@ class QueryExecutor
 
             $message = "**Последние испытания приборов:**\n\n";
             foreach ($tests as $test) {
-                $testDate = $test['test_date'] ? date('d.m.Y', strtotime($test['test_date'])) : 'Не указана';
+                $testDate = $test['created_at'] ? date('d.m.Y', strtotime($test['created_at'])) : 'Не указана';
                 $result = $test['test_result'] ?: 'Результат не указан';
                 $message .= "• Прибор {$test['serial_number']} ({$test['device_type']}, корпус {$test['case_number']})\n";
                 $message .= "  Дата испытания: {$testDate}\n";
                 $message .= "  Результат: {$result}\n";
-                $message .= "  Ответственный: {$test['creator_surname']}\n\n";
+                $message .= "  Ответственный: {$test['creator']}\n\n";
             }
 
             return [

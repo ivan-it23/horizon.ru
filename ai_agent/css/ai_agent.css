@@ -350,12 +350,39 @@
     color: var(--color-text, #0B1E2D);
 }
 
+/* Контейнер-обёртка вокруг каждой таблицы (добавляется JS-постпроцессором).
+   Позволяет таблице «вытянуться» по содержимому и прокручиваться по горизонтали,
+   не растягивая родительский bubble и не сжимая колонки до нечитаемой ширины. */
+.ai-message-ai .ai-message-bubble .ai-table-wrap {
+    margin: var(--space-3, 12px) 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    border: 1px solid var(--color-border, #DCE4EC);
+    border-radius: var(--radius-sm, 6px);
+    background: var(--color-surface, #FFFFFF);
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-border-strong, #BFCAD6) transparent;
+    -webkit-overflow-scrolling: touch;
+}
+
+.ai-message-ai .ai-message-bubble .ai-table-wrap::-webkit-scrollbar {
+    height: 8px;
+}
+
+.ai-message-ai .ai-message-bubble .ai-table-wrap::-webkit-scrollbar-thumb {
+    background: var(--color-border-strong, #BFCAD6);
+    border-radius: var(--radius-full, 9999px);
+}
+
 .ai-message-ai .ai-message-bubble table {
     border-collapse: collapse;
-    width: 100%;
-    margin: var(--space-3, 12px) 0;
+    margin: 0;
     background: var(--color-surface, #FFFFFF);
     font-size: 0.88em;
+    /* Таблица свободно расширяется по содержимому, но не уже bubble */
+    width: max-content;
+    min-width: 100%;
+    table-layout: auto;
 }
 
 .ai-message-ai .ai-message-bubble th,
@@ -363,12 +390,24 @@
     border: 1px solid var(--color-border, #DCE4EC);
     padding: var(--space-2, 8px) var(--space-3, 12px);
     text-align: left;
+    vertical-align: top;
+    /* Базовая комфортная ширина: достаточно для коротких значений (даты, ID, серийные
+       номера), но без растягивания на весь bubble. Длинный текст переносится по словам. */
+    min-width: 96px;
+    max-width: 260px;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    word-break: normal;
 }
 
 .ai-message-ai .ai-message-bubble th {
     background: var(--color-surface-2, #F8FAFC);
     color: var(--color-text, #0B1E2D);
     font-weight: 600;
+    /* Заголовки колонок не должны разрываться побуквенно (как «Се\nрий\nный №»):
+       по возможности держим их в одну строку, длинный заголовок переносится
+       по нормальным правилам слов. */
+    white-space: nowrap;
 }
 
 .ai-message-ai .ai-message-bubble hr {
