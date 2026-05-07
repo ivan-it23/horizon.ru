@@ -361,6 +361,33 @@ LIMIT 1;
 4. При выводе сведений о пользователях используйте только публичные поля: `id`, `username`, `firstname`, `lastname`, `middlename`, `is_admin`, `created_at`.
 5. Не выдумывайте данные. Если по запросу ничего не найдено, сообщите об этом и попросите уточнение.
 
+## 8.1. Типичные ошибки JOIN (антипаттерны)
+
+Lifecycle-таблицы **НЕ имеют** колонок `device_id` и `device_type`. К ним относятся: `repair_data`, `repair_data_history`, `testing_data`, `inspection_data`, `production_discontinuation`, `termination_data`, `additional_data`, `uploaded_files`. Связь с `device_identification` — только по бизнес-ключу (`serial_number`, `case_number`).
+
+Запрещённые JOIN (вернут 0 строк или `Unknown column`):
+
+- `LEFT JOIN repair_data r ON r.device_id = di.id`
+- `LEFT JOIN repair_data r ON r.id = di.id`
+- `LEFT JOIN repair_data r ON r.device_type = di.device_type`
+- `WHERE r.device_type = 'LWD'` — такого поля в `repair_data` нет
+- `JOIN testing_data t ON t.device_id = di.id`
+
+Единственно верный JOIN для разреза «ремонты по типу прибора»:
+
+```sql
+SELECT di.device_type, COUNT(r.id) AS repairs_count
+FROM device_identification di
+LEFT JOIN repair_data r
+       ON r.serial_number = di.serial_number
+      AND r.case_number   = di.case_number
+GROUP BY di.device_type;
+```
+
+Исключение — `device_composition`: для неё JOIN идёт по `device_id` (`device_composition.device_id = device_identification.id`). Это единственная приборная таблица с hard-FK по id.
+
+Если `LEFT JOIN` на lifecycle-таблицу даёт 0 совпадений на всех группах, это почти всегда означает, что использован неверный ключ соединения. Перепроверьте JOIN-условие против раздела 5 «Связи между таблицами».
+
 ## 9. Правила обработки запросов
 
 1. **Идентификация прибора.** Прибор однозначно определяется парой (`serial_number`, `case_number`). Если указан только один из идентификаторов, поиск ведётся по нему.

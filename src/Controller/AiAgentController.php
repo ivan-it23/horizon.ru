@@ -188,6 +188,7 @@ class AiAgentController extends BaseController
                     case 'last_repair':
                     case 'devices_in_repair':
                     case 'devices_in_testing':
+                    case 'repair_analysis':
                         // Для этих типов используем message напрямую
                         $responseText = $dbResult['message'] ?? '';
                         break;
@@ -321,7 +322,8 @@ class AiAgentController extends BaseController
             "2. ТОЛЬКО SELECT-запросы.\n" .
             "3. Минимум текста до/после запросов.\n" .
             "4. Если вопрос не требует БД — отвечайте кратко без SQL.\n" .
-            "5. Соблюдайте запреты из руководства (поля users.password и uploaded_files.file_data в SELECT не включать).\n\n" .
+            "5. Соблюдайте запреты из руководства (поля users.password и uploaded_files.file_data в SELECT не включать).\n" .
+            "6. ВНИМАНИЕ: lifecycle-таблицы (repair_data, testing_data, inspection_data, termination_data, production_discontinuation, additional_data, uploaded_files) соединяются с device_identification ТОЛЬКО по (serial_number, case_number). У них НЕТ колонок device_id и device_type. См. блок === ТИПИЧНЫЕ ОШИБКИ JOIN ===.\n\n" .
             "Пример:\n<sql>SELECT device_type, COUNT(*) FROM device_identification GROUP BY device_type</sql>";
 
         $step1Messages = [
@@ -599,6 +601,7 @@ class AiAgentController extends BaseController
                     case 'last_repair':
                     case 'devices_in_repair':
                     case 'devices_in_testing':
+                    case 'repair_analysis':
                         $fullResponse = $dbResult['message'] ?? '';
                         break;
                     default:
@@ -655,15 +658,19 @@ class AiAgentController extends BaseController
         $this->sseEmit('status', ['message' => 'Анализирую запрос...']);
 
         // ШАГ 1: Роутер запросов — определяем, нужна ли БД для ответа
-        $step1SystemContext = "Ты роутер запросов для ИИ-ассистента системы АМК ГОРИЗОНТ (БД приборов учёта).\n\n" .
+        $instructionsBlock = $this->getAgentInstructionsBlock();
+        $step1SystemContext = $instructionsBlock .
+            "Вы — роутер запросов для ИИ-ассистента системы учёта приборов АМК «Горизонт».\n\n" .
             "Структура БД:\n{$dbContext}{$deviceContextStr}\n\n" .
-            "ТВОЯ ЗАДАЧА: решить, нужна ли БД для ответа.\n\n" .
+            "ВАША ЗАДАЧА: решить, нужна ли БД для ответа.\n\n" .
             "ПРАВИЛА:\n" .
-            "1. Если вопрос ТРЕБУЕТ данных из БД (приборы, ремонты, статистика, поиск) — выдай SQL в тегах: <sql>ЗАПРОС</sql>\n" .
-            "2. Если вопрос НЕ требует БД (программирование, общие вопросы, разговор, математика) — выдай ТОЛЬКО тег: <no_sql/>\n" .
+            "1. Если вопрос ТРЕБУЕТ данных из БД (приборы, ремонты, статистика, поиск) — выдайте SQL в тегах: <sql>ЗАПРОС</sql>\n" .
+            "2. Если вопрос НЕ требует БД (программирование, общие вопросы, разговор, математика) — выдайте ТОЛЬКО тег: <no_sql/>\n" .
             "3. ТОЛЬКО SELECT-запросы.\n" .
-            "4. НЕ размышляй долго. Отвечай СРАЗУ одним-двумя тегами.\n" .
-            "5. Никакого текста вне тегов.\n\n" .
+            "4. Не размышляйте долго. Отвечайте сразу одним-двумя тегами.\n" .
+            "5. Никакого текста вне тегов.\n" .
+            "6. Соблюдайте запреты из руководства: users.password и uploaded_files.file_data в SELECT не включать.\n" .
+            "7. ВНИМАНИЕ: lifecycle-таблицы (repair_data, testing_data, inspection_data, termination_data, production_discontinuation, additional_data, uploaded_files) соединяются с device_identification ТОЛЬКО по (serial_number, case_number). У них НЕТ колонок device_id и device_type. См. блок === ТИПИЧНЫЕ ОШИБКИ JOIN ===.\n\n" .
             "Примеры:\n" .
             "«Сколько приборов LWD?» → <sql>SELECT COUNT(*) FROM device_identification WHERE device_type='LWD'</sql>\n" .
             "«Напиши функцию факториала» → <no_sql/>\n" .
