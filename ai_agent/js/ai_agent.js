@@ -14,6 +14,24 @@ document.addEventListener('DOMContentLoaded', function() {
     // Хранилище истории чата для ИИ-агента
     let aiChatHistory = [];
 
+    // Оборачивает каждую таблицу в контейнер с горизонтальной прокруткой,
+    // чтобы широкие таблицы не сжимались до нечитаемого вида внутри узкого drawer.
+    // CSS-стили для .ai-table-wrap определены в ai_agent.css.
+    function wrapTablesForScroll(rootEl) {
+        if (!rootEl) return;
+        const tables = rootEl.querySelectorAll('table');
+        tables.forEach((table) => {
+            const parent = table.parentElement;
+            if (parent && parent.classList && parent.classList.contains('ai-table-wrap')) {
+                return; // уже обёрнута
+            }
+            const wrap = document.createElement('div');
+            wrap.className = 'ai-table-wrap';
+            table.parentNode.insertBefore(wrap, table);
+            wrap.appendChild(table);
+        });
+    }
+
     // Функция для постепенного вывода текста с markdown-форматированием в реальном времени
     function typewriterEffect(element, text, callback, speed = 8, charsPerTick = 3) {
         let i = 0;
@@ -24,6 +42,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (useMarkdown) {
                     // Рендерим markdown на каждом шаге для live-форматирования
                     element.innerHTML = marked.parse(currentText);
+                    wrapTablesForScroll(element);
                     // Прокручиваем чат вниз по мере печати
                     aiChatBox.scrollTop = aiChatBox.scrollHeight;
                 } else {
@@ -35,6 +54,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Финальный рендер с полным текстом
                 if (useMarkdown) {
                     element.innerHTML = marked.parse(text);
+                    wrapTablesForScroll(element);
                 }
                 if (callback) callback();
             }
@@ -228,6 +248,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         // Live-рендер markdown
                         if (window.marked) {
                             messageBubble.innerHTML = marked.parse(accumulatedText);
+                            wrapTablesForScroll(messageBubble);
                         } else {
                             messageBubble.textContent = accumulatedText;
                         }
@@ -238,6 +259,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         accumulatedText += `\n\n**Ошибка:** ${errMsg}`;
                         if (window.marked) {
                             messageBubble.innerHTML = marked.parse(accumulatedText);
+                            wrapTablesForScroll(messageBubble);
                         } else {
                             messageBubble.textContent = accumulatedText;
                         }
@@ -245,6 +267,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         // Финальный рендер (на случай, если markdown не полностью отрендерился)
                         if (window.marked && accumulatedText) {
                             messageBubble.innerHTML = marked.parse(accumulatedText);
+                            wrapTablesForScroll(messageBubble);
                         }
                     }
                 }
