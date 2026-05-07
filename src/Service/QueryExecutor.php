@@ -58,6 +58,9 @@ class QueryExecutor
             case 'device_statistics':
                 return $this->getDeviceStatistics();
 
+            case 'repair_analysis':
+                return $this->getRepairAnalysis();
+
             default:
                 return [
                     'success' => false,
@@ -487,5 +490,215 @@ class QueryExecutor
                 'message' => 'Ошибка при выполнении запроса: ' . $e->getMessage()
             ];
         }
+    }
+
+    /**
+     * Аналитический отчёт по ремонтам:
+     *  - общая сводка (всего ремонтов, в ремонте сейчас, диапазон дат, среднее время);
+     *  - распределение по типам приборов с COUNT(r.id), AVG(DATEDIFF), MIN/MAX дат и
+     *    уникальными ответственными;
+     *  - топ-5 «проблемных» приборов по числу ремонтов;
+     *  - топ-5 ответственных по числу зарегистрированных ремонтов.
+     *
+     * Связь repair_data <-> device_identification — строго по бизнес-ключу
+     * (serial_number, case_number); device_id/device_type в repair_data НЕТ.
+     */
+    private function getRepairAnalysis(): array
+    {
+        try {
+            // Общая сводка
+            $sqlOverall = "
+                SELECT
+                    COUNT(*) AS total_repairs,
+                    SUM(CASE WHEN release_date IS NULL OR release_date = '' THEN 1 ELSE 0 END) AS in_repair_now,
+                    COUNT(DISTINCT CONCAT_WS('|', serial_number, case_number)) AS devices_with_repairs,
+                    MIN(NULLIF(admission_date, '')) AS first_repair_date,
+                    MAX(NULLIF(admission_date, '')) AS last_repair_date,
+                    AVG(CASE
+                        WHEN release_date IS NOT NULL AND release_date <> ''
+                             AND admission_date IS NOT NULL AND admission_date <> ''
+                        THEN DATEDIFF(release_date, admission_date)
+                        ELSE NULL
+                    END) AS avg_repair_days
+                FROM repair_data
+            ";
+            $resultOverall = $this->conn->query($sqlOverall);
+            if (!$resultOverall) {
+                return [
+                    'success' => false,
+                    'message' => 'Ошибка при выполнении запроса (сводка): ' . $this->conn->error
+                ];
+            }
+            $overall = $resultOverall->fetch_assoc() ?: [];
+
+            // Общее количество приборов в БД (для сводки)
+            $resultDevices = $this->conn->query("SELECT COUNT(*) AS total FROM device_identification");
+            $totalDevices = $resultDevices ? (int)($resultDevices->fetch_assoc()['total'] ?? 0) : 0;
+
+            // Распределение по типам приборов
+            $sqlByType = "
+                SELECT
+                    di.device_type,
+                    COUNT(DISTINCT di.id) AS device_count,
+                    COUNT(r.id) AS repair_count,
+                    SUM(CASE WHEN r.release_date IS NULL OR r.release_date = '' THEN 1 ELSE 0 END) AS in_repair_now,
+                    AVG(CASE
+                        WHEN r.release_date IS NOT NULL AND r.release_date <> ''
+                             AND r.admission_date IS NOT NULL AND r.admission_date <> ''
+                        THEN DATEDIFF(r.release_date, r.admission_date)
+                        ELSE NULL
+                    END) AS avg_repair_days,
+                    MIN(NULLIF(r.admission_date, '')) AS first_repair_date,
+                    MAX(NULLIF(r.admission_date, '')) AS last_repair_date
+                FROM device_identification di
+                LEFT JOIN repair_data r
+                       ON r.serial_number = di.serial_number
+                      AND r.case_number   = di.case_number
+                GROUP BY di.device_type
+                ORDER BY repair_count DESC, di.device_type
+            ";
+            $resultByType = $this->conn->query($sqlByType);
+            if (!$resultByType) {
+                return [
+                    'success' => false,
+                    'message' => 'Ошибка при выполнении запроса (по типам): ' . $this->conn->error
+                ];
+            }
+            $byType = $resultByType->fetch_all(MYSQLI_ASSOC);
+
+            // Топ «проблемных» приборов
+            $sqlTopDevices = "
+                SELECT
+                    di.serial_number,
+                    di.case_number,
+                    di.device_type,
+                    COUNT(r.id) AS repair_count
+                FROM device_identification di
+                INNER JOIN repair_data r
+                        ON r.serial_number = di.serial_number
+                       AND r.case_number   = di.case_number
+                GROUP BY di.id, di.serial_number, di.case_number, di.device_type
+                HAVING repair_count > 0
+                ORDER BY repair_count DESC, di.serial_number
+                LIMIT 5
+            ";
+            $resultTop = $this->conn->query($sqlTopDevices);
+            $topDevices = $resultTop ? $resultTop->fetch_all(MYSQLI_ASSOC) : [];
+
+            // Топ ответственных
+            $sqlTopCreators = "
+                SELECT
+                    repair_creator,
+                    COUNT(*) AS repair_count
+                FROM repair_data
+                WHERE repair_creator IS NOT NULL AND repair_creator <> ''
+                GROUP BY repair_creator
+                ORDER BY repair_count DESC, repair_creator
+                LIMIT 5
+            ";
+            $resultCreators = $this->conn->query($sqlTopCreators);
+            $topCreators = $resultCreators ? $resultCreators->fetch_all(MYSQLI_ASSOC) : [];
+
+            $message = $this->formatRepairAnalysis($overall, $totalDevices, $byType, $topDevices, $topCreators);
+
+            return [
+                'success' => true,
+                'overall'      => $overall,
+                'total_devices' => $totalDevices,
+                'by_type'      => $byType,
+                'top_devices'  => $topDevices,
+                'top_creators' => $topCreators,
+                'message'      => $message
+            ];
+        } catch (\Exception $e) {
+            return [
+                'success' => false,
+                'message' => 'Ошибка при выполнении запроса: ' . $e->getMessage()
+            ];
+        }
+    }
+
+    /**
+     * Форматирует результат `getRepairAnalysis()` в Markdown
+     * (подзаголовки `###`/`####`, маркированные списки, таблицы — без эмодзи).
+     */
+    private function formatRepairAnalysis(array $overall, int $totalDevices, array $byType, array $topDevices, array $topCreators): string
+    {
+        $totalRepairs   = (int)($overall['total_repairs']   ?? 0);
+        $inRepairNow    = (int)($overall['in_repair_now']   ?? 0);
+        $devicesRepaired = (int)($overall['devices_with_repairs'] ?? 0);
+        $avgDays = $overall['avg_repair_days'] ?? null;
+
+        $fmtDate = function ($value): string {
+            if ($value === null || $value === '' || $value === '0000-00-00') {
+                return '—';
+            }
+            $ts = strtotime($value);
+            return $ts ? date('d.m.Y', $ts) : (string)$value;
+        };
+        $fmtAvg = function ($value): string {
+            return ($value === null || $value === '') ? '—' : number_format((float)$value, 1, ',', ' ');
+        };
+        $fmtInt = function ($value): string {
+            return (string)((int)$value);
+        };
+
+        $out = "### Анализ ремонтов\n\n";
+
+        if ($totalRepairs === 0) {
+            $out .= "В таблице `repair_data` нет записей о ремонтах. Анализ невозможен.\n";
+            return $out;
+        }
+
+        $out .= "#### Общая сводка\n\n";
+        $out .= "- Приборов в системе: {$totalDevices}\n";
+        $out .= "- Зарегистрированных ремонтов: {$totalRepairs}\n";
+        $out .= "- Уникальных приборов, побывавших в ремонте: {$devicesRepaired}\n";
+        $out .= "- Сейчас находится в ремонте: {$inRepairNow}\n";
+        $out .= "- Первый ремонт: " . $fmtDate($overall['first_repair_date'] ?? null) . "\n";
+        $out .= "- Последний ремонт: " . $fmtDate($overall['last_repair_date'] ?? null) . "\n";
+        $out .= "- Среднее время ремонта (дней): " . $fmtAvg($avgDays) . "\n\n";
+
+        if (!empty($byType)) {
+            $out .= "#### Распределение по типам приборов\n\n";
+            $out .= "| Тип прибора | Приборов | Ремонтов | В ремонте сейчас | Среднее время (дн.) | Первый ремонт | Последний ремонт |\n";
+            $out .= "|---|---|---|---|---|---|---|\n";
+            foreach ($byType as $row) {
+                $type = $row['device_type'] ?? '—';
+                $out .= "| {$type} "
+                     . "| " . $fmtInt($row['device_count']    ?? 0) . " "
+                     . "| " . $fmtInt($row['repair_count']    ?? 0) . " "
+                     . "| " . $fmtInt($row['in_repair_now']   ?? 0) . " "
+                     . "| " . $fmtAvg($row['avg_repair_days'] ?? null) . " "
+                     . "| " . $fmtDate($row['first_repair_date'] ?? null) . " "
+                     . "| " . $fmtDate($row['last_repair_date']  ?? null) . " |\n";
+            }
+            $out .= "\n";
+        }
+
+        if (!empty($topDevices)) {
+            $out .= "#### Топ приборов по числу ремонтов\n\n";
+            foreach ($topDevices as $idx => $row) {
+                $n = $idx + 1;
+                $serial = $row['serial_number'] ?? '—';
+                $case   = $row['case_number']   ?? '—';
+                $type   = $row['device_type']   ?? '—';
+                $count  = $fmtInt($row['repair_count'] ?? 0);
+                $out .= "{$n}. Прибор {$serial} (корпус {$case}, {$type}) — {$count} ремонт(ов).\n";
+            }
+            $out .= "\n";
+        }
+
+        if (!empty($topCreators)) {
+            $out .= "#### Топ ответственных за ремонты\n\n";
+            foreach ($topCreators as $row) {
+                $creator = $row['repair_creator'] ?? '—';
+                $count = $fmtInt($row['repair_count'] ?? 0);
+                $out .= "- {$creator} — {$count} ремонт(ов).\n";
+            }
+            $out .= "\n";
+        }
+
+        return rtrim($out) . "\n";
     }
 }

@@ -29,6 +29,7 @@ class DatabaseSchemaService
         $context .= $this->renderRelations();
         $context .= $this->renderEnumerations();
         $context .= $this->renderForbidden();
+        $context .= $this->renderJoinAntipatterns();
         $context .= $this->renderSearchRules();
         $context .= $this->renderQueryPatterns();
         return $context;
@@ -427,6 +428,48 @@ class DatabaseSchemaService
         $out .= "3. messages.message — личная переписка. Не раскрывайте сообщения сторонних пользователей; обращайтесь к ним только если сам пользователь явно спрашивает свою переписку.\n";
         $out .= "4. При выводе пользователей используйте только публичные поля: id, username, firstname, lastname, middlename, is_admin, created_at.\n";
         $out .= "5. Никогда не придумывайте данные. Если по запросу ничего не найдено — так и сообщите и попросите уточнения.\n\n";
+        return $out;
+    }
+
+    /**
+     * Антипаттерны JOIN, из-за которых аналитические запросы возвращают 0
+     * (или Unknown column). Lifecycle-таблицы соединяются с device_identification
+     * ТОЛЬКО по бизнес-ключу (serial_number, case_number) — у них нет device_id
+     * и нет device_type.
+     */
+    private function renderJoinAntipatterns(): string
+    {
+        $out  = "=== ТИПИЧНЫЕ ОШИБКИ JOIN (НЕ ПОВТОРЯТЬ) ===\n\n";
+
+        $out .= "Lifecycle-таблицы НЕ ИМЕЮТ колонок device_id и device_type.\n";
+        $out .= "К ним относятся: repair_data, repair_data_history, testing_data,\n";
+        $out .= "inspection_data, production_discontinuation, termination_data,\n";
+        $out .= "additional_data, uploaded_files. Связь с device_identification —\n";
+        $out .= "ТОЛЬКО по бизнес-ключу (serial_number, case_number).\n\n";
+
+        $out .= "ЗАПРЕЩЕННЫЕ JOIN (вернут 0 строк или 'Unknown column'):\n";
+        $out .= "  - LEFT JOIN repair_data r ON r.device_id = di.id\n";
+        $out .= "  - LEFT JOIN repair_data r ON r.id = di.id\n";
+        $out .= "  - LEFT JOIN repair_data r ON r.device_type = di.device_type\n";
+        $out .= "  - WHERE r.device_type = 'LWD'  -- такого поля в repair_data нет\n";
+        $out .= "  - JOIN testing_data t ON t.device_id = di.id\n\n";
+
+        $out .= "ЕДИНСТВЕННО ВЕРНЫЙ JOIN для разреза \"ремонты по типу прибора\":\n";
+        $out .= "  SELECT di.device_type, COUNT(r.id) AS repairs_count\n";
+        $out .= "  FROM device_identification di\n";
+        $out .= "  LEFT JOIN repair_data r\n";
+        $out .= "         ON r.serial_number = di.serial_number\n";
+        $out .= "        AND r.case_number   = di.case_number\n";
+        $out .= "  GROUP BY di.device_type;\n\n";
+
+        $out .= "Исключение — device_composition: для НЕЁ JOIN идёт по device_id:\n";
+        $out .= "  device_composition.device_id -> device_identification.id (FK).\n";
+        $out .= "Только эта приборная таблица имеет hard-FK по id.\n\n";
+
+        $out .= "Если LEFT JOIN на lifecycle-таблицу даёт 0 совпадений на ВСЕХ группах,\n";
+        $out .= "это почти всегда означает, что использован неверный ключ соединения.\n";
+        $out .= "Перепроверьте JOIN-условие против блока === СВЯЗИ МЕЖДУ ТАБЛИЦАМИ ===.\n\n";
+
         return $out;
     }
 

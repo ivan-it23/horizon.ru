@@ -55,6 +55,7 @@ class DatabaseQueryHandler
             case 'devices_in_repair':
             case 'devices_in_testing':
             case 'device_statistics':
+            case 'repair_analysis':
                 return $this->queryExecutor->executeQuery($queryAnalysis);
 
             // Диалоговые запросы — возвращаем специальный тип для обработки в контроллере
