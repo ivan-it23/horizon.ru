@@ -10,7 +10,7 @@
     <header class="ai-sidebar-header ai-drawer-header">
         <div class="ai-drawer-heading">
             <span class="ai-drawer-logo" aria-hidden="true">
-                <i class="fas fa-wand-magic-sparkles"></i>
+                <i class="fas fa-robot"></i>
             </span>
             <div class="ai-drawer-title-wrap">
                 <h3 id="ai-drawer-title">AI-ассистент</h3>
@@ -58,7 +58,7 @@
         title="Открыть ИИ-ассистента"
         aria-label="Открыть ИИ-ассистента"
         aria-controls="ai-agent-sidebar">
-    <i class="fas fa-wand-magic-sparkles" aria-hidden="true"></i>
+    <i class="fas fa-robot" aria-hidden="true"></i>
 </button>
 
 <!-- Скрытое поле для хранения контекста устройства -->
