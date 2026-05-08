@@ -135,10 +135,11 @@ class DatabaseSchemaService
     private function renderDataQualityRules(): string
     {
         $out  = "=== ПРАВИЛА ОБРАБОТКИ ДАННЫХ ===\n\n";
-        $out .= "1. В legacy-данных даты могут встречаться как NULL, пустая строка '' или '0000-00-00'.\n";
-        $out .= "2. Перед DATEDIFF/DATE_FORMAT/MIN/MAX по датам используйте нормализацию: NULLIF(NULLIF(date_column, ''), '0000-00-00').\n";
-        $out .= "3. Для длительности ремонта используйте DATEDIFF(NULLIF(NULLIF(release_date, ''), '0000-00-00'), NULLIF(NULLIF(admission_date, ''), '0000-00-00')) и исключайте NULL из AVG через CASE.\n";
-        $out .= "4. Если SQL вернул ошибку, нельзя формировать фактический вывод по предположениям — нужно исправить SQL или честно сообщить об ошибке.\n\n";
+        $out .= "1. Всегда ориентируйтесь на фактический тип столбца из блока ФАКТИЧЕСКАЯ СХЕМА.\n";
+        $out .= "2. Для DATE/DATETIME/TIMESTAMP столбцов НЕ сравнивайте значение с пустой строкой ''. Это вызывает ошибку MySQL Incorrect DATE value. Используйте IS NULL и, при необходимости, YEAR(date_column) = 0 для zero-date.\n";
+        $out .= "3. Для varchar/text столбцов, которые логически содержат дату, нормализуйте пустые/нулевые значения через NULLIF(NULLIF(date_column, ''), '0000-00-00').\n";
+        $out .= "4. Для длительности ремонта сначала создайте безопасные даты через CASE WHEN admission_date IS NULL OR YEAR(admission_date) = 0 THEN NULL ELSE admission_date END, затем используйте DATEDIFF только по этим безопасным значениям.\n";
+        $out .= "5. Если SQL вернул ошибку, нельзя формировать фактический вывод по предположениям или советовать чистить БД — нужно исправить SQL и повторно получить данные.\n\n";
         return $out;
     }
 
@@ -622,22 +623,27 @@ class DatabaseSchemaService
 
         $out .= "-- 7) Сводный анализ ремонтов по фактическим данным БД:\n";
         $out .= "SELECT\n";
-        $out .= "    di.device_type,\n";
-        $out .= "    COUNT(r.id) AS repairs_count,\n";
-        $out .= "    COUNT(DISTINCT CONCAT(di.serial_number, '#', di.case_number)) AS devices_with_repairs,\n";
-        $out .= "    SUM(CASE WHEN NULLIF(NULLIF(r.release_date, ''), '0000-00-00') IS NULL AND r.id IS NOT NULL THEN 1 ELSE 0 END) AS active_repairs,\n";
-        $out .= "    MIN(NULLIF(NULLIF(r.admission_date, ''), '0000-00-00')) AS first_repair_date,\n";
-        $out .= "    MAX(NULLIF(NULLIF(r.admission_date, ''), '0000-00-00')) AS last_repair_date,\n";
+        $out .= "    repairs.device_type,\n";
+        $out .= "    COUNT(repairs.repair_id) AS repairs_count,\n";
+        $out .= "    COUNT(DISTINCT CASE WHEN repairs.repair_id IS NOT NULL THEN CONCAT(repairs.serial_number, '#', repairs.case_number) END) AS devices_with_repairs,\n";
+        $out .= "    SUM(CASE WHEN repairs.repair_id IS NOT NULL AND repairs.release_date_safe IS NULL THEN 1 ELSE 0 END) AS active_repairs,\n";
+        $out .= "    MIN(repairs.admission_date_safe) AS first_repair_date,\n";
+        $out .= "    MAX(repairs.admission_date_safe) AS last_repair_date,\n";
         $out .= "    AVG(CASE\n";
-        $out .= "        WHEN NULLIF(NULLIF(r.release_date, ''), '0000-00-00') IS NOT NULL\n";
-        $out .= "         AND NULLIF(NULLIF(r.admission_date, ''), '0000-00-00') IS NOT NULL\n";
-        $out .= "        THEN DATEDIFF(NULLIF(NULLIF(r.release_date, ''), '0000-00-00'), NULLIF(NULLIF(r.admission_date, ''), '0000-00-00'))\n";
+        $out .= "        WHEN repairs.release_date_safe IS NOT NULL AND repairs.admission_date_safe IS NOT NULL\n";
+        $out .= "        THEN DATEDIFF(repairs.release_date_safe, repairs.admission_date_safe)\n";
         $out .= "        ELSE NULL\n";
         $out .= "    END) AS avg_repair_days\n";
-        $out .= "FROM device_identification di\n";
-        $out .= "LEFT JOIN repair_data r\n";
-        $out .= "       ON r.serial_number = di.serial_number AND r.case_number = di.case_number\n";
-        $out .= "GROUP BY di.device_type\n";
+        $out .= "FROM (\n";
+        $out .= "    SELECT\n";
+        $out .= "        di.device_type, di.serial_number, di.case_number, r.id AS repair_id,\n";
+        $out .= "        CASE WHEN r.admission_date IS NULL OR YEAR(r.admission_date) = 0 THEN NULL ELSE r.admission_date END AS admission_date_safe,\n";
+        $out .= "        CASE WHEN r.release_date IS NULL OR YEAR(r.release_date) = 0 THEN NULL ELSE r.release_date END AS release_date_safe\n";
+        $out .= "    FROM device_identification di\n";
+        $out .= "    LEFT JOIN repair_data r\n";
+        $out .= "           ON r.serial_number = di.serial_number AND r.case_number = di.case_number\n";
+        $out .= ") AS repairs\n";
+        $out .= "GROUP BY repairs.device_type\n";
         $out .= "ORDER BY repairs_count DESC;\n\n";
 
         $out .= "-- 8) Последнее испытание прибора (created_at используется как дата испытания):\n";
