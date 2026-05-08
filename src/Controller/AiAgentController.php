@@ -323,7 +323,7 @@ class AiAgentController extends BaseController
             "3. Минимум текста до/после запросов.\n" .
             "4. Если вопрос не требует БД — отвечайте кратко без SQL.\n" .
             "5. Соблюдайте запреты из руководства (поля users.password и uploaded_files.file_data в SELECT не включать).\n" .
-            "6. Для дат в legacy-таблицах учитывайте NULL, пустые строки и '0000-00-00' через NULLIF.\n" .
+            "6. Для DATE/DATETIME столбцов не сравнивайте дату с пустой строкой ''; используйте IS NULL и YEAR(date_column) = 0 для zero-date. NULLIF(..., '') применяйте только к varchar/text датам.\n" .
             "7. ВНИМАНИЕ: lifecycle-таблицы (repair_data, testing_data, inspection_data, termination_data, production_discontinuation, additional_data, uploaded_files) соединяются с device_identification ТОЛЬКО по (serial_number, case_number). У них НЕТ колонок device_id и device_type. См. блок === ТИПИЧНЫЕ ОШИБКИ JOIN ===.\n\n" .
             "Пример:\n<sql>SELECT device_type, COUNT(*) FROM device_identification GROUP BY device_type</sql>";
 
@@ -343,46 +343,18 @@ class AiAgentController extends BaseController
             return $step1Response;
         }
 
-        // ШАГ 2: Выполняем SQL-запросы и собираем результаты
-        $executionResults = [];
-        foreach ($sqlQueries as $sql) {
-            $result = $dbHandler->executeQueryForLLM($sql);
-            $executionResults[] = [
-                'sql' => $sql,
-                'result' => $result
-            ];
-        }
+        // ШАГ 2: Выполняем SQL-запросы и при ошибке один раз просим LLM исправить SQL
+        $executionResults = $this->executeLLMQueriesWithRetry($sqlQueries, $dbHandler, $dbContext, $deviceContextStr, $userMessage);
 
         // ШАГ 3: Отправляем результаты обратно к LLM для форматирования
-        $resultsContext = "РЕЗУЛЬТАТЫ SQL-ЗАПРОСОВ:\n\n";
-        foreach ($executionResults as $idx => $item) {
-            $resultsContext .= "Запрос " . ($idx + 1) . ": " . $item['sql'] . "\n";
-            if ($item['result']['success']) {
-                $resultsContext .= "Результат:\n";
-                if (!empty($item['result']['data'])) {
-                    $resultsContext .= json_encode($item['result']['data'], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
-                } else {
-                    $resultsContext .= "Нет данных (пустой результат)";
-                }
-                $resultsContext .= "\nКоличество записей: " . $item['result']['count'] . "\n";
-                if (isset($item['result']['total_count']) && $item['result']['total_count'] !== $item['result']['count']) {
-                    $resultsContext .= "Всего строк в результате: " . $item['result']['total_count'] . "\n";
-                }
-                if (!empty($item['result']['truncated'])) {
-                    $resultsContext .= "Результат обрезан до первых " . $item['result']['count'] . " строк.\n";
-                }
-            } else {
-                $resultsContext .= "ОШИБКА: " . ($item['result']['error'] ?? 'Неизвестная ошибка') . "\n";
-            }
-            $resultsContext .= "\n";
-        }
+        $resultsContext = $this->buildSQLResultsContext($executionResults);
 
         $step2SystemContext = "Ты ИИ-агент АМК ГОРИЗОНТ. Отвечай коротко и по делу на основе данных из БД.\n" .
             "ПРАВИЛА:\n" .
             "1. Используй Markdown (заголовки, списки, таблицы).\n" .
             "2. НЕ ПРИДУМЫВАЙ данные.\n" .
             "3. Не дублируй SQL-запросы в ответе.\n" .
-            "4. Если SQL вернул ошибку, не делай фактических выводов из предположений — сообщи, что данные не получены.\n" .
+            "4. Если SQL после повторной попытки всё равно вернул ошибку, не делай фактических выводов из предположений и не советуй чистить БД — сообщи, что данные не получены.\n" .
             "5. Будь лаконичен: только нужные данные и краткий вывод.";
 
         $step2Messages = [
@@ -505,6 +477,105 @@ class AiAgentController extends BaseController
         }
         
         return $queries;
+    }
+
+    /**
+     * Выполняет SQL от LLM и один раз просит модель исправить запросы при ошибке.
+     */
+    private function executeLLMQueriesWithRetry(
+        array $sqlQueries,
+        \App\Service\DatabaseQueryHandler $dbHandler,
+        string $dbContext,
+        string $deviceContextStr,
+        string $userMessage
+    ): array {
+        $executionResults = [];
+
+        for ($attempt = 1; $attempt <= 2; $attempt++) {
+            $executionResults = [];
+            foreach ($sqlQueries as $sql) {
+                $executionResults[] = [
+                    'sql' => $sql,
+                    'result' => $dbHandler->executeQueryForLLM($sql)
+                ];
+            }
+
+            if (!$this->hasFailedSQLExecution($executionResults) || $attempt === 2) {
+                return $executionResults;
+            }
+
+            $retrySystemContext = $this->getAgentInstructionsBlock() .
+                "Вы исправляете SQL-запросы для БД АМК «Горизонт».\n\n" .
+                "Структура БД:\n{$dbContext}{$deviceContextStr}\n\n" .
+                "ПРАВИЛА:\n" .
+                "1. Верните только исправленные запросы в тегах <sql>...</sql>.\n" .
+                "2. Разрешены только SELECT-запросы или read-only WITH ... SELECT.\n" .
+                "3. Не советуйте чистить или менять данные — исправьте SQL так, чтобы он корректно читал текущую БД.\n" .
+                "4. Для DATE/DATETIME столбцов не сравнивайте дату с пустой строкой ''. Используйте IS NULL и YEAR(date_column) = 0 для zero-date.\n" .
+                "5. NULLIF(date_column, '') применяйте только если фактический тип столбца varchar/text, а не DATE/DATETIME.\n" .
+                "6. Lifecycle-таблицы соединяйте с device_identification по serial_number и case_number.\n" .
+                "7. Соблюдайте запреты из руководства: users.password и uploaded_files.file_data не запрашивать.\n";
+
+            $retryMessages = [
+                ['role' => 'system', 'content' => $retrySystemContext],
+                ['role' => 'user', 'content' => "Вопрос пользователя: {$userMessage}\n\nОшибки предыдущих SQL-запросов:\n" . $this->buildSQLResultsContext($executionResults)]
+            ];
+
+            $retryResponse = $this->callLLM($retryMessages, 1800, 0.1);
+            $retryQueries = $this->extractSQLQueries($retryResponse);
+            if (empty($retryQueries)) {
+                return $executionResults;
+            }
+
+            $sqlQueries = $retryQueries;
+        }
+
+        return $executionResults;
+    }
+
+    /**
+     * Проверяет, были ли ошибки выполнения SQL.
+     */
+    private function hasFailedSQLExecution(array $executionResults): bool
+    {
+        foreach ($executionResults as $item) {
+            if (empty($item['result']['success'])) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Формирует контекст результатов SQL для LLM.
+     */
+    private function buildSQLResultsContext(array $executionResults): string
+    {
+        $resultsContext = "РЕЗУЛЬТАТЫ SQL-ЗАПРОСОВ:\n\n";
+        foreach ($executionResults as $idx => $item) {
+            $resultsContext .= "Запрос " . ($idx + 1) . ": " . $item['sql'] . "\n";
+            if ($item['result']['success']) {
+                $resultsContext .= "Результат:\n";
+                if (!empty($item['result']['data'])) {
+                    $resultsContext .= json_encode($item['result']['data'], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+                } else {
+                    $resultsContext .= "Нет данных (пустой результат)";
+                }
+                $resultsContext .= "\nКоличество записей: " . $item['result']['count'] . "\n";
+                if (isset($item['result']['total_count']) && $item['result']['total_count'] !== $item['result']['count']) {
+                    $resultsContext .= "Всего строк в результате: " . $item['result']['total_count'] . "\n";
+                }
+                if (!empty($item['result']['truncated'])) {
+                    $resultsContext .= "Результат обрезан до первых " . $item['result']['count'] . " строк.\n";
+                }
+            } else {
+                $resultsContext .= "ОШИБКА: " . ($item['result']['error'] ?? 'Неизвестная ошибка') . "\n";
+            }
+            $resultsContext .= "\n";
+        }
+
+        return $resultsContext;
     }
 
     /**
@@ -678,7 +749,7 @@ class AiAgentController extends BaseController
             "4. Не размышляйте долго. Отвечайте сразу одним-двумя тегами.\n" .
             "5. Никакого текста вне тегов.\n" .
             "6. Соблюдайте запреты из руководства: users.password и uploaded_files.file_data в SELECT не включать.\n" .
-            "7. Для дат в legacy-таблицах учитывайте NULL, пустые строки и '0000-00-00' через NULLIF.\n" .
+            "7. Для DATE/DATETIME столбцов не сравнивайте дату с пустой строкой ''; используйте IS NULL и YEAR(date_column) = 0 для zero-date. NULLIF(..., '') применяйте только к varchar/text датам.\n" .
             "8. ВНИМАНИЕ: lifecycle-таблицы (repair_data, testing_data, inspection_data, termination_data, production_discontinuation, additional_data, uploaded_files) соединяются с device_identification ТОЛЬКО по (serial_number, case_number). У них НЕТ колонок device_id и device_type. См. блок === ТИПИЧНЫЕ ОШИБКИ JOIN ===.\n\n" .
             "Примеры:\n" .
             "«Сколько приборов LWD?» → <sql>SELECT COUNT(*) FROM device_identification WHERE device_type='LWD'</sql>\n" .
@@ -702,35 +773,9 @@ class AiAgentController extends BaseController
 
         $this->sseEmit('status', ['message' => 'Получаю данные из базы...']);
 
-        // ШАГ 2: Выполнение SQL
-        $executionResults = [];
-        foreach ($sqlQueries as $sql) {
-            $result = $dbHandler->executeQueryForLLM($sql);
-            $executionResults[] = ['sql' => $sql, 'result' => $result];
-        }
-
-        $resultsContext = "РЕЗУЛЬТАТЫ SQL-ЗАПРОСОВ:\n\n";
-        foreach ($executionResults as $idx => $item) {
-            $resultsContext .= "Запрос " . ($idx + 1) . ": " . $item['sql'] . "\n";
-            if ($item['result']['success']) {
-                $resultsContext .= "Результат:\n";
-                if (!empty($item['result']['data'])) {
-                    $resultsContext .= json_encode($item['result']['data'], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
-                } else {
-                    $resultsContext .= "Нет данных (пустой результат)";
-                }
-                $resultsContext .= "\nКоличество записей: " . $item['result']['count'] . "\n";
-                if (isset($item['result']['total_count']) && $item['result']['total_count'] !== $item['result']['count']) {
-                    $resultsContext .= "Всего строк в результате: " . $item['result']['total_count'] . "\n";
-                }
-                if (!empty($item['result']['truncated'])) {
-                    $resultsContext .= "Результат обрезан до первых " . $item['result']['count'] . " строк.\n";
-                }
-            } else {
-                $resultsContext .= "ОШИБКА: " . ($item['result']['error'] ?? 'Неизвестная ошибка') . "\n";
-            }
-            $resultsContext .= "\n";
-        }
+        // ШАГ 2: Выполнение SQL с одной попыткой исправить ошибочный запрос
+        $executionResults = $this->executeLLMQueriesWithRetry($sqlQueries, $dbHandler, $dbContext, $deviceContextStr, $userMessage);
+        $resultsContext = $this->buildSQLResultsContext($executionResults);
 
         $step2SystemContext = $this->getAgentInstructionsBlock() .
             "Вы — ИИ-агент системы учёта приборов АМК «Горизонт». Сформируйте ответ на основе данных из БД.\n" .
@@ -738,7 +783,7 @@ class AiAgentController extends BaseController
             "1. Используйте Markdown (заголовки уровня ###, маркированные списки, таблицы при необходимости).\n" .
             "2. Не придумывайте данные — используйте только то, что пришло из SQL-результата.\n" .
             "3. Не дублируйте SQL-запросы в ответе.\n" .
-            "4. Если SQL вернул ошибку, не делайте фактических выводов из предположений — сообщите, что данные не получены.\n" .
+            "4. Если SQL после повторной попытки всё равно вернул ошибку, не делайте фактических выводов из предположений и не советуйте чистить БД — сообщите, что данные не получены.\n" .
             "5. Отвечайте лаконично, в нейтрально-деловом тоне, без эмодзи.\n" .
             "6. При выводе таблиц старайтесь не превышать 4–5 колонок: длинные многоколоночные таблицы плохо читаются в drawer-чате; вместо этого используйте маркированные списки или несколько компактных таблиц.";
 
