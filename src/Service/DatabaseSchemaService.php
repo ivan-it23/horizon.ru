@@ -26,8 +26,10 @@ class DatabaseSchemaService
     {
         $context  = $this->renderDomainOverview();
         $context .= $this->renderTablesReference();
+        $context .= $this->renderLiveSchemaSnapshot();
         $context .= $this->renderRelations();
         $context .= $this->renderEnumerations();
+        $context .= $this->renderDataQualityRules();
         $context .= $this->renderForbidden();
         $context .= $this->renderJoinAntipatterns();
         $context .= $this->renderSearchRules();
@@ -71,6 +73,84 @@ class DatabaseSchemaService
         }
 
         return $out;
+    }
+
+    /**
+     * Фактический снимок схемы текущей БД.
+     */
+    private function renderLiveSchemaSnapshot(): string
+    {
+        if (!$this->conn || $this->conn->connect_error) {
+            return "";
+        }
+
+        try {
+            $tablesResult = $this->conn->query("SHOW TABLES");
+            if (!$tablesResult) {
+                return "";
+            }
+
+            $out = "=== ФАКТИЧЕСКАЯ СХЕМА ТЕКУЩЕЙ БД ===\n\n";
+            while ($tableRow = $tablesResult->fetch_row()) {
+                $tableName = $tableRow[0] ?? '';
+                $quotedTable = $this->quoteIdentifier($tableName);
+                if ($quotedTable === '') {
+                    continue;
+                }
+
+                $rowCount = 'не удалось получить';
+                $countResult = $this->conn->query("SELECT COUNT(*) AS cnt FROM {$quotedTable}");
+                if ($countResult) {
+                    $countRow = $countResult->fetch_assoc();
+                    $rowCount = (string)($countRow['cnt'] ?? 0);
+                    $countResult->free();
+                }
+
+                $out .= "ТАБЛИЦА: {$tableName} (строк: {$rowCount})\n";
+                $columnsResult = $this->conn->query("SHOW COLUMNS FROM {$quotedTable}");
+                if ($columnsResult) {
+                    while ($column = $columnsResult->fetch_assoc()) {
+                        $field = $column['Field'] ?? '';
+                        $type = $column['Type'] ?? '';
+                        $null = $column['Null'] ?? '';
+                        $key = $column['Key'] ?? '';
+                        $extra = $column['Extra'] ?? '';
+                        $out .= "  - {$field}: {$type}, null={$null}, key={$key}, extra={$extra}\n";
+                    }
+                    $columnsResult->free();
+                }
+                $out .= "\n";
+            }
+            $tablesResult->free();
+
+            return $out;
+        } catch (\Exception $e) {
+            return "=== ФАКТИЧЕСКАЯ СХЕМА ТЕКУЩЕЙ БД ===\n\nНе удалось получить схему: " . $e->getMessage() . "\n\n";
+        }
+    }
+
+    /**
+     * Правила для legacy-значений и вычислений.
+     */
+    private function renderDataQualityRules(): string
+    {
+        $out  = "=== ПРАВИЛА ОБРАБОТКИ ДАННЫХ ===\n\n";
+        $out .= "1. В legacy-данных даты могут встречаться как NULL, пустая строка '' или '0000-00-00'.\n";
+        $out .= "2. Перед DATEDIFF/DATE_FORMAT/MIN/MAX по датам используйте нормализацию: NULLIF(NULLIF(date_column, ''), '0000-00-00').\n";
+        $out .= "3. Для длительности ремонта используйте DATEDIFF(NULLIF(NULLIF(release_date, ''), '0000-00-00'), NULLIF(NULLIF(admission_date, ''), '0000-00-00')) и исключайте NULL из AVG через CASE.\n";
+        $out .= "4. Если SQL вернул ошибку, нельзя формировать фактический вывод по предположениям — нужно исправить SQL или честно сообщить об ошибке.\n\n";
+        return $out;
+    }
+
+    /**
+     * Экранирует имя таблицы/столбца для служебных introspection-запросов.
+     */
+    private function quoteIdentifier(string $identifier): string
+    {
+        if (!preg_match('/^[A-Za-z0-9_]+$/', $identifier)) {
+            return '';
+        }
+        return '`' . str_replace('`', '``', $identifier) . '`';
     }
 
     /**
@@ -421,7 +501,7 @@ class DatabaseSchemaService
     private function renderForbidden(): string
     {
         $out  = "=== ЗАПРЕТЫ И ОГРАНИЧЕНИЯ ===\n\n";
-        $out .= "1. Разрешены ТОЛЬКО SELECT-запросы. Никаких INSERT/UPDATE/DELETE/DDL.\n";
+        $out .= "1. Разрешены ТОЛЬКО SELECT-запросы и read-only WITH ... SELECT. Никаких INSERT/UPDATE/DELETE/DDL.\n";
         $out .= "2. ЗАПРЕЩЕНО включать в SELECT-список и в ответы пользователю:\n";
         $out .= "   - users.password (bcrypt-хэш)\n";
         $out .= "   - uploaded_files.file_data (LONGBLOB, двоичные данные файла)\n";
@@ -540,7 +620,27 @@ class DatabaseSchemaService
         $out .= "ORDER BY repairs_count DESC, di.serial_number\n";
         $out .= "LIMIT 10;\n\n";
 
-        $out .= "-- 7) Последнее испытание прибора (created_at используется как дата испытания):\n";
+        $out .= "-- 7) Сводный анализ ремонтов по фактическим данным БД:\n";
+        $out .= "SELECT\n";
+        $out .= "    di.device_type,\n";
+        $out .= "    COUNT(r.id) AS repairs_count,\n";
+        $out .= "    COUNT(DISTINCT CONCAT(di.serial_number, '#', di.case_number)) AS devices_with_repairs,\n";
+        $out .= "    SUM(CASE WHEN NULLIF(NULLIF(r.release_date, ''), '0000-00-00') IS NULL AND r.id IS NOT NULL THEN 1 ELSE 0 END) AS active_repairs,\n";
+        $out .= "    MIN(NULLIF(NULLIF(r.admission_date, ''), '0000-00-00')) AS first_repair_date,\n";
+        $out .= "    MAX(NULLIF(NULLIF(r.admission_date, ''), '0000-00-00')) AS last_repair_date,\n";
+        $out .= "    AVG(CASE\n";
+        $out .= "        WHEN NULLIF(NULLIF(r.release_date, ''), '0000-00-00') IS NOT NULL\n";
+        $out .= "         AND NULLIF(NULLIF(r.admission_date, ''), '0000-00-00') IS NOT NULL\n";
+        $out .= "        THEN DATEDIFF(NULLIF(NULLIF(r.release_date, ''), '0000-00-00'), NULLIF(NULLIF(r.admission_date, ''), '0000-00-00'))\n";
+        $out .= "        ELSE NULL\n";
+        $out .= "    END) AS avg_repair_days\n";
+        $out .= "FROM device_identification di\n";
+        $out .= "LEFT JOIN repair_data r\n";
+        $out .= "       ON r.serial_number = di.serial_number AND r.case_number = di.case_number\n";
+        $out .= "GROUP BY di.device_type\n";
+        $out .= "ORDER BY repairs_count DESC;\n\n";
+
+        $out .= "-- 8) Последнее испытание прибора (created_at используется как дата испытания):\n";
         $out .= "SELECT t.id, t.serial_number, t.case_number, t.creator, t.created_at AS test_date,\n";
         $out .= "       t.test_result, t.temperature_test, t.vibration_test\n";
         $out .= "FROM testing_data t\n";
@@ -548,7 +648,7 @@ class DatabaseSchemaService
         $out .= "ORDER BY t.created_at DESC\n";
         $out .= "LIMIT 1;\n\n";
 
-        $out .= "-- 8) Допуски для приборов LWD на частоте 400 кГц (для проверки соответствия испытаний):\n";
+        $out .= "-- 9) Допуски для приборов LWD на частоте 400 кГц (для проверки соответствия испытаний):\n";
         $out .= "SELECT tl.parameter, tl.frequency, tl.column_name, tl.min_value, tl.max_value\n";
         $out .= "FROM tolerances_lwd tl\n";
         $out .= "WHERE tl.frequency = 400\n";
@@ -556,7 +656,7 @@ class DatabaseSchemaService
         $out .= "-- Затем сравнить min_value/max_value со значением соответствующего\n";
         $out .= "-- столбца в testing_data (например, t.noise_sko_x1_400) для конкретной записи испытания.\n\n";
 
-        $out .= "-- 9) Полный жизненный цикл прибора одним запросом (агрегаты по lifecycle-таблицам):\n";
+        $out .= "-- 10) Полный жизненный цикл прибора одним запросом (агрегаты по lifecycle-таблицам):\n";
         $out .= "SELECT di.serial_number, di.case_number, di.device_type,\n";
         $out .= "       (SELECT COUNT(*) FROM repair_data r\n";
         $out .= "          WHERE r.serial_number = di.serial_number\n";
@@ -573,7 +673,7 @@ class DatabaseSchemaService
         $out .= "FROM device_identification di\n";
         $out .= "WHERE di.serial_number = '109';\n\n";
 
-        $out .= "-- 10) История изменений идентификации прибора:\n";
+        $out .= "-- 11) История изменений идентификации прибора:\n";
         $out .= "SELECT dh.changed_at, dh.serial_number, dh.case_number,\n";
         $out .= "       dh.length_mm, dh.diameter_mm, dh.frequency1_khz, dh.frequency2_khz,\n";
         $out .= "       dh.creator_lastname\n";
@@ -581,7 +681,7 @@ class DatabaseSchemaService
         $out .= "WHERE dh.device_id = (SELECT id FROM device_identification WHERE serial_number = '109' LIMIT 1)\n";
         $out .= "ORDER BY dh.changed_at;\n\n";
 
-        $out .= "-- 11) Кто из пользователей зарегистрировал больше всего ремонтов:\n";
+        $out .= "-- 12) Кто из пользователей зарегистрировал больше всего ремонтов:\n";
         $out .= "SELECT u.id, u.lastname, u.firstname, u.middlename, COUNT(r.id) AS repairs_logged\n";
         $out .= "FROM users u\n";
         $out .= "INNER JOIN repair_data r ON r.creator_id = u.id\n";
@@ -589,7 +689,7 @@ class DatabaseSchemaService
         $out .= "ORDER BY repairs_logged DESC\n";
         $out .= "LIMIT 10;\n\n";
 
-        $out .= "-- 12) Прикреплённые файлы по прибору (БЕЗ file_data):\n";
+        $out .= "-- 13) Прикреплённые файлы по прибору (БЕЗ file_data):\n";
         $out .= "SELECT id, field_name, file_name, device_type, created_at\n";
         $out .= "FROM uploaded_files\n";
         $out .= "WHERE serial_number = '109' AND case_number = '008-2024'\n";
@@ -638,20 +738,77 @@ class DatabaseSchemaService
      */
     public function executeQueryForLLM(string $sql): array
     {
+        $sql = trim($sql);
+        $sql = rtrim($sql, "; \t\n\r\0\x0B");
+
+        $validationError = $this->validateLLMSelectQuery($sql);
+        if ($validationError !== null) {
+            return ['success' => false, 'error' => $validationError];
+        }
+
         try {
             $result = $this->conn->query($sql);
             if (!$result) {
                 return ['success' => false, 'error' => $this->conn->error];
             }
 
-            $data = [];
-            while ($row = $result->fetch_assoc()) {
-                $data[] = $row;
+            if (!$result instanceof \mysqli_result) {
+                return ['success' => false, 'error' => 'LLM SQL должен возвращать набор строк.'];
             }
 
-            return ['success' => true, 'data' => $data, 'count' => count($data)];
+            $data = [];
+            $totalCount = 0;
+            $maxRows = 200;
+            while ($row = $result->fetch_assoc()) {
+                $totalCount++;
+                if (count($data) < $maxRows) {
+                    $data[] = $row;
+                }
+            }
+            $result->free();
+
+            return [
+                'success' => true,
+                'data' => $data,
+                'count' => count($data),
+                'total_count' => $totalCount,
+                'truncated' => $totalCount > count($data)
+            ];
         } catch (\Exception $e) {
             return ['success' => false, 'error' => $e->getMessage()];
         }
+    }
+
+    /**
+     * Проверяет SQL, сгенерированный LLM, перед выполнением.
+     */
+    private function validateLLMSelectQuery(string $sql): ?string
+    {
+        if ($sql === '') {
+            return 'Пустой SQL-запрос.';
+        }
+
+        if (!preg_match('/^\s*(SELECT|WITH)\b/i', $sql)) {
+            return 'Разрешены только SELECT-запросы и read-only WITH ... SELECT.';
+        }
+
+        $forbiddenPatterns = [
+            '/;\s*\S/i' => 'Множественные SQL-запросы запрещены.',
+            '/\b(INSERT|UPDATE|DELETE|DROP|ALTER|CREATE|TRUNCATE|REPLACE|GRANT|REVOKE|LOCK|UNLOCK)\b/i' => 'Разрешены только read-only запросы.',
+            '/\bINTO\s+OUTFILE\b/i' => 'Запись файлов из SQL запрещена.',
+            '/\bLOAD_FILE\s*\(/i' => 'Чтение файлов из SQL запрещено.',
+            '/\bSLEEP\s*\(/i' => 'SQL-функции задержки запрещены.',
+            '/\bBENCHMARK\s*\(/i' => 'SQL-функции нагрузки запрещены.',
+            '/\busers\s*\.\s*password\b/i' => 'Поле users.password нельзя запрашивать.',
+            '/\bfile_data\b/i' => 'Поле uploaded_files.file_data нельзя запрашивать.'
+        ];
+
+        foreach ($forbiddenPatterns as $pattern => $message) {
+            if (preg_match($pattern, $sql)) {
+                return $message;
+            }
+        }
+
+        return null;
     }
 }
