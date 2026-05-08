@@ -616,9 +616,6 @@ class AiAgentController extends BaseController
         header('X-Accel-Buffering: no');
         header('Connection: keep-alive');
 
-        // Освобождаем сессию, чтобы не блокировать другие запросы пользователя
-        session_write_close();
-
         try {
             $input = file_get_contents('php://input');
             $data = json_decode($input, true) ?: [];
@@ -629,10 +626,7 @@ class AiAgentController extends BaseController
                 return;
             }
 
-            // Переоткрываем сессию на чтение для получения user info
-            session_start();
             $userName = $_SESSION['user']['lastname'] ?? ($_SESSION['user']['username'] ?? 'Guest');
-            session_write_close();
 
             require_once __DIR__ . '/../../db_connection.php';
             if (!isset($conn)) {
@@ -722,9 +716,6 @@ class AiAgentController extends BaseController
         $dbContext = $dbHandler->getDatabaseContextForLLM();
         
         $deviceContextStr = $dbHandler->getConversationContextForLLM();
-        if (session_status() === PHP_SESSION_ACTIVE) {
-            session_write_close();
-        }
 
         $this->sseEmit('status', ['message' => 'Анализирую запрос...']);
 

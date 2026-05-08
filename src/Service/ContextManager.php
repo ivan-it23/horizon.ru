@@ -328,7 +328,7 @@ class ContextManager
         $query = mb_strtolower($userQuery);
         $ordinal = $this->detectOrdinal($query);
         $hasReference = $ordinal !== null || preg_match(
-            '/\b(этот|этого|этому|этом|данный|данного|данному|данном|него|нему|ним|нему|по нему|у него|эти|их|данные|предыдущий|последний)\b/ui',
+            '/\b(этот|этого|этому|этом|этим|эта|этой|эту|эти|этих|этими|данный|данного|данному|данном|данным|данная|данной|данную|данные|данных|него|нему|ним|по нему|у него|их|предыдущий|последний)\b/ui',
             $query
         );
 
@@ -354,7 +354,7 @@ class ContextManager
                 if ($ordinal !== null && isset($devices[$ordinal - 1])) {
                     $result['device'] = $devices[$ordinal - 1];
                     $result['devices'] = [$devices[$ordinal - 1]];
-                } elseif (preg_match('/\b(эти|их|данные)\b/ui', $query)) {
+                } elseif (preg_match('/\b(эти|этих|этими|их|данные|данных)\b/ui', $query)) {
                     $result['devices'] = $devices;
                     $result['device'] = $devices[0] ?? null;
                 } else {
@@ -438,7 +438,7 @@ class ContextManager
         if (preg_match('/termination|прекращен|эксплуатац|списан/ui', $haystack)) {
             return 'termination';
         }
-        if (preg_match('/repair|ремонт|неисправ|полом|причин[аы]?.*уход|уходил/ui', $haystack)) {
+        if (preg_match('/repair|ремонт|неисправ|полом|проблем|причин[аы]?.*уход|уходил/ui', $haystack)) {
             return 'repairs';
         }
         if (preg_match('/testing|испытан|допуск|замер/ui', $haystack)) {

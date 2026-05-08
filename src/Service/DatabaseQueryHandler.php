@@ -48,6 +48,12 @@ class DatabaseQueryHandler
         }
 
         switch ($queryAnalysis['type']) {
+            case 'context_missing':
+                return [
+                    'success' => true,
+                    'message' => $queryAnalysis['message'] ?? 'Не удалось определить контекст. Уточните серийный номер или номер корпуса.'
+                ];
+
             case 'count_devices_by_type':
             case 'count_all_devices':
             case 'count_repairs':
