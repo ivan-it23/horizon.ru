@@ -319,11 +319,12 @@ class AiAgentController extends BaseController
             "Структура БД:\n{$dbContext}{$deviceContextStr}\n\n" .
             "ПРАВИЛА:\n" .
             "1. Каждый запрос оборачивайте в тег: <sql>ЗАПРОС</sql>\n" .
-            "2. ТОЛЬКО SELECT-запросы.\n" .
+            "2. ТОЛЬКО SELECT-запросы или read-only WITH ... SELECT.\n" .
             "3. Минимум текста до/после запросов.\n" .
             "4. Если вопрос не требует БД — отвечайте кратко без SQL.\n" .
             "5. Соблюдайте запреты из руководства (поля users.password и uploaded_files.file_data в SELECT не включать).\n" .
-            "6. ВНИМАНИЕ: lifecycle-таблицы (repair_data, testing_data, inspection_data, termination_data, production_discontinuation, additional_data, uploaded_files) соединяются с device_identification ТОЛЬКО по (serial_number, case_number). У них НЕТ колонок device_id и device_type. См. блок === ТИПИЧНЫЕ ОШИБКИ JOIN ===.\n\n" .
+            "6. Для дат в legacy-таблицах учитывайте NULL, пустые строки и '0000-00-00' через NULLIF.\n" .
+            "7. ВНИМАНИЕ: lifecycle-таблицы (repair_data, testing_data, inspection_data, termination_data, production_discontinuation, additional_data, uploaded_files) соединяются с device_identification ТОЛЬКО по (serial_number, case_number). У них НЕТ колонок device_id и device_type. См. блок === ТИПИЧНЫЕ ОШИБКИ JOIN ===.\n\n" .
             "Пример:\n<sql>SELECT device_type, COUNT(*) FROM device_identification GROUP BY device_type</sql>";
 
         $step1Messages = [
@@ -364,6 +365,12 @@ class AiAgentController extends BaseController
                     $resultsContext .= "Нет данных (пустой результат)";
                 }
                 $resultsContext .= "\nКоличество записей: " . $item['result']['count'] . "\n";
+                if (isset($item['result']['total_count']) && $item['result']['total_count'] !== $item['result']['count']) {
+                    $resultsContext .= "Всего строк в результате: " . $item['result']['total_count'] . "\n";
+                }
+                if (!empty($item['result']['truncated'])) {
+                    $resultsContext .= "Результат обрезан до первых " . $item['result']['count'] . " строк.\n";
+                }
             } else {
                 $resultsContext .= "ОШИБКА: " . ($item['result']['error'] ?? 'Неизвестная ошибка') . "\n";
             }
@@ -375,7 +382,8 @@ class AiAgentController extends BaseController
             "1. Используй Markdown (заголовки, списки, таблицы).\n" .
             "2. НЕ ПРИДУМЫВАЙ данные.\n" .
             "3. Не дублируй SQL-запросы в ответе.\n" .
-            "4. Будь лаконичен: только нужные данные и краткий вывод.";
+            "4. Если SQL вернул ошибку, не делай фактических выводов из предположений — сообщи, что данные не получены.\n" .
+            "5. Будь лаконичен: только нужные данные и краткий вывод.";
 
         $step2Messages = [
             ['role' => 'system', 'content' => $step2SystemContext],
@@ -465,8 +473,8 @@ class AiAgentController extends BaseController
         if (preg_match_all('/<sql>(.*?)<\/sql>/is', $text, $matches)) {
             foreach ($matches[1] as $sql) {
                 $sql = trim($sql);
-                // Проверяем, что это SELECT-запрос
-                if (preg_match('/^\s*SELECT/i', $sql)) {
+                // Проверяем, что это read-only запрос
+                if (preg_match('/^\s*(SELECT|WITH)\b/i', $sql)) {
                     $queries[] = $sql;
                 }
             }
@@ -477,7 +485,7 @@ class AiAgentController extends BaseController
             if (preg_match_all('/```sql\s*(.*?)```/is', $text, $matches)) {
                 foreach ($matches[1] as $sql) {
                     $sql = trim($sql);
-                    if (preg_match('/^\s*SELECT/i', $sql)) {
+                    if (preg_match('/^\s*(SELECT|WITH)\b/i', $sql)) {
                         $queries[] = $sql;
                     }
                 }
@@ -486,7 +494,7 @@ class AiAgentController extends BaseController
         
         // Если и code blocks нет, ищем строки начинающиеся с SELECT
         if (empty($queries)) {
-            if (preg_match_all('/SELECT\s+.*?;/is', $text, $matches)) {
+            if (preg_match_all('/(?:SELECT|WITH)\s+.*?;/is', $text, $matches)) {
                 foreach ($matches[0] as $sql) {
                     $sql = trim($sql);
                     // Убираем точку с запятой в конце если есть
@@ -666,11 +674,12 @@ class AiAgentController extends BaseController
             "ПРАВИЛА:\n" .
             "1. Если вопрос ТРЕБУЕТ данных из БД (приборы, ремонты, статистика, поиск) — выдайте SQL в тегах: <sql>ЗАПРОС</sql>\n" .
             "2. Если вопрос НЕ требует БД (программирование, общие вопросы, разговор, математика) — выдайте ТОЛЬКО тег: <no_sql/>\n" .
-            "3. ТОЛЬКО SELECT-запросы.\n" .
+            "3. ТОЛЬКО SELECT-запросы или read-only WITH ... SELECT.\n" .
             "4. Не размышляйте долго. Отвечайте сразу одним-двумя тегами.\n" .
             "5. Никакого текста вне тегов.\n" .
             "6. Соблюдайте запреты из руководства: users.password и uploaded_files.file_data в SELECT не включать.\n" .
-            "7. ВНИМАНИЕ: lifecycle-таблицы (repair_data, testing_data, inspection_data, termination_data, production_discontinuation, additional_data, uploaded_files) соединяются с device_identification ТОЛЬКО по (serial_number, case_number). У них НЕТ колонок device_id и device_type. См. блок === ТИПИЧНЫЕ ОШИБКИ JOIN ===.\n\n" .
+            "7. Для дат в legacy-таблицах учитывайте NULL, пустые строки и '0000-00-00' через NULLIF.\n" .
+            "8. ВНИМАНИЕ: lifecycle-таблицы (repair_data, testing_data, inspection_data, termination_data, production_discontinuation, additional_data, uploaded_files) соединяются с device_identification ТОЛЬКО по (serial_number, case_number). У них НЕТ колонок device_id и device_type. См. блок === ТИПИЧНЫЕ ОШИБКИ JOIN ===.\n\n" .
             "Примеры:\n" .
             "«Сколько приборов LWD?» → <sql>SELECT COUNT(*) FROM device_identification WHERE device_type='LWD'</sql>\n" .
             "«Напиши функцию факториала» → <no_sql/>\n" .
@@ -711,6 +720,12 @@ class AiAgentController extends BaseController
                     $resultsContext .= "Нет данных (пустой результат)";
                 }
                 $resultsContext .= "\nКоличество записей: " . $item['result']['count'] . "\n";
+                if (isset($item['result']['total_count']) && $item['result']['total_count'] !== $item['result']['count']) {
+                    $resultsContext .= "Всего строк в результате: " . $item['result']['total_count'] . "\n";
+                }
+                if (!empty($item['result']['truncated'])) {
+                    $resultsContext .= "Результат обрезан до первых " . $item['result']['count'] . " строк.\n";
+                }
             } else {
                 $resultsContext .= "ОШИБКА: " . ($item['result']['error'] ?? 'Неизвестная ошибка') . "\n";
             }
@@ -723,8 +738,9 @@ class AiAgentController extends BaseController
             "1. Используйте Markdown (заголовки уровня ###, маркированные списки, таблицы при необходимости).\n" .
             "2. Не придумывайте данные — используйте только то, что пришло из SQL-результата.\n" .
             "3. Не дублируйте SQL-запросы в ответе.\n" .
-            "4. Отвечайте лаконично, в нейтрально-деловом тоне, без эмодзи.\n" .
-            "5. При выводе таблиц старайтесь не превышать 4–5 колонок: длинные многоколоночные таблицы плохо читаются в drawer-чате; вместо этого используйте маркированные списки или несколько компактных таблиц.";
+            "4. Если SQL вернул ошибку, не делайте фактических выводов из предположений — сообщите, что данные не получены.\n" .
+            "5. Отвечайте лаконично, в нейтрально-деловом тоне, без эмодзи.\n" .
+            "6. При выводе таблиц старайтесь не превышать 4–5 колонок: длинные многоколоночные таблицы плохо читаются в drawer-чате; вместо этого используйте маркированные списки или несколько компактных таблиц.";
 
         $step2Messages = [
             ['role' => 'system', 'content' => $step2SystemContext],
