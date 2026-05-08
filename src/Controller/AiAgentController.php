@@ -106,6 +106,7 @@ class AiAgentController extends BaseController
             // Очистка истории диалога
             if (isset($data['clear_history']) && $data['clear_history'] === true) {
                 $_SESSION['conversation_history'] = [];
+                unset($_SESSION['ai_context_frames'], $_SESSION['current_device_context']);
                 ob_clean();
                 echo json_encode([
                     'choices'            => [
@@ -301,16 +302,8 @@ class AiAgentController extends BaseController
         // Получаем контекст базы данных для LLM
         $dbContext = $dbHandler->getDatabaseContextForLLM();
         
-        // Получаем текущий контекст устройства (если есть)
-        $deviceContext = $dbHandler->getCurrentContext();
-        $deviceContextStr = '';
-        if ($deviceContext) {
-            $deviceContextStr = "\n\n=== ТЕКУЩИЙ КОНТЕКСТ ===\n";
-            $deviceContextStr .= "Сейчас мы обсуждаем прибор с серийным номером: {$deviceContext['serial_number']}\n";
-            if ($deviceContext['case_number']) {
-                $deviceContextStr .= "Номер корпуса: {$deviceContext['case_number']}\n";
-            }
-        }
+        // Получаем структурный контекст диалога: последние приборы, списки, темы.
+        $deviceContextStr = $dbHandler->getConversationContextForLLM();
 
         // ШАГ 1: Просим LLM сгенерировать SQL-запросы (короткий промпт, низкая температура)
         $instructionsBlock = $this->getAgentInstructionsBlock();
@@ -324,7 +317,9 @@ class AiAgentController extends BaseController
             "4. Если вопрос не требует БД — отвечайте кратко без SQL.\n" .
             "5. Соблюдайте запреты из руководства (поля users.password и uploaded_files.file_data в SELECT не включать).\n" .
             "6. Для DATE/DATETIME столбцов не сравнивайте дату с пустой строкой ''; используйте IS NULL и YEAR(date_column) = 0 для zero-date. NULLIF(..., '') применяйте только к varchar/text датам.\n" .
-            "7. ВНИМАНИЕ: lifecycle-таблицы (repair_data, testing_data, inspection_data, termination_data, production_discontinuation, additional_data, uploaded_files) соединяются с device_identification ТОЛЬКО по (serial_number, case_number). У них НЕТ колонок device_id и device_type. См. блок === ТИПИЧНЫЕ ОШИБКИ JOIN ===.\n\n" .
+            "7. ВНИМАНИЕ: lifecycle-таблицы (repair_data, testing_data, inspection_data, termination_data, production_discontinuation, additional_data, uploaded_files) соединяются с device_identification ТОЛЬКО по (serial_number, case_number). У них НЕТ колонок device_id и device_type. См. блок === ТИПИЧНЫЕ ОШИБКИ JOIN ===.\n" .
+            "8. Если пользователь ссылается на предыдущий результат (например, \"данный прибор\", \"первый из списка\", \"эти приборы\", \"этот тип\"), используйте блок === КОНТЕКСТ ДИАЛОГА ===.\n" .
+            "9. Если текущая тема — ремонты, фразы \"причины ухода\" или \"почему уходил\" трактуйте как причины отправки в ремонт, а не как прекращение эксплуатации, если пользователь явно не сказал обратное.\n\n" .
             "Пример:\n<sql>SELECT device_type, COUNT(*) FROM device_identification GROUP BY device_type</sql>";
 
         $step1Messages = [
@@ -363,7 +358,9 @@ class AiAgentController extends BaseController
         ];
 
         // Step 2: финальный ответ с форматированием
-        return $this->callLLM($step2Messages, 3000, 0.5);
+        $responseText = $this->callLLM($step2Messages, 3000, 0.5);
+        $dbHandler->rememberSqlResults($userMessage, $executionResults, $responseText);
+        return $responseText;
     }
 
     /**
@@ -724,14 +721,9 @@ class AiAgentController extends BaseController
     {
         $dbContext = $dbHandler->getDatabaseContextForLLM();
         
-        $deviceContext = $dbHandler->getCurrentContext();
-        $deviceContextStr = '';
-        if ($deviceContext) {
-            $deviceContextStr = "\n\n=== ТЕКУЩИЙ КОНТЕКСТ ===\n";
-            $deviceContextStr .= "Сейчас мы обсуждаем прибор с серийным номером: {$deviceContext['serial_number']}\n";
-            if ($deviceContext['case_number']) {
-                $deviceContextStr .= "Номер корпуса: {$deviceContext['case_number']}\n";
-            }
+        $deviceContextStr = $dbHandler->getConversationContextForLLM();
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            session_write_close();
         }
 
         $this->sseEmit('status', ['message' => 'Анализирую запрос...']);
@@ -750,7 +742,9 @@ class AiAgentController extends BaseController
             "5. Никакого текста вне тегов.\n" .
             "6. Соблюдайте запреты из руководства: users.password и uploaded_files.file_data в SELECT не включать.\n" .
             "7. Для DATE/DATETIME столбцов не сравнивайте дату с пустой строкой ''; используйте IS NULL и YEAR(date_column) = 0 для zero-date. NULLIF(..., '') применяйте только к varchar/text датам.\n" .
-            "8. ВНИМАНИЕ: lifecycle-таблицы (repair_data, testing_data, inspection_data, termination_data, production_discontinuation, additional_data, uploaded_files) соединяются с device_identification ТОЛЬКО по (serial_number, case_number). У них НЕТ колонок device_id и device_type. См. блок === ТИПИЧНЫЕ ОШИБКИ JOIN ===.\n\n" .
+            "8. ВНИМАНИЕ: lifecycle-таблицы (repair_data, testing_data, inspection_data, termination_data, production_discontinuation, additional_data, uploaded_files) соединяются с device_identification ТОЛЬКО по (serial_number, case_number). У них НЕТ колонок device_id и device_type. См. блок === ТИПИЧНЫЕ ОШИБКИ JOIN ===.\n" .
+            "9. Если пользователь ссылается на предыдущий результат (например, \"данный прибор\", \"первый из списка\", \"эти приборы\", \"этот тип\"), используйте блок === КОНТЕКСТ ДИАЛОГА ===.\n" .
+            "10. Если текущая тема — ремонты, фразы \"причины ухода\" или \"почему уходил\" трактуйте как причины отправки в ремонт, а не как прекращение эксплуатации, если пользователь явно не сказал обратное.\n\n" .
             "Примеры:\n" .
             "«Сколько приборов LWD?» → <sql>SELECT COUNT(*) FROM device_identification WHERE device_type='LWD'</sql>\n" .
             "«Напиши функцию факториала» → <no_sql/>\n" .
@@ -801,6 +795,7 @@ class AiAgentController extends BaseController
             $this->sseEmit('content', ['delta' => $delta]);
         });
 
+        $dbHandler->rememberSqlResults($userMessage, $executionResults, $accumulated);
         return $accumulated;
     }
 
@@ -900,7 +895,9 @@ class AiAgentController extends BaseController
         }
         file_put_contents($logFile, json_encode($logData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
 
-        session_start();
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
         $_SESSION['conversation_history'][] = [
             'user' => $userMessage,
             'assistant' => $responseText,

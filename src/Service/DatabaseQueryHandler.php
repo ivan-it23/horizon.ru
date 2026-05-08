@@ -13,15 +13,16 @@ class DatabaseQueryHandler
     private $deviceInfoManager;
     private $responseFormatter;
     private $contextManager;
+    private string $lastUserQuery = '';
 
     public function __construct($connection)
     {
         $this->conn = $connection;
-        $this->queryAnalyzer = new QueryAnalyzer();
+        $this->contextManager = new ContextManager();
+        $this->queryAnalyzer = new QueryAnalyzer($this->contextManager);
         $this->queryExecutor = new QueryExecutor($connection);
         $this->deviceInfoManager = new DeviceInfoManager($connection);
         $this->responseFormatter = new ResponseFormatter();
-        $this->contextManager = new ContextManager();
     }
 
     /**
@@ -29,6 +30,7 @@ class DatabaseQueryHandler
      */
     public function analyzeQuery($userQuery): array
     {
+        $this->lastUserQuery = (string)$userQuery;
         return $this->queryAnalyzer->analyzeQuery($userQuery);
     }
 
@@ -55,7 +57,11 @@ class DatabaseQueryHandler
             case 'devices_in_repair':
             case 'devices_in_testing':
             case 'device_statistics':
-                return $this->queryExecutor->executeQuery($queryAnalysis);
+            case 'top_repaired_device':
+            case 'repair_reasons_by_device':
+                $result = $this->queryExecutor->executeQuery($queryAnalysis);
+                $this->rememberDatabaseResult($this->lastUserQuery, $queryAnalysis, $result);
+                return $result;
 
             // Диалоговые запросы — возвращаем специальный тип для обработки в контроллере
             case 'about_agent':
@@ -86,8 +92,10 @@ class DatabaseQueryHandler
                 $result = $this->deviceInfoManager->getDeviceInfoBySerial($queryAnalysis['serial_number']);
                 if ($result['success']) {
                     $this->queryAnalyzer->setLastDevice($queryAnalysis['serial_number'], $result['device']['case_number']);
-                    $this->contextManager->setContext($queryAnalysis['serial_number'], $result['device']['case_number']);
-                    return $this->responseFormatter->formatDeviceInfo($result['device'], $result['composition'], $result['repairs']);
+                    $this->contextManager->setContext($queryAnalysis['serial_number'], $result['device']['case_number'], $result['device']['device_type'] ?? null);
+                    $this->rememberDatabaseResult($this->lastUserQuery, $queryAnalysis, $result);
+                    $formatted = $this->responseFormatter->formatDeviceInfo($result['device'], $result['composition'], $result['repairs']);
+                    return $formatted;
                 }
                 return $result;
 
@@ -95,7 +103,8 @@ class DatabaseQueryHandler
                 $result = $this->deviceInfoManager->getDeviceInfoByCase($queryAnalysis['case_number']);
                 if ($result['success']) {
                     $this->queryAnalyzer->setLastDevice($result['device']['serial_number'], $queryAnalysis['case_number']);
-                    $this->contextManager->setContext($result['device']['serial_number'], $queryAnalysis['case_number']);
+                    $this->contextManager->setContext($result['device']['serial_number'], $queryAnalysis['case_number'], $result['device']['device_type'] ?? null);
+                    $this->rememberDatabaseResult($this->lastUserQuery, $queryAnalysis, $result);
                     return $this->responseFormatter->formatDeviceInfo($result['device'], $result['composition'], $result['repairs']);
                 }
                 return $result;
@@ -104,7 +113,8 @@ class DatabaseQueryHandler
                 $result = $this->deviceInfoManager->getFullDeviceInfo($queryAnalysis['serial_number'], null);
                 if ($result['success']) {
                     $this->queryAnalyzer->setLastDevice($queryAnalysis['serial_number'], $result['data']['device']['case_number']);
-                    $this->contextManager->setContext($queryAnalysis['serial_number'], $result['data']['device']['case_number']);
+                    $this->contextManager->setContext($queryAnalysis['serial_number'], $result['data']['device']['case_number'], $result['data']['device']['device_type'] ?? null);
+                    $this->rememberDatabaseResult($this->lastUserQuery, $queryAnalysis, $result);
                     return $this->responseFormatter->formatFullDeviceInfo($result['data']);
                 }
                 return $result;
@@ -113,7 +123,8 @@ class DatabaseQueryHandler
                 $result = $this->deviceInfoManager->getFullDeviceInfo(null, $queryAnalysis['case_number']);
                 if ($result['success']) {
                     $this->queryAnalyzer->setLastDevice($result['data']['device']['serial_number'], $queryAnalysis['case_number']);
-                    $this->contextManager->setContext($result['data']['device']['serial_number'], $queryAnalysis['case_number']);
+                    $this->contextManager->setContext($result['data']['device']['serial_number'], $queryAnalysis['case_number'], $result['data']['device']['device_type'] ?? null);
+                    $this->rememberDatabaseResult($this->lastUserQuery, $queryAnalysis, $result);
                     return $this->responseFormatter->formatFullDeviceInfo($result['data']);
                 }
                 return $result;
@@ -244,5 +255,34 @@ class DatabaseQueryHandler
     {
         $schemaService = new DatabaseSchemaService($this->conn);
         return $schemaService->executeQueryForLLM($sql);
+    }
+
+    /**
+     * Сохраняет структурный фрейм обычного DB-результата.
+     */
+    public function rememberDatabaseResult(string $userQuery, array $queryAnalysis, array $dbResult): ?array
+    {
+        return $this->contextManager->rememberDatabaseResult($userQuery, $queryAnalysis, $dbResult);
+    }
+
+    /**
+     * Сохраняет структурный фрейм SQL-результатов, полученных через LLM.
+     */
+    public function rememberSqlResults(string $userQuery, array $executionResults, string $responseText = ''): ?array
+    {
+        return $this->contextManager->rememberSqlResults($userQuery, $executionResults, $responseText);
+    }
+
+    /**
+     * Возвращает контекст фреймов для системного промпта LLM.
+     */
+    public function getConversationContextForLLM(): string
+    {
+        return $this->contextManager->getContextPrompt();
+    }
+
+    public function resolveReferences(string $userQuery): array
+    {
+        return $this->contextManager->resolveReferences($userQuery);
     }
 }

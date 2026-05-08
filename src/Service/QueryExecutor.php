@@ -58,6 +58,15 @@ class QueryExecutor
             case 'device_statistics':
                 return $this->getDeviceStatistics();
 
+            case 'top_repaired_device':
+                return $this->getTopRepairedDevices();
+
+            case 'repair_reasons_by_device':
+                return $this->getRepairReasonsByDevice(
+                    $queryAnalysis['serial_number'] ?? null,
+                    $queryAnalysis['case_number'] ?? null
+                );
+
             default:
                 return [
                     'success' => false,
@@ -206,6 +215,7 @@ class QueryExecutor
             return [
                 'success' => true,
                 'device_type' => $deviceType,
+                'devices' => $devices,
                 'device_list' => $deviceList,
                 'count' => count($devices),
                 'message' => "Найдено " . count($devices) . " приборов типа {$deviceType}."
@@ -263,6 +273,7 @@ class QueryExecutor
             return [
                 'success' => true,
                 'repairs_list' => $repairsList,
+                'repairs' => $repairs,
                 'count' => count($repairs),
                 'message' => "Найдено " . count($repairs) . " последних ремонтов."
             ];
@@ -479,6 +490,162 @@ class QueryExecutor
                 'success' => true,
                 'count' => count($tests),
                 'tests' => $tests,
+                'message' => $message
+            ];
+        } catch (\Exception $e) {
+            return [
+                'success' => false,
+                'message' => 'Ошибка при выполнении запроса: ' . $e->getMessage()
+            ];
+        }
+    }
+
+    /**
+     * Возвращает приборы, чаще всего уходившие в ремонт.
+     */
+    private function getTopRepairedDevices(): array
+    {
+        try {
+            $sql = "SELECT di.serial_number, di.case_number, di.device_type, COUNT(r.id) AS repairs_count
+                    FROM device_identification di
+                    INNER JOIN repair_data r
+                            ON r.serial_number = di.serial_number
+                           AND r.case_number = di.case_number
+                    GROUP BY di.id, di.serial_number, di.case_number, di.device_type
+                    ORDER BY repairs_count DESC, di.serial_number
+                    LIMIT 10";
+            $stmt = $this->conn->prepare($sql);
+            if (!$stmt) {
+                return [
+                    'success' => false,
+                    'message' => 'Ошибка подготовки запроса: ' . $this->conn->error
+                ];
+            }
+
+            $stmt->execute();
+            $result = $stmt->get_result();
+            $devices = $result->fetch_all(MYSQLI_ASSOC);
+            $stmt->close();
+
+            if (empty($devices)) {
+                return [
+                    'success' => false,
+                    'message' => 'В базе данных нет записей о ремонтах приборов.'
+                ];
+            }
+
+            $top = $devices[0];
+            $message = "### Статистика по ремонтам\n\n";
+            $message .= "Наиболее часто в ремонт направлялся следующий прибор:\n\n";
+            $message .= "- **Серийный номер:** {$top['serial_number']}\n";
+            $message .= "- **Номер корпуса:** {$top['case_number']}\n";
+            $message .= "- **Тип прибора:** {$top['device_type']}\n";
+            $message .= "- **Количество ремонтов:** {$top['repairs_count']}\n";
+
+            if (count($devices) > 1) {
+                $message .= "\n#### Следующие приборы по частоте ремонтов\n";
+                foreach (array_slice($devices, 1, 4) as $device) {
+                    $message .= "- {$device['serial_number']} / {$device['case_number']} ({$device['device_type']}): {$device['repairs_count']}\n";
+                }
+            }
+
+            return [
+                'success' => true,
+                'devices' => $devices,
+                'count' => count($devices),
+                'message' => $message
+            ];
+        } catch (\Exception $e) {
+            return [
+                'success' => false,
+                'message' => 'Ошибка при выполнении запроса: ' . $e->getMessage()
+            ];
+        }
+    }
+
+    /**
+     * Возвращает причины отправки в ремонт для конкретного прибора.
+     */
+    private function getRepairReasonsByDevice(?string $serialNumber, ?string $caseNumber): array
+    {
+        if (!$serialNumber && !$caseNumber) {
+            return [
+                'success' => false,
+                'message' => 'Не удалось определить прибор из контекста. Уточните серийный номер или номер корпуса.'
+            ];
+        }
+
+        try {
+            $sql = "SELECT serial_number, case_number, repair_reason, failure_reason, admission_date, release_date, actions_description, repair_creator
+                    FROM repair_data
+                    WHERE 1=1";
+            $params = [];
+            $types = '';
+
+            if ($serialNumber) {
+                $sql .= " AND serial_number = ?";
+                $params[] = $serialNumber;
+                $types .= 's';
+            }
+            if ($caseNumber) {
+                $sql .= " AND case_number = ?";
+                $params[] = $caseNumber;
+                $types .= 's';
+            }
+
+            $sql .= " ORDER BY admission_date DESC";
+            $stmt = $this->conn->prepare($sql);
+            if (!$stmt) {
+                return [
+                    'success' => false,
+                    'message' => 'Ошибка подготовки запроса: ' . $this->conn->error
+                ];
+            }
+
+            if (!empty($params)) {
+                $stmt->bind_param($types, ...$params);
+            }
+
+            $stmt->execute();
+            $result = $stmt->get_result();
+            $repairs = $result->fetch_all(MYSQLI_ASSOC);
+            $stmt->close();
+
+            if (empty($repairs)) {
+                return [
+                    'success' => true,
+                    'count' => 0,
+                    'repairs' => [],
+                    'message' => 'Для выбранного прибора записи о ремонтах не найдены.'
+                ];
+            }
+
+            $first = $repairs[0];
+            $message = "### Причины отправки прибора в ремонт\n\n";
+            $message .= "- **Серийный номер:** {$first['serial_number']}\n";
+            $message .= "- **Номер корпуса:** {$first['case_number']}\n";
+            $message .= "- **Всего ремонтов:** " . count($repairs) . "\n\n";
+
+            foreach ($repairs as $repair) {
+                $admissionDate = $repair['admission_date'] ? date('d.m.Y', strtotime($repair['admission_date'])) : 'не указана';
+                $releaseDate = $repair['release_date'] ? date('d.m.Y', strtotime($repair['release_date'])) : 'ещё в ремонте';
+                $message .= "#### Ремонт от {$admissionDate}\n";
+                $message .= "- **Причина ремонта:** " . ($repair['repair_reason'] ?: 'не указана') . "\n";
+                $message .= "- **Причина неисправности:** " . ($repair['failure_reason'] ?: 'не указана') . "\n";
+                $message .= "- **Дата выпуска:** {$releaseDate}\n";
+                if (!empty($repair['actions_description'])) {
+                    $message .= "- **Выполненные действия:** {$repair['actions_description']}\n";
+                }
+                if (!empty($repair['repair_creator'])) {
+                    $message .= "- **Ответственный:** {$repair['repair_creator']}\n";
+                }
+                $message .= "\n";
+            }
+
+            return [
+                'success' => true,
+                'count' => count($repairs),
+                'repairs' => $repairs,
                 'message' => $message
             ];
         } catch (\Exception $e) {

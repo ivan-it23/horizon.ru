@@ -9,6 +9,12 @@ class QueryAnalyzer
 {
     private $last_device_serial_number = null;
     private $last_device_case_number = null;
+    private ?ContextManager $contextManager;
+
+    public function __construct(?ContextManager $contextManager = null)
+    {
+        $this->contextManager = $contextManager;
+    }
 
     /**
      * Устанавливает контекст последнего найденного прибора
@@ -28,6 +34,64 @@ class QueryAnalyzer
     public function analyzeQuery($userQuery): array
     {
         $query = mb_strtolower($userQuery);
+        $reference = $this->contextManager ? $this->contextManager->resolveReferences($userQuery) : [
+            'has_reference' => false,
+            'device' => null,
+            'topic' => null,
+        ];
+
+        // Контекстные вопросы о причинах ремонта. Важно: после темы ремонтов
+        // "причины ухода" означает причины отправки в ремонт, а не списание.
+        if (($reference['device'] ?? null) &&
+            preg_match('/(?:причин|почему|из-за чего|из за чего|основан).*(?:уход|ремонт|неисправ)|(?:уход|ремонт).*(?:причин|почему|из-за чего|из за чего)/ui', $query) &&
+            (($reference['topic'] ?? null) === 'repairs' || preg_match('/ремонт|уход/ui', $query))
+        ) {
+            return [
+                'type' => 'repair_reasons_by_device',
+                'serial_number' => $reference['device']['serial_number'] ?? null,
+                'case_number' => $reference['device']['case_number'] ?? null,
+                'context_reference' => true,
+            ];
+        }
+
+        // Контекстные запросы на информацию о первом/втором/данном приборе.
+        if (($reference['device'] ?? null) &&
+            preg_match('/(?:полную|все).*?(?:информацию|данные).*?(?:перв|втор|трет|данн|эт|нему|него|прибор)/ui', $query)
+        ) {
+            if (!empty($reference['device']['serial_number'])) {
+                return [
+                    'type' => 'full_device_info_by_serial',
+                    'serial_number' => $reference['device']['serial_number'],
+                    'context_reference' => true,
+                ];
+            }
+            if (!empty($reference['device']['case_number'])) {
+                return [
+                    'type' => 'full_device_info_by_case',
+                    'case_number' => $reference['device']['case_number'],
+                    'context_reference' => true,
+                ];
+            }
+        }
+
+        if (($reference['device'] ?? null) &&
+            preg_match('/(?:информация|покажи|выдай|что известно).*?(?:перв|втор|трет|данн|эт|нему|него|прибор)/ui', $query)
+        ) {
+            if (!empty($reference['device']['serial_number'])) {
+                return [
+                    'type' => 'device_info_by_serial',
+                    'serial_number' => $reference['device']['serial_number'],
+                    'context_reference' => true,
+                ];
+            }
+            if (!empty($reference['device']['case_number'])) {
+                return [
+                    'type' => 'device_info_by_case',
+                    'case_number' => $reference['device']['case_number'],
+                    'context_reference' => true,
+                ];
+            }
+        }
 
         // Определяем тип запроса
         if (preg_match("/сколько.*приборов?.*типа?\s+(\w+)/ui", $query, $matches)) {
@@ -43,6 +107,10 @@ class QueryAnalyzer
 
         if (preg_match("/сколько.*ремонтов?/ui", $query)) {
             return ['type' => 'count_repairs'];
+        }
+
+        if (preg_match('/(?:какой|какие|что за).*прибор.*(?:чаще|больше|много).*ремонт|(?:чаще|больше|много).*ремонт.*прибор|прибор.*уходил.*ремонт.*чаще/ui', $query)) {
+            return ['type' => 'top_repaired_device'];
         }
 
         // Поиск полной информации по серийному номеру
@@ -181,4 +249,4 @@ class QueryAnalyzer
     {
         return $this->last_device_case_number;
     }
-}  
+}
