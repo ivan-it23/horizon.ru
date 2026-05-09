@@ -18,7 +18,8 @@
 
     const deviceTypeSelect          = newDeviceForm.querySelector('select[name="device_type"]');
     const transmitterCountSelect    = newDeviceForm.querySelector('select[name="transmitter_count"]');
-    const createParamsTbody         = newDeviceForm.querySelector('#device_parameters tbody');
+    const createReceiversTbody      = document.querySelector('#create-receivers-group tbody');
+    const createTransmittersTbody   = document.querySelector('#create-transmitters-group tbody');
     const createCompositionTbodyMain= newDeviceForm.querySelector('#device_composition table:nth-of-type(1) tbody');
     const createCompositionTbodyOther=newDeviceForm.querySelector('#device_composition table:nth-of-type(2) tbody');
 
@@ -44,45 +45,24 @@
     /* ------------------------------------------------------------------ */
     function updateReceiverRows() {
         const deviceType = deviceTypeSelect.value;
-        // remove existing receiver base rows
-        createParamsTbody.querySelectorAll('tr').forEach(tr => {
-            if ($rowContains(tr, 'База приёмника')) tr.remove();
-        });
-        const anchorRow = createParamsTbody.querySelector('[data-group="receivers"]');
-        if (!anchorRow) { console.error('anchor for receiver rows not found'); return; }
-
+        if (!createReceiversTbody) { console.error('receivers tbody not found'); return; }
+        createReceiversTbody.innerHTML = '';
         const count = deviceType === 'Картограф' ? 3 : 1;
-        let insertAfter = anchorRow;
         for (let i = 1; i <= count; i++) {
-            const newRow = document.createElement('tr');
+            const newRow = createReceiversTbody.insertRow();
             newRow.innerHTML = `<td>База приёмника ${i}, мм</td><td><input type="text" name="receiver_base${i}_mm" class="param-input"></td>`;
-            insertAfter.after(newRow);
-            insertAfter = newRow;
         }
         updateTransmitterRows();
     }
 
     function updateTransmitterRows() {
         const count = parseInt(transmitterCountSelect.value, 10);
-        createParamsTbody.querySelectorAll('tr').forEach(tr => {
-            if ($rowContains(tr, 'База передатчика')) tr.remove();
-        });
-        const anchorRow = createParamsTbody.querySelector('[data-group="transmitters"]');
-        if (!anchorRow) { console.error('anchor for transmitter rows not found'); return; }
-        let insertAfter = anchorRow;
+        if (!createTransmittersTbody) { console.error('transmitters tbody not found'); return; }
+        createTransmittersTbody.innerHTML = '';
         for (let i = 1; i <= count; i++) {
-            const newRow = document.createElement('tr');
+            const newRow = createTransmittersTbody.insertRow();
             newRow.innerHTML = `<td>База передатчика ${i}, мм</td><td><input type="text" name="transmitter_base${i}_mm" class="param-input"></td>`;
-            insertAfter.after(newRow);
-            insertAfter = newRow;
         }
-        // перенести заголовок «Авторство и даты» и итоговые поля в конец
-        const authorshipHeader = createParamsTbody.querySelector('[data-group="authorship"]');
-        if (authorshipHeader) createParamsTbody.appendChild(authorshipHeader);
-        ['record_date','creator_lastname'].forEach(name => {
-            const row = createParamsTbody.querySelector(`input[name="${name}"]`)?.closest('tr');
-            if (row) createParamsTbody.appendChild(row);
-        });
     }
 
     /* ------------------------------------------------------------------ */
