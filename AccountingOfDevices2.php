@@ -220,25 +220,26 @@ if ($is_logged_in) {
                         </div>
 
                         <div id="device_parameters" class="tab-content-section active">
-                            <table class="data-table">
-                                <thead>
-                                <tr>
-                                    <th>Поле</th>
-                                    <th>Значение</th>
-                                </tr>
-                                </thead>
+                            <table class="data-table device-params-table">
                                 <tbody>
+                                <tr class="params-group-header" data-group="identification"><td colspan="2"><i class="fas fa-id-card" aria-hidden="true"></i> Идентификация</td></tr>
                                 <tr><td>Серийный номер</td><td><input type="text" name="serial_number"></td></tr>
                                 <tr><td>Номер корпуса</td><td><input type="text" name="case_number"></td></tr>
+                                <tr class="params-group-header" data-group="geometry"><td colspan="2"><i class="fas fa-ruler-combined" aria-hidden="true"></i> Геометрия</td></tr>
                                 <tr><td>Длина, мм</td><td><input type="text" name="length_mm"></td></tr>
                                 <tr><td>Диаметр, мм</td><td><input type="text" name="diameter_mm"></td></tr>
+                                <tr class="params-group-header" data-group="threads"><td colspan="2"><i class="fas fa-cogs" aria-hidden="true"></i> Резьбы</td></tr>
                                 <tr><td>Резьба верхняя</td><td><input type="text" name="upper_thread"></td></tr>
                                 <tr><td>Резьба нижняя</td><td><input type="text" name="lower_thread"></td></tr>
+                                <tr class="params-group-header" data-group="frequencies"><td colspan="2"><i class="fas fa-wave-square" aria-hidden="true"></i> Рабочие частоты</td></tr>
                                 <tr><td>Рабочая частота 1, кГц</td><td><input type="text" name="frequency1_khz"></td></tr>
                                 <tr><td>Рабочая частота 2, кГц</td><td><input type="text" name="frequency2_khz"></td></tr>
+                                <tr class="params-group-header" data-group="receivers"><td colspan="2"><i class="fas fa-satellite-dish" aria-hidden="true"></i> Базы приёмников</td></tr>
                                 <tr><td>База приёмника 1, мм</td><td><input type="text" name="receiver_base1_mm"></td></tr>
                                 <tr><td>База приёмника 2, мм</td><td><input type="text" name="receiver_base2_mm"></td></tr>
                                 <tr><td>База приёмника 3, мм</td><td><input type="text" name="receiver_base3_mm"></td></tr>
+                                <tr class="params-group-header" data-group="transmitters"><td colspan="2"><i class="fas fa-broadcast-tower" aria-hidden="true"></i> Базы передатчиков</td></tr>
+                                <tr class="params-group-header" data-group="authorship"><td colspan="2"><i class="fas fa-user-clock" aria-hidden="true"></i> Авторство и даты</td></tr>
                                 <tr><td>Дата создания записи</td><td><input type="date" name="record_date"></td></tr>
                                 <tr>
                                     <td>Создатель записи</td>

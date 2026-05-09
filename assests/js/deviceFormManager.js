@@ -48,14 +48,16 @@
         createParamsTbody.querySelectorAll('tr').forEach(tr => {
             if ($rowContains(tr, 'База приёмника')) tr.remove();
         });
-        const anchorRow = Array.from(createParamsTbody.rows)
-                            .find(r => r.textContent.includes('Рабочая частота 2, кГц'));
+        const anchorRow = createParamsTbody.querySelector('[data-group="receivers"]');
         if (!anchorRow) { console.error('anchor for receiver rows not found'); return; }
 
         const count = deviceType === 'Картограф' ? 3 : 1;
+        let insertAfter = anchorRow;
         for (let i = 1; i <= count; i++) {
-            const newRow = createParamsTbody.insertRow(anchorRow.rowIndex + i);
+            const newRow = document.createElement('tr');
             newRow.innerHTML = `<td>База приёмника ${i}, мм</td><td><input type="text" name="receiver_base${i}_mm" class="param-input"></td>`;
+            insertAfter.after(newRow);
+            insertAfter = newRow;
         }
         updateTransmitterRows();
     }
@@ -65,15 +67,18 @@
         createParamsTbody.querySelectorAll('tr').forEach(tr => {
             if ($rowContains(tr, 'База передатчика')) tr.remove();
         });
-        const lastReceiverRow = Array.from(createParamsTbody.rows).reverse()
-                                     .find(r => $rowContains(r, 'База приёмника'));
-        const anchorRow = lastReceiverRow || createParamsTbody.querySelector('input[name="frequency2_khz"]')?.closest('tr');
+        const anchorRow = createParamsTbody.querySelector('[data-group="transmitters"]');
         if (!anchorRow) { console.error('anchor for transmitter rows not found'); return; }
+        let insertAfter = anchorRow;
         for (let i = 1; i <= count; i++) {
-            const newRow = createParamsTbody.insertRow(anchorRow.rowIndex + i);
+            const newRow = document.createElement('tr');
             newRow.innerHTML = `<td>База передатчика ${i}, мм</td><td><input type="text" name="transmitter_base${i}_mm" class="param-input"></td>`;
+            insertAfter.after(newRow);
+            insertAfter = newRow;
         }
-        // перенести итоговые поля в конец
+        // перенести заголовок «Авторство и даты» и итоговые поля в конец
+        const authorshipHeader = createParamsTbody.querySelector('[data-group="authorship"]');
+        if (authorshipHeader) createParamsTbody.appendChild(authorshipHeader);
         ['record_date','creator_lastname'].forEach(name => {
             const row = createParamsTbody.querySelector(`input[name="${name}"]`)?.closest('tr');
             if (row) createParamsTbody.appendChild(row);

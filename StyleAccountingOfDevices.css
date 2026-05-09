@@ -1366,6 +1366,33 @@ button:disabled {
     margin-bottom: 0;
 }
 
+/* --- Подзаголовки групп параметров в табличной форме создания прибора --- */
+.params-group-header td {
+    padding: var(--space-4) 0 var(--space-2) !important;
+    font-size: var(--fs-small);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--color-text-muted);
+    border-bottom: 1px solid var(--color-border) !important;
+    background: none !important;
+    font-family: var(--font-family-base);
+}
+
+.params-group-header:first-child td {
+    padding-top: 0 !important;
+}
+
+.params-group-header td i {
+    color: var(--color-primary);
+    font-size: 0.95rem;
+    margin-right: var(--space-2);
+}
+
+.params-group-header:hover > * {
+    background: none !important;
+}
+
 /* --- Панель действий под карточкой прибора (primary + secondary) --- */
 .device-action-bar {
     display: flex;
