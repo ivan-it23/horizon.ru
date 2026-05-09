@@ -470,7 +470,7 @@
 .ai-input-container.ai-drawer-footer {
     flex-shrink: 0;
     display: flex;
-    align-items: flex-end;
+    align-items: center;
     gap: var(--space-3, 12px);
     padding: var(--space-4, 16px) var(--space-5, 24px);
     background: var(--color-surface, #FFFFFF);
@@ -479,11 +479,13 @@
 
 .ai-input-wrap {
     flex: 1 1 auto;
-    display: block;
+    display: flex;
+    align-items: center;
     min-width: 0;
 }
 
 .ai-input {
+    display: block;
     width: 100%;
     min-height: 42px;
     max-height: 140px;
