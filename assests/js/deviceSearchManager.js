@@ -41,11 +41,38 @@
     }
     
     /**
+     * Допустимые значения количества передатчиков для каждого типа прибора
+     */
+    const TRANSMITTER_OPTIONS = {
+        'LWD':        [3, 4],
+        'Картограф':  [5],
+        'Автономный': [3, 4, 5]
+    };
+
+    /**
+     * Обновляет список опций «Количество передатчиков» в зависимости от типа прибора.
+     * Если текущее значение не входит в допустимый список — устанавливает первое допустимое.
+     */
+    function updateTransmitterOptions() {
+        if (!viewDeviceType || !viewTransmitterCount) return;
+        const deviceType = viewDeviceType.value;
+        const allowed = TRANSMITTER_OPTIONS[deviceType] || [3, 4, 5];
+        const current = parseInt(viewTransmitterCount.value, 10);
+        viewTransmitterCount.innerHTML = allowed
+            .map(v => `<option value="${v}">${v}</option>`)
+            .join('');
+        viewTransmitterCount.value = allowed.includes(current) ? String(current) : String(allowed[0]);
+    }
+
+    /**
      * Инициализирует обработчики событий для элементов поиска
      */
     function initEventListeners() {
         if (viewDeviceType && viewNominalDiameter && viewTransmitterCount) {
-            viewDeviceType.addEventListener('change', saveDeviceSearchParams);
+            viewDeviceType.addEventListener('change', () => {
+                updateTransmitterOptions();
+                saveDeviceSearchParams();
+            });
             viewNominalDiameter.addEventListener('change', saveDeviceSearchParams);
             viewTransmitterCount.addEventListener('change', saveDeviceSearchParams);
         }
@@ -97,14 +124,24 @@
                 if (viewNominalDiameter && savedParams.nominalDiameter) {
                     viewNominalDiameter.value = savedParams.nominalDiameter;
                 }
+                // Сначала обновляем допустимые опции под сохранённый тип прибора,
+                // затем восстанавливаем значение (оно будет скорректировано если недопустимо)
+                updateTransmitterOptions();
                 if (viewTransmitterCount && savedParams.transmitterCount) {
-                    viewTransmitterCount.value = savedParams.transmitterCount;
+                    const allowed = TRANSMITTER_OPTIONS[viewDeviceType.value] || [3, 4, 5];
+                    const saved   = parseInt(savedParams.transmitterCount, 10);
+                    viewTransmitterCount.value = allowed.includes(saved)
+                        ? String(saved)
+                        : String(allowed[0]);
                 }
             } catch (e) {
                 console.error('Ошибка при разборе сохраненных параметров поиска: ', e);
                 // В случае ошибки удаляем некорректные данные из хранилища
                 localStorage.removeItem(DEVICE_SEARCH_PARAMS_KEY);
             }
+        } else {
+            // Нет сохранённых данных — всё равно применяем ограничения для начального типа
+            updateTransmitterOptions();
         }
     }
     

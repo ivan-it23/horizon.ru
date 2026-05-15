@@ -41,6 +41,26 @@
     }
 
     /* ------------------------------------------------------------------ */
+    /*  Зависимость «Количество передатчиков» от типа прибора             */
+    /* ------------------------------------------------------------------ */
+    const TRANSMITTER_OPTIONS = {
+        'LWD':        [3, 4],
+        'Картограф':  [5],
+        'Автономный': [3, 4, 5]
+    };
+
+    function updateTransmitterOptions() {
+        if (!deviceTypeSelect || !transmitterCountSelect) return;
+        const deviceType = deviceTypeSelect.value;
+        const allowed = TRANSMITTER_OPTIONS[deviceType] || [3, 4, 5];
+        const current = parseInt(transmitterCountSelect.value, 10);
+        transmitterCountSelect.innerHTML = allowed
+            .map(v => `<option value="${v}">${v}</option>`)
+            .join('');
+        transmitterCountSelect.value = allowed.includes(current) ? String(current) : String(allowed[0]);
+    }
+
+    /* ------------------------------------------------------------------ */
     /*  Таблица параметров: ген. динамических строк баз                   */
     /* ------------------------------------------------------------------ */
     function updateReceiverRows() {
@@ -309,6 +329,7 @@
 
         // селекты
         deviceTypeSelect.addEventListener('change', ()=>{
+            updateTransmitterOptions();
             updateReceiverRowsWithRestore();
             updateTransmitterRowsWithRestore();
             generateCompositionTableRowsWithRestore();
@@ -319,6 +340,7 @@
         });
 
         // стартовое состояние
+        updateTransmitterOptions();
         toggleCreateFormSections('parameters');
         generateCompositionTableRowsWithRestore();
 
