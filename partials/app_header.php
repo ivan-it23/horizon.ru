@@ -34,8 +34,7 @@ $isAdmin = !empty($user_info['is_admin']);
 <header class="app-header">
     <div class="app-header__inner<?= $showNav ? '' : ' app-header__inner--no-nav' ?>">
         <a href="index.php" class="brand" aria-label="АМК Горизонт — главная">
-            <span class="brand__mark">АМК</span>
-            <span class="brand__name">Горизонт</span>
+            <img class="brand__mark" src="images/favicon.png" alt="АМК Горизонт">
         </a>
 
         <?php if ($showNav): ?>

@@ -323,11 +323,7 @@ if ($is_logged_in && $user_info) {
 <main class="login-shell">
     <section class="login-card" aria-labelledby="loginHeading">
         <div class="login-card__brand">
-            <span class="brand__mark brand__mark--lg" aria-hidden="true">АМК</span>
-            <div class="login-card__brand-text">
-                <div class="login-card__title">Горизонт</div>
-                <div class="login-card__sub">Корпоративная система учёта приборов</div>
-            </div>
+            <img class="brand__mark brand__mark--lg" src="images/favicon.png" alt="АМК Горизонт">
             <button type="button" id="themeToggle" class="icon-btn theme-toggle login-card__theme"
                     title="Переключить тему" aria-label="Переключить тему" aria-pressed="false">
                 <i class="fas fa-moon theme-toggle__icon theme-toggle__icon--dark" aria-hidden="true"></i>

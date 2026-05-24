@@ -55,6 +55,24 @@
     font-size: 16px;
     border-radius: var(--radius-md);
 }
+
+/* Изображение в качестве логотипа: убирает текстовые стили и градиент,
+   сохраняет габариты через фиксированную высоту и пропорциональную ширину.
+   Используется для горизонтального логотипа АМК «Горизонт» с фирменным
+   текстом, который не должен искажаться или ужиматься в квадрат. */
+img.brand__mark {
+    width: auto;
+    height: 40px;
+    background: none;
+    box-shadow: none;
+    border-radius: 0;
+    object-fit: contain;
+    object-position: left center;
+}
+img.brand__mark--lg {
+    width: auto;
+    height: 64px;
+}
 .brand__name {
     font-weight: 600;
     font-size: 15px;
