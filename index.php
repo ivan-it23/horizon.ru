@@ -217,17 +217,12 @@ if ($is_logged_in && $user_info) {
         <section class="branches" aria-label="Выбор направления учёта">
             <header class="branches__head">
                 <div class="branches__title-block">
-                    <span class="branches__eyebrow">Направление работы</span>
                     <h2 class="branches__title">Выберите направление учёта</h2>
                     <p class="branches__subtitle">
                         Сейчас в системе активен один модуль —
                         <strong>индукционный каротаж</strong>.
                         Остальные направления находятся в разработке и будут подключены по мере готовности.
                     </p>
-                </div>
-                <div class="branches__legend" aria-hidden="true">
-                    <span class="legend-dot legend-dot--on"></span><span class="legend-text">активен</span>
-                    <span class="legend-dot legend-dot--off"></span><span class="legend-text">в разработке</span>
                 </div>
             </header>
 
@@ -268,7 +263,6 @@ if ($is_logged_in && $user_info) {
                         <span class="branch__chip">В разработке</span>
                     </div>
                     <div class="branch__title">Акустический каротаж</div>
-                    <div class="branch__desc">Модуль учёта акустических приборов. Будет подключён в следующем релизе.</div>
                     <div class="branch__cta branch__cta--muted">
                         <span class="branch__cta-label">Недоступно</span>
                         <i class="fas fa-lock" aria-hidden="true"></i>
@@ -281,7 +275,6 @@ if ($is_logged_in && $user_info) {
                         <span class="branch__chip">В разработке</span>
                     </div>
                     <div class="branch__title">Боковой электрический каротаж</div>
-                    <div class="branch__desc">Модуль учёта приборов БЭК. Запланирован к реализации.</div>
                     <div class="branch__cta branch__cta--muted">
                         <span class="branch__cta-label">Недоступно</span>
                         <i class="fas fa-lock" aria-hidden="true"></i>
@@ -294,7 +287,6 @@ if ($is_logged_in && $user_info) {
                         <span class="branch__chip">В разработке</span>
                     </div>
                     <div class="branch__title">Радиационные методы</div>
-                    <div class="branch__desc">Модуль учёта приборов радиационных методов каротажа.</div>
                     <div class="branch__cta branch__cta--muted">
                         <span class="branch__cta-label">Недоступно</span>
                         <i class="fas fa-lock" aria-hidden="true"></i>
@@ -307,7 +299,6 @@ if ($is_logged_in && $user_info) {
                         <span class="branch__chip">В разработке</span>
                     </div>
                     <div class="branch__title">Профилемеры</div>
-                    <div class="branch__desc">Модуль учёта профилемеров. Будет добавлен после акустического каротажа.</div>
                     <div class="branch__cta branch__cta--muted">
                         <span class="branch__cta-label">Недоступно</span>
                         <i class="fas fa-lock" aria-hidden="true"></i>
@@ -371,10 +362,6 @@ if ($is_logged_in && $user_info) {
             </button>
         </form>
 
-        <footer class="login-card__foot">
-            <span class="status-dot status-dot--ok" aria-hidden="true"></span>
-            <span>Сервер доступен · соединение защищено</span>
-        </footer>
     </section>
 
     <aside class="login-side" aria-hidden="true">
