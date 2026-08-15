@@ -5,6 +5,13 @@
 (function (global) {
     "use strict";
 
+    // Ключ, под которым номер активной вкладки хранится в history.state
+    const HISTORY_STATE_KEY = 'accountingTab';
+    // Имя query-параметра, отражающего активную вкладку в адресной строке
+    const TAB_QUERY_PARAM = 'tab';
+    // Вкладка, открытая по умолчанию; её номер в URL не выносится
+    const DEFAULT_TAB = '1';
+
     /**
      * @typedef {Object} DeviceInfo
      * @property {number|null} id
@@ -32,6 +39,101 @@
         const tabPanes = document.querySelectorAll(tabPaneSelector);
 
         if (!tabItems.length) return; // нет вкладок — выходим
+
+        // Номер вкладки, соответствующий текущей записи в истории браузера
+        let currentTabNum = null;
+        // Признак того, что вкладка активируется переходом по истории:
+        // в этом случае новую запись создавать нельзя
+        let restoringFromHistory = false;
+
+        /**
+         * Возвращает элемент вкладки по её номеру
+         * @param {string} tabNum
+         * @returns {HTMLElement|null}
+         */
+        function findTabItem(tabNum) {
+            return document.querySelector(`${tabItemSelector}[data-tab="${tabNum}"]`);
+        }
+
+        /**
+         * Читает номер вкладки из адресной строки (?tab=N).
+         * Возвращает null, если параметра нет или вкладка с таким номером отсутствует.
+         * @returns {string|null}
+         */
+        function readTabFromLocation() {
+            const raw = new URLSearchParams(global.location.search).get(TAB_QUERY_PARAM);
+            if (!raw) return null;
+            const item = findTabItem(raw);
+            return (item && !item.classList.contains('parent-tab')) ? raw : null;
+        }
+
+        /**
+         * Собирает URL текущей страницы с указанием активной вкладки
+         * @param {string} tabNum
+         * @returns {string}
+         */
+        function buildTabUrl(tabNum) {
+            const url = new URL(global.location.href);
+            if (tabNum === DEFAULT_TAB) {
+                url.searchParams.delete(TAB_QUERY_PARAM);
+            } else {
+                url.searchParams.set(TAB_QUERY_PARAM, tabNum);
+            }
+            return url.pathname + url.search + url.hash;
+        }
+
+        /**
+         * Синхронизирует переключение вкладки с историей браузера.
+         *
+         * Стартовая активация только заменяет текущую запись — поэтому «Назад» на
+         * нетронутой вкладке по-прежнему уводит на предыдущую страницу сайта.
+         * Каждое последующее переключение добавляет полноценную запись, и стрелки
+         * браузера начинают ходить между вкладками и подвкладками.
+         *
+         * @param {string} tabNum
+         */
+        function syncHistory(tabNum) {
+            if (currentTabNum === tabNum) return;
+
+            const isInitialActivation = currentTabNum === null;
+            currentTabNum = tabNum;
+
+            const state = { [HISTORY_STATE_KEY]: tabNum };
+            if (isInitialActivation || restoringFromHistory) {
+                // При возврате по истории браузер уже перевёл адрес на нужную запись;
+                // replaceState нужен только чтобы поправить её, если вкладка оказалась
+                // заблокированной и мы открыли вкладку по умолчанию.
+                global.history.replaceState(state, '', buildTabUrl(tabNum));
+            } else {
+                global.history.pushState(state, '', buildTabUrl(tabNum));
+            }
+        }
+
+        /**
+         * Активирует вкладку без создания новой записи в истории.
+         * Если вкладка заблокирована (прибор не выбран), открывается вкладка по умолчанию.
+         * @param {string} tabNum
+         */
+        function restoreTab(tabNum) {
+            let item = findTabItem(tabNum);
+            if (!item || item.classList.contains('parent-tab') || item.classList.contains('disabled')) {
+                item = findTabItem(DEFAULT_TAB);
+            }
+            if (!item) return;
+
+            restoringFromHistory = true;
+            try {
+                item.click();
+            } finally {
+                restoringFromHistory = false;
+            }
+        }
+
+        // Переходы по стрелкам «Назад»/«Вперёд» внутри страницы учёта приборов
+        global.addEventListener('popstate', event => {
+            const stateTab = event.state && event.state[HISTORY_STATE_KEY];
+            restoreTab(stateTab || readTabFromLocation() || DEFAULT_TAB);
+        });
 
         tabItems.forEach(tabItem => {
             tabItem.addEventListener('click', e => {
@@ -108,6 +210,9 @@
                         }
                     }
                 }
+
+                // Фиксируем вкладку как отдельный шаг навигации
+                syncHistory(tabNum);
             });
         });
 
@@ -123,9 +228,14 @@
             });
         });
 
-        // Автоактивация первой вкладки после инициализации
-        const firstTab = document.querySelector(`${tabItemSelector}[data-tab="1"]`);
-        if (firstTab) firstTab.click();
+        // Автоактивация вкладки после инициализации: либо вкладка из адресной строки
+        // (перезагрузка страницы, возврат из bfcache-промаха, прямая ссылка),
+        // либо вкладка по умолчанию
+        let initialTab = findTabItem(readTabFromLocation() || DEFAULT_TAB);
+        if (!initialTab || initialTab.classList.contains('disabled')) {
+            initialTab = findTabItem(DEFAULT_TAB);
+        }
+        if (initialTab) initialTab.click();
     }
 
     // Экспорт
