@@ -13,8 +13,8 @@ class FileController extends BaseController
         // Проверка авторизации
         $this->requireAuth();
         
-        // Rate limiting для загрузки файлов (не более 10 файлов в час)
-        if (!$this->checkRateLimit($this->getClientIP(), 'file_upload', 10, 3600)) {
+        // Rate limiting для загрузки файлов (не более 20 файлов в час)
+        if (!$this->checkRateLimit($this->getClientIP(), 'file_upload', 20, 3600)) {
             $this->jsonResponse(['success' => false, 'message' => 'Слишком много загрузок файлов. Попробуйте через час.'], 429);
         }
 
@@ -233,10 +233,21 @@ class FileController extends BaseController
             }
         }
 
+        // Контрольная сумма нужна для защиты от повторной загрузки того же файла.
+        // Её заполняют оба пути — веб-форма и API приложения, иначе проверка
+        // дубля не увидела бы файлы, загруженные через сайт.
+        $columnResult = $conn->query("SHOW COLUMNS FROM `uploaded_files` LIKE 'sha256'");
+        if (!$columnResult || $columnResult->num_rows === 0) {
+            $conn->query("ALTER TABLE `uploaded_files` ADD COLUMN `sha256` char(64) DEFAULT NULL");
+            $conn->query("ALTER TABLE `uploaded_files` ADD INDEX `idx_sha256` (`sha256`)");
+        }
+
+        $fileSha256 = hash('sha256', $fileData);
+
         try {
-            $stmt = $conn->prepare("INSERT INTO uploaded_files (field_name, file_name, file_data, serial_number, case_number, device_type, created_at)
-                VALUES (?, ?, ?, ?, ?, ?, NOW())");
-            $stmt->bind_param('ssssss', $uploadedField, $fileName, $fileData, $serialNumber, $caseNumber, $deviceType);
+            $stmt = $conn->prepare("INSERT INTO uploaded_files (field_name, file_name, file_data, serial_number, case_number, device_type, sha256, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, NOW())");
+            $stmt->bind_param('sssssss', $uploadedField, $fileName, $fileData, $serialNumber, $caseNumber, $deviceType, $fileSha256);
             $stmt->execute();
             
             // Логируем успешную загрузку файла

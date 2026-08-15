@@ -135,6 +135,181 @@ try {
         <div class="card">
             <div class="card__head">
                 <div>
+                    <h2 class="card__title">Доступ для приложения «Визуализация данных»</h2>
+                    <p class="card__sub">
+                        Токен позволяет приложению загружать файлы приборов в базу напрямую.
+                        Создайте его один раз и вставьте в приложении: верхнее меню → «Связь с БД».
+                    </p>
+                </div>
+                <button type="button" id="api-token-create" class="btn btn--primary">
+                    <i class="fas fa-key" aria-hidden="true"></i> Создать токен
+                </button>
+            </div>
+            <div class="card__body">
+                <div id="api-token-result" class="stack stack--sm" style="display:none;margin-bottom:16px;">
+                    <p style="margin:0 0 8px;font-weight:600;">
+                        Скопируйте токен сейчас — позже показать его будет нельзя.
+                    </p>
+                    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                        <input type="text" id="api-token-value" readonly
+                               style="flex:1 1 420px;font-family:'JetBrains Mono',monospace;font-size:13px;padding:10px;">
+                        <button type="button" id="api-token-copy" class="btn btn--secondary">
+                            <i class="fas fa-copy" aria-hidden="true"></i> Копировать
+                        </button>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Название</th>
+                                <th>Токен</th>
+                                <th>Создан</th>
+                                <th>Последнее использование</th>
+                                <th>Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody id="api-token-rows">
+                            <tr><td colspan="5" class="no-data">Загрузка…</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <script>
+        (function () {
+            const createButton = document.getElementById('api-token-create');
+            const copyButton   = document.getElementById('api-token-copy');
+            const resultBlock  = document.getElementById('api-token-result');
+            const tokenValue   = document.getElementById('api-token-value');
+            const rowsBody     = document.getElementById('api-token-rows');
+
+            function escapeHtml(value) {
+                return String(value === null || value === undefined ? '' : value)
+                    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+            }
+
+            function formatDate(value) {
+                if (!value) {
+                    return '—';
+                }
+                const parsed = new Date(String(value).replace(' ', 'T'));
+                if (isNaN(parsed.getTime())) {
+                    return escapeHtml(value);
+                }
+                return parsed.toLocaleString('ru-RU', {
+                    day: '2-digit', month: '2-digit', year: 'numeric',
+                    hour: '2-digit', minute: '2-digit'
+                });
+            }
+
+            function renderRows(tokens) {
+                if (!tokens || tokens.length === 0) {
+                    rowsBody.innerHTML = '<tr><td colspan="5" class="no-data">Токены не создавались</td></tr>';
+                    return;
+                }
+
+                rowsBody.innerHTML = tokens.map(function (token) {
+                    return '<tr>' +
+                        '<td>' + escapeHtml(token.name) + '</td>' +
+                        '<td><code>amkdv_' + escapeHtml(token.token_prefix) + '…</code></td>' +
+                        '<td>' + formatDate(token.created_at) + '</td>' +
+                        '<td>' + formatDate(token.last_used_at) + '</td>' +
+                        '<td><button type="button" class="btn btn--danger btn--sm" data-revoke="' +
+                            escapeHtml(token.id) + '">Отозвать</button></td>' +
+                        '</tr>';
+                }).join('');
+            }
+
+            function loadTokens() {
+                fetch('front.php?c=ApiToken&a=list', { method: 'POST' })
+                    .then(function (response) { return response.json(); })
+                    .then(function (data) {
+                        if (data.success) {
+                            renderRows(data.tokens);
+                        } else {
+                            rowsBody.innerHTML = '<tr><td colspan="5" class="no-data">' +
+                                escapeHtml(data.message || 'Не удалось загрузить список') + '</td></tr>';
+                        }
+                    })
+                    .catch(function () {
+                        rowsBody.innerHTML = '<tr><td colspan="5" class="no-data">Ошибка связи с сервером</td></tr>';
+                    });
+            }
+
+            createButton.addEventListener('click', function () {
+                const name = prompt('Название токена:', 'Визуализация данных');
+                if (name === null) {
+                    return;
+                }
+
+                const body = new FormData();
+                body.append('name', name);
+
+                createButton.disabled = true;
+                fetch('front.php?c=ApiToken&a=create', { method: 'POST', body: body })
+                    .then(function (response) { return response.json(); })
+                    .then(function (data) {
+                        if (data.success) {
+                            tokenValue.value = data.token;
+                            resultBlock.style.display = '';
+                            loadTokens();
+                        } else {
+                            alert(data.message || 'Не удалось создать токен.');
+                        }
+                    })
+                    .catch(function () { alert('Ошибка связи с сервером.'); })
+                    .finally(function () { createButton.disabled = false; });
+            });
+
+            copyButton.addEventListener('click', function () {
+                tokenValue.select();
+                tokenValue.setSelectionRange(0, tokenValue.value.length);
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(tokenValue.value);
+                } else {
+                    document.execCommand('copy');
+                }
+                copyButton.innerHTML = '<i class="fas fa-check" aria-hidden="true"></i> Скопировано';
+                setTimeout(function () {
+                    copyButton.innerHTML = '<i class="fas fa-copy" aria-hidden="true"></i> Копировать';
+                }, 2000);
+            });
+
+            rowsBody.addEventListener('click', function (event) {
+                const button = event.target.closest('[data-revoke]');
+                if (!button) {
+                    return;
+                }
+
+                if (!confirm('Отозвать токен? Приложения, где он введён, потеряют доступ.')) {
+                    return;
+                }
+
+                const body = new FormData();
+                body.append('id', button.getAttribute('data-revoke'));
+
+                fetch('front.php?c=ApiToken&a=revoke', { method: 'POST', body: body })
+                    .then(function (response) { return response.json(); })
+                    .then(function (data) {
+                        if (!data.success) {
+                            alert(data.message || 'Не удалось отозвать токен.');
+                        }
+                        loadTokens();
+                    })
+                    .catch(function () { alert('Ошибка связи с сервером.'); });
+            });
+
+            loadTokens();
+        })();
+        </script>
+
+        <div class="card">
+            <div class="card__head">
+                <div>
                     <h2 class="card__title">Сообщения</h2>
                     <p class="card__sub">Внутренний обмен сообщениями между сотрудниками системы.</p>
                 </div>

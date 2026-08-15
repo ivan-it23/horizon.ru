@@ -40,13 +40,13 @@ if (!$is_production) {
     // Продакшн-сервер Beget
     define('DB_HOST', 'localhost'); // Для сайта на Beget
     define('DB_USERNAME', 'ivanbohg_account');
-    define('DB_PASSWORD', 'u52rfhPlUXzb');
+    define('DB_PASSWORD', 'btpvJ1F1aDJ*');
     define('DB_NAME', 'ivanbohg_account');
     define('DEBUG_MODE', false);
     // Параметры для удалённого доступа к БД Beget
     define('DB_REMOTE_HOST', 'ivanbohg.beget.tech');
     define('DB_REMOTE_USER', 'ivanbohg');
-    define('DB_REMOTE_PASS', 'u52rfhPlUXzb');
+    define('DB_REMOTE_PASS', 'btpvJ1F1aDJ*');
     // Для удалённого подключения используйте DB_REMOTE_* в своих скриптах
 }
 
@@ -54,7 +54,7 @@ if (!$is_production) {
 define('SESSION_TIMEOUT', 3600); // 1 час
 
 // Настройки загрузки файлов
-define('MAX_FILE_SIZE', 10 * 1024 * 1024); // 10 MB
+define('MAX_FILE_SIZE', 20 * 1024 * 1024); // 20 MB
 define('UPLOAD_DIR', __DIR__ . '/uploads/');
 
 // API key для polza.ai AI-агента
