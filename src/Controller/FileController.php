@@ -236,18 +236,26 @@ class FileController extends BaseController
         // Контрольная сумма нужна для защиты от повторной загрузки того же файла.
         // Её заполняют оба пути — веб-форма и API приложения, иначе проверка
         // дубля не увидела бы файлы, загруженные через сайт.
+        //
+        // Колонка не создаётся здесь: ALTER TABLE пересоздаёт таблицу целиком,
+        // а в ней лежат файлы приборов. Структура готовится один раз скриптом
+        // sql/2026-08-15-device-registry-api.sql; пока его не выполнили, загрузка
+        // через сайт продолжает работать без контрольной суммы.
         $columnResult = $conn->query("SHOW COLUMNS FROM `uploaded_files` LIKE 'sha256'");
-        if (!$columnResult || $columnResult->num_rows === 0) {
-            $conn->query("ALTER TABLE `uploaded_files` ADD COLUMN `sha256` char(64) DEFAULT NULL");
-            $conn->query("ALTER TABLE `uploaded_files` ADD INDEX `idx_sha256` (`sha256`)");
-        }
-
+        $hasSha256Column = $columnResult && $columnResult->num_rows > 0;
         $fileSha256 = hash('sha256', $fileData);
 
         try {
-            $stmt = $conn->prepare("INSERT INTO uploaded_files (field_name, file_name, file_data, serial_number, case_number, device_type, sha256, created_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, NOW())");
-            $stmt->bind_param('sssssss', $uploadedField, $fileName, $fileData, $serialNumber, $caseNumber, $deviceType, $fileSha256);
+            if ($hasSha256Column) {
+                $stmt = $conn->prepare("INSERT INTO uploaded_files (field_name, file_name, file_data, serial_number, case_number, device_type, sha256, created_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, NOW())");
+                $stmt->bind_param('sssssss', $uploadedField, $fileName, $fileData, $serialNumber, $caseNumber, $deviceType, $fileSha256);
+            } else {
+                $stmt = $conn->prepare("INSERT INTO uploaded_files (field_name, file_name, file_data, serial_number, case_number, device_type, created_at)
+                    VALUES (?, ?, ?, ?, ?, ?, NOW())");
+                $stmt->bind_param('ssssss', $uploadedField, $fileName, $fileData, $serialNumber, $caseNumber, $deviceType);
+            }
+
             $stmt->execute();
             
             // Логируем успешную загрузку файла

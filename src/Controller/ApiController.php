@@ -48,6 +48,60 @@ class ApiController extends BaseController
     /** @var \mysqli|null */
     private $connection = null;
 
+    /**
+     * Клиент этого контроллера — настольное приложение, а не браузер, поэтому
+     * ответом обязан быть JSON при любом исходе.
+     *
+     * Без этого необработанное исключение mysqli (в PHP 8 они включены по
+     * умолчанию) уходило клиенту как HTML-фатал с кодом 200 и полными путями
+     * на сервере, а приложение показывало этот текст пользователю.
+     */
+    public function __construct()
+    {
+        parent::__construct();
+
+        // Текст ошибки не должен попадать в тело ответа: он ломает JSON и
+        // раскрывает устройство сервера. Подробности идут в журнал.
+        ini_set('display_errors', '0');
+
+        set_exception_handler(function (\Throwable $exception) {
+            $this->logSecurityEvent('api_unhandled_exception', [
+                'message' => $exception->getMessage(),
+                'file'    => $exception->getFile(),
+                'line'    => $exception->getLine(),
+            ]);
+            $this->respondWithServerError();
+        });
+
+        register_shutdown_function(function () {
+            $error = error_get_last();
+            $fatalTypes = [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR, E_USER_ERROR];
+            if ($error === null || !in_array($error['type'], $fatalTypes, true)) {
+                return;
+            }
+
+            $this->logSecurityEvent('api_fatal_error', $error);
+            $this->respondWithServerError();
+        });
+    }
+
+    /**
+     * Единый ответ на внутреннюю ошибку. Подробности уже в журнале, клиенту
+     * достаточно знать, что запрос не выполнен.
+     */
+    private function respondWithServerError(): void
+    {
+        if (headers_sent()) {
+            return;
+        }
+
+        $this->jsonResponse([
+            'success' => false,
+            'code'    => 'server_error',
+            'message' => 'Внутренняя ошибка сервера. Подробности записаны в журнал сайта.',
+        ], 500);
+    }
+
     // ------------------------------------------------------------------
     // Действия
     // ------------------------------------------------------------------
@@ -307,7 +361,7 @@ class ApiController extends BaseController
         }
 
         $conn = $this->db();
-        $this->ensureUploadedFilesSchema($conn);
+        $this->requireUploadedFilesSchema($conn);
 
         // Повтор той же кнопки, возврат к тому же файлу через неделю, отправка
         // метрологии после каждой из нескольких калибровок подряд — всё это
@@ -344,9 +398,10 @@ class ApiController extends BaseController
             $this->fail('server_error', 'Не удалось подготовить запрос на сохранение файла.', 500);
         }
 
-        $null = null;
-        $stmt->bind_param('sssssss', $fieldName, $fileName, $null, $serial, $caseNumber, $deviceType, $sha256);
-        $stmt->send_long_data(2, $fileData);
+        // Содержимое передаётся обычной привязкой параметра. Через
+        // send_long_data() в базу уходил NULL, а этот путь годами работает в
+        // загрузке через сайт на этом же хостинге.
+        $stmt->bind_param('sssssss', $fieldName, $fileName, $fileData, $serial, $caseNumber, $deviceType, $sha256);
 
         if (!$stmt->execute()) {
             $error = $stmt->error;
@@ -362,7 +417,6 @@ class ApiController extends BaseController
         $insertedId = (int)$conn->insert_id;
         $stmt->close();
 
-        ApiTokenService::touch($conn, (int)$this->tokenRow['id']);
         $this->logSecurityEvent('api_file_uploaded', [
             'user_id'       => (int)$this->tokenRow['user_id'],
             'field_name'    => $fieldName,
@@ -408,7 +462,7 @@ class ApiController extends BaseController
         }
 
         $conn = $this->db();
-        $this->ensureUploadedFilesSchema($conn);
+        $this->requireUploadedFilesSchema($conn);
 
         $stmt = $conn->prepare(
             "SELECT id, file_name, created_at, sha256, LENGTH(file_data) AS size
@@ -461,6 +515,11 @@ class ApiController extends BaseController
         }
 
         $this->tokenRow = $row;
+
+        // Отметка ставится на любом обращении, а не только на загрузке файла:
+        // иначе «Последнее использование» в профиле оставалось бы пустым даже
+        // после успешной проверки связи из приложения.
+        ApiTokenService::touch($this->db(), (int)$row['id']);
     }
 
     private function requirePost(): void
@@ -501,17 +560,33 @@ class ApiController extends BaseController
     }
 
     /**
-     * Добавляет колонку контрольной суммы, если её ещё нет.
+     * Проверяет, что колонка контрольной суммы существует.
+     *
+     * Раньше она добавлялась прямо здесь, но MySQL при ALTER TABLE пересоздаёт
+     * таблицу целиком, а в `uploaded_files` лежат файлы приборов — на время
+     * операции нужно вдвое больше места на диске. Делать это внутри обычного
+     * запроса на shared-хостинге нельзя, поэтому структура готовится один раз
+     * скриптом `sql/2026-08-15-device-registry-api.sql`.
      */
-    private function ensureUploadedFilesSchema(\mysqli $conn): void
+    private function requireUploadedFilesSchema(\mysqli $conn): void
     {
-        $result = $conn->query("SHOW COLUMNS FROM `uploaded_files` LIKE 'sha256'");
-        if ($result && $result->num_rows > 0) {
+        if ($this->hasSha256Column($conn)) {
             return;
         }
 
-        $conn->query("ALTER TABLE `uploaded_files` ADD COLUMN `sha256` char(64) DEFAULT NULL");
-        $conn->query("ALTER TABLE `uploaded_files` ADD INDEX `idx_sha256` (`sha256`)");
+        $this->fail(
+            'schema_not_ready',
+            'В таблице uploaded_files нет колонки sha256. Выполните один раз скрипт ' .
+            'sql/2026-08-15-device-registry-api.sql в phpMyAdmin.',
+            500
+        );
+    }
+
+    private function hasSha256Column(\mysqli $conn): bool
+    {
+        $result = $conn->query("SHOW COLUMNS FROM `uploaded_files` LIKE 'sha256'");
+
+        return $result && $result->num_rows > 0;
     }
 
     /**
